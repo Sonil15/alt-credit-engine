@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Alt-Credit Consent Gateway</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+    .phone {
+      width: 100%;
+      max-width: 390px;
+      background: #1e293b;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    }
+    .status-bar {
+      background: #0f172a;
+      padding: 12px 20px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      color: #94a3b8;
+    }
+    .header {
+      padding: 24px 20px 16px;
+      text-align: center;
+      border-bottom: 1px solid #334155;
+    }
+    .header h1 { font-size: 20px; font-weight: 700; color: #f8fafc; }
+    .header p { font-size: 13px; color: #94a3b8; margin-top: 6px; }
+    .content { padding: 20px; }
+    .step { display: none; }
+    .step.active { display: block; }
+    .scope-list { list-style: none; margin: 16px 0; }
+    .scope-list li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: #0f172a;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .scope-list input { width: 18px; height: 18px; accent-color: #3b82f6; }
+    label.field {
+      display: block;
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      margin-top: 14px;
+    }
+    select, textarea {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #f1f5f9;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: opacity 0.2s;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: #3b82f6; color: white; }
+    .btn-success { background: #22c55e; color: white; }
+    .progress { display: flex; gap: 6px; justify-content: center; margin-bottom: 20px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #334155; }
+    .dot.active { background: #3b82f6; }
+    .result {
+      text-align: center;
+      padding: 24px 0;
+    }
+    .result .score {
+      font-size: 48px;
+      font-weight: 800;
+      color: #22c55e;
+      margin: 12px 0;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .badge-approve { background: #14532d; color: #86efac; }
+    .badge-review { background: #713f12; color: #fde68a; }
+    .badge-reject { background: #7f1d1d; color: #fca5a5; }
+    .error { color: #f87171; font-size: 13px; margin-top: 10px; }
+    .loading { text-align: center; color: #94a3b8; font-size: 14px; padding: 20px; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="status-bar">
+      <span>Alt-Credit</span>
+      <span>Consent Gateway</span>
+    </div>
+    <div class="header">
+      <h1>Share Your Data</h1>
+      <p>Grant consent to build your alternate credit profile</p>
+    </div>
+    <div class="content">
+      <div class="progress">
+        <div class="dot active" id="dot1"></div>
+        <div class="dot" id="dot2"></div>
+        <div class="dot" id="dot3"></div>
+      </div>
+
+      <!-- Step 1: Consent -->
+      <div class="step active" id="step1">
+        <p style="font-size:14px;color:#94a3b8;margin-bottom:8px;">Select data sources to share:</p>
+        <ul class="scope-list">
+          <li><input type="checkbox" id="scope-telecom" checked> Telecom bills</li>
+          <li><input type="checkbox" id="scope-ecommerce" checked> E-commerce history</li>
+          <li><input type="checkbox" id="scope-geo" checked> Location stability</li>
+          <li><input type="checkbox" id="scope-cashflow" checked> Bank cash flow</li>
+          <li><input type="checkbox" id="scope-survey" checked> Psychometric survey</li>
+        </ul>
+        <button class="btn btn-primary" onclick="goToStep(2)">Continue</button>
+      </div>
+
+      <!-- Step 2: Survey -->
+      <div class="step" id="step2">
+        <label class="field">Risk Appetite</label>
+        <select id="risk_appetite">
+          <option value="low">Low — I avoid financial risk</option>
+          <option value="medium" selected>Medium — Balanced approach</option>
+          <option value="high">High — Willing to take risks</option>
+        </select>
+
+        <label class="field">Savings Frequency</label>
+        <select id="savings_freq">
+          <option value="weekly">Weekly</option>
+          <option value="monthly" selected>Monthly</option>
+          <option value="quarterly">Quarterly</option>
+          <option value="rarely">Rarely</option>
+          <option value="never">Never</option>
+        </select>
+
+        <label class="field">How do you handle financial stress?</label>
+        <textarea id="stress_response_text" placeholder="Describe how you prioritize bills and expenses when money is tight...">I prioritize paying my utility bills first before business inventory purchases.</textarea>
+
+        <button class="btn btn-primary" onclick="submitAll()">Submit & Get Score</button>
+        <div class="error" id="error-msg"></div>
+      </div>
+
+      <!-- Step 3: Result -->
+      <div class="step" id="step3">
+        <div class="result">
+          <p style="color:#94a3b8;font-size:14px;">Your Alternate Credit Score</p>
+          <div class="score" id="score-display">—</div>
+          <div class="badge badge-approve" id="decision-badge">—</div>
+          <p style="color:#94a3b8;font-size:13px;margin-top:16px;" id="pd-display"></p>
+          <p style="color:#64748b;font-size:12px;margin-top:8px;" id="user-id-display"></p>
+        </div>
+        <button class="btn btn-success" onclick="window.location='/dashboard?user_id=' + userId">View Bank Dashboard</button>
+      </div>
+
+      <div class="loading" id="loading" style="display:none;">Processing your data...</div>
+    </div>
+  </div>
+
+  <script>
+    let userId = crypto.randomUUID();
+
+    function goToStep(n) {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.getElementById('step' + n).classList.add('active');
+      for (let i = 1; i <= 3; i++) {
+        document.getElementById('dot' + i).classList.toggle('active', i <= n);
+      }
+    }
+
+    async function submitAll() {
+      const errorEl = document.getElementById('error-msg');
+      errorEl.textContent = '';
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('step2').classList.remove('active');
+
+      const surveyPayload = {
+        user_id: userId,
+        risk_appetite: document.getElementById('risk_appetite').value,
+        savings_freq: document.getElementById('savings_freq').value,
+        stress_response_text: document.getElementById('stress_response_text').value,
+      };
+
+      try {
+        // Ingest survey (real data from user)
+        await fetch('/ingest/survey', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(surveyPayload),
+        });
+
+        // Wait briefly for background preprocessing of survey
+        await new Promise(r => setTimeout(r, 3000));
+
+        // Try to get score (may need training first)
+        let scoreResp = await fetch('/score/' + userId);
+        if (scoreResp.status === 404 || scoreResp.status === 503) {
+          // User not in DB yet — show demo message
+          document.getElementById('loading').style.display = 'none';
+          goToStep(3);
+          document.getElementById('score-display').textContent = 'Pending';
+          document.getElementById('decision-badge').textContent = 'DATA SUBMITTED';
+          document.getElementById('decision-badge').className = 'badge badge-review';
+          document.getElementById('pd-display').textContent = 'Survey submitted. Run bulk loader + training for full score.';
+          document.getElementById('user-id-display').textContent = 'User ID: ' + userId;
+          return;
+        }
+
+        const data = await scoreResp.json();
+        document.getElementById('loading').style.display = 'none';
+        goToStep(3);
+        document.getElementById('score-display').textContent = data.credit_score;
+        const badge = document.getElementById('decision-badge');
+        badge.textContent = data.decision;
+        badge.className = 'badge badge-' + data.decision.toLowerCase();
+        document.getElementById('pd-display').textContent = 'PD: ' + (data.probability_of_default * 100).toFixed(1) + '%';
+        document.getElementById('user-id-display').textContent = 'User ID: ' + userId;
+      } catch (err) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('step2').classList.add('active');
+        errorEl.textContent = 'Submission failed: ' + err.message;
+      }
+    }
+  </script>
+</body>
+</html>

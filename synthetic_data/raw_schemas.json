@@ -1,0 +1,70 @@
+{
+  "telecom": {
+    "description": "Mock telecom/utility provider API response (e.g., Jio/Airtel)",
+    "fields": {
+      "user_id": "UUID",
+      "invoices": [
+        {
+          "invoice_date": "YYYY-MM-DD",
+          "due_date": "YYYY-MM-DD",
+          "payment_date": "YYYY-MM-DD | null",
+          "billed_amount": "float",
+          "status": "paid | late | defaulted | missed | unpaid"
+        }
+      ]
+    }
+  },
+  "ecommerce": {
+    "description": "Mock e-commerce export (Amazon/Flipkart)",
+    "fields": {
+      "user_id": "UUID",
+      "orders": [
+        {
+          "order_id": "string",
+          "timestamp": "ISO8601 datetime",
+          "item_category": "electronics | groceries | luxury | fashion | travel | utilities | health | education | household | entertainment",
+          "amount": "float",
+          "merchant_id": "string",
+          "merchant_rating_at_purchase": "float 1.0-5.0"
+        }
+      ]
+    }
+  },
+  "geo": {
+    "description": "Mock mobile OS / Google Maps Timeline location array",
+    "fields": {
+      "user_id": "UUID",
+      "locations": [
+        {
+          "timestamp": "ISO8601 datetime",
+          "lat": "float",
+          "long": "float",
+          "accuracy_meters": "int"
+        }
+      ]
+    }
+  },
+  "cashflow": {
+    "description": "Mock RBI Account Aggregator FIP transaction payload",
+    "fields": {
+      "user_id": "UUID",
+      "transactions": [
+        {
+          "txn_date": "YYYY-MM-DD",
+          "type": "CREDIT | DEBIT",
+          "amount": "float",
+          "narration": "string (messy UPI/bank narration)"
+        }
+      ]
+    }
+  },
+  "survey": {
+    "description": "Mock psychometric survey form submission",
+    "fields": {
+      "user_id": "UUID",
+      "risk_appetite": "low | medium | high",
+      "savings_freq": "weekly | monthly | quarterly | rarely | never",
+      "stress_response_text": "string (natural language response)"
+    }
+  }
+}

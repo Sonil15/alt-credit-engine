@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alt-Credit — Bank LOS Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+    }
+    .topbar {
+      background: #0f172a;
+      color: white;
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .topbar h1 { font-size: 18px; font-weight: 700; }
+    .topbar span { font-size: 13px; color: #94a3b8; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+    .search-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .search-bar input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+    .search-bar button {
+      padding: 12px 24px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .card-label { font-size: 13px; color: #64748b; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card-value { font-size: 36px; font-weight: 800; margin-top: 8px; }
+    .card-value.score { color: #2563eb; }
+    .card-value.pd { color: #dc2626; }
+    .badge {
+      display: inline-block;
+      padding: 8px 18px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+    .badge-APPROVE { background: #dcfce7; color: #166534; }
+    .badge-REVIEW { background: #fef9c3; color: #854d0e; }
+    .badge-REJECT { background: #fee2e2; color: #991b1b; }
+    .chart-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .chart-card h2 { font-size: 16px; margin-bottom: 16px; color: #334155; }
+    .drivers { margin-top: 16px; }
+    .driver-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+    }
+    .driver-row .name { color: #475569; }
+    .driver-row .val { font-weight: 600; }
+    .val.positive { color: #dc2626; }
+    .val.negative { color: #16a34a; }
+    .error-box {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 14px;
+    }
+    .user-list { margin-top: 24px; }
+    .user-list h3 { font-size: 15px; margin-bottom: 12px; color: #475569; }
+    .user-chip {
+      display: inline-block;
+      padding: 6px 12px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 12px;
+      margin: 4px;
+      cursor: pointer;
+      font-family: monospace;
+    }
+    .user-chip:hover { background: #eff6ff; border-color: #93c5fd; }
+    .reject-reason { color: #dc2626; font-size: 13px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <h1>Alt-Credit LOS Dashboard</h1>
+      <span>Loan Origination System — Alternate Credit Scoring</span>
+    </div>
+    <a href="/consent" style="color:#93c5fd;font-size:13px;text-decoration:none;">← Consent Gateway</a>
+  </div>
+
+  <div class="container">
+    <div class="search-bar">
+      <input type="text" id="user-id-input" placeholder="Enter User ID (UUID)" value="{{ user_id }}">
+      <button onclick="loadScore()">Lookup Score</button>
+      <button onclick="loadAll()" style="background:#475569;">List All</button>
+    </div>
+
+    <div id="error-box" class="error-box" style="display:none;"></div>
+
+    <div id="score-panel" style="display:none;">
+      <div class="grid">
+        <div class="card">
+          <div class="card-label">Alternate Credit Score</div>
+          <div class="card-value score" id="credit-score">—</div>
+          <div class="card-label" style="margin-top:4px;">Range: 300 – 900</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Probability of Default</div>
+          <div class="card-value pd" id="pd-value">—</div>
+          <canvas id="pd-gauge" height="80" style="margin-top:12px;"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-label">Decision</div>
+          <div class="badge" id="decision-badge">—</div>
+          <div class="reject-reason" id="reject-reason"></div>
+          <div style="margin-top:12px;font-size:12px;color:#94a3b8;font-family:monospace;" id="display-user-id"></div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h2>SHAP Feature Drivers (Top 3)</h2>
+        <canvas id="shap-chart" height="120"></canvas>
+        <div class="drivers" id="drivers-list"></div>
+      </div>
+    </div>
+
+    <div class="user-list" id="user-list-panel" style="display:none;">
+      <h3>All Scored Users — click to view</h3>
+      <div id="user-chips"></div>
+    </div>
+  </div>
+
+  <script>
+    let shapChart = null;
+    let gaugeChart = null;
+
+    async function loadScore() {
+      const userId = document.getElementById('user-id-input').value.trim();
+      if (!userId) return showError('Enter a user ID');
+      hideError();
+
+      try {
+        const resp = await fetch('/score/' + userId);
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.detail || resp.statusText);
+        }
+        const data = await resp.json();
+        renderScore(data);
+      } catch (err) {
+        showError(err.message);
+      }
+    }
+
+    async function loadAll() {
+      hideError();
+      try {
+        const resp = await fetch('/score/');
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.detail || resp.statusText);
+        }
+        const users = await resp.json();
+        const panel = document.getElementById('user-list-panel');
+        const chips = document.getElementById('user-chips');
+        chips.innerHTML = '';
+        users.forEach(u => {
+          const chip = document.createElement('span');
+          chip.className = 'user-chip';
+          chip.textContent = u.user_id.slice(0, 8) + '… ' + u.credit_score + ' ' + u.decision;
+          chip.title = u.user_id;
+          chip.onclick = () => {
+            document.getElementById('user-id-input').value = u.user_id;
+            renderScore(u);
+          };
+          chips.appendChild(chip);
+        });
+        panel.style.display = users.length ? 'block' : 'none';
+        if (users.length) renderScore(users[0]);
+      } catch (err) {
+        showError(err.message);
+      }
+    }
+
+    function renderScore(data) {
+      document.getElementById('score-panel').style.display = 'block';
+      document.getElementById('credit-score').textContent = data.credit_score;
+      document.getElementById('pd-value').textContent = (data.probability_of_default * 100).toFixed(1) + '%';
+      document.getElementById('display-user-id').textContent = data.user_id;
+
+      const badge = document.getElementById('decision-badge');
+      badge.textContent = data.decision;
+      badge.className = 'badge badge-' + data.decision;
+
+      const reason = document.getElementById('reject-reason');
+      reason.textContent = data.reject_reason || '';
+
+      renderGauge(data.probability_of_default);
+      renderShap(data.shap_drivers || []);
+    }
+
+    function renderGauge(pd) {
+      const ctx = document.getElementById('pd-gauge').getContext('2d');
+      if (gaugeChart) gaugeChart.destroy();
+      gaugeChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['PD', 'Safe'],
+          datasets: [{
+            data: [pd * 100, (1 - pd) * 100],
+            backgroundColor: ['#dc2626', '#e2e8f0'],
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          cutout: '70%',
+          plugins: { legend: { display: false } },
+          responsive: true,
+        }
+      });
+    }
+
+    function renderShap(drivers) {
+      const ctx = document.getElementById('shap-chart').getContext('2d');
+      if (shapChart) shapChart.destroy();
+
+      const labels = drivers.map(d => d.feature.replace(/_/g, ' '));
+      const values = drivers.map(d => d.shap_value);
+      const colors = values.map(v => v >= 0 ? '#dc2626' : '#16a34a');
+
+      shapChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'SHAP Value',
+            data: values,
+            backgroundColor: colors,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { title: { display: true, text: 'Impact on Default Risk' } }
+          }
+        }
+      });
+
+      const list = document.getElementById('drivers-list');
+      list.innerHTML = drivers.map(d => `
+        <div class="driver-row">
+          <span class="name">${d.feature.replace(/_/g, ' ')}</span>
+          <span class="val ${d.shap_value >= 0 ? 'positive' : 'negative'}">${d.shap_value >= 0 ? '+' : ''}${d.shap_value.toFixed(4)}</span>
+        </div>
+      `).join('');
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('error-box');
+      box.textContent = msg;
+      box.style.display = 'block';
+      document.getElementById('score-panel').style.display = 'none';
+    }
+
+    function hideError() {
+      document.getElementById('error-box').style.display = 'none';
+    }
+
+    // Auto-load if user_id provided via query param
+    const initialId = document.getElementById('user-id-input').value.trim();
+    if (initialId) loadScore();
+  </script>
+</body>
+</html>
