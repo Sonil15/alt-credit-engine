@@ -24,12 +24,30 @@ class Settings:
     CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")
     AUTO_SEED_ON_STARTUP: str = os.getenv("AUTO_SEED_ON_STARTUP", "false")
 
+    # Single connection string (e.g. Render/Railway/Fly provide this). Takes
+    # precedence over the individual POSTGRES_* vars when set.
+    DATABASE_URL_ENV: str = os.getenv("DATABASE_URL", "")
+
     @property
     def DATABASE_URL(self) -> str:
+        if self.DATABASE_URL_ENV:
+            return self._normalize_async_url(self.DATABASE_URL_ENV)
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
+
+    @staticmethod
+    def _normalize_async_url(url: str) -> str:
+        # Managed hosts hand out sync-style URLs (postgres:// or
+        # postgresql://). SQLAlchemy's async engine needs the asyncpg driver.
+        if url.startswith("postgresql+asyncpg://"):
+            return url
+        if url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+asyncpg://", 1)
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
 
     @property
     def cors_origins_list(self) -> list[str]:
