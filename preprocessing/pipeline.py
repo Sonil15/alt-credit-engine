@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import AsyncSessionLocal
+from core.feature_store import upsert_series
 from core.security import get_encryptor
 from models.db_models import MLFeature, SecureVault
 from models.pydantic_schemas import DataType
@@ -60,14 +61,15 @@ async def process_vault_record(vault_id: UUID) -> None:
             data_type = DataType(record.data_type)
             raw_records = _extract_records(data_type, payload)
 
+            series: list[float] = []
             if data_type == DataType.TELECOM:
-                features = clean_telecom(raw_records)
+                features, series = clean_telecom(raw_records)
             elif data_type == DataType.ECOMMERCE:
                 features = clean_ecommerce(raw_records)
             elif data_type == DataType.GEO:
                 features = clean_geo(raw_records)
             elif data_type == DataType.CASHFLOW:
-                features = clean_cashflow(raw_records)
+                features, series = clean_cashflow(raw_records)
             elif data_type == DataType.SURVEY:
                 features = await clean_survey(raw_records)
             else:
@@ -75,6 +77,16 @@ async def process_vault_record(vault_id: UUID) -> None:
                 return
 
             await save_features(session, record.user_id, features)
+
+            if series:
+                series_name = (
+                    "monthly_net_cashflow"
+                    if data_type == DataType.CASHFLOW
+                    else "telecom_payment_rate"
+                )
+                await upsert_series(session, record.user_id, series_name, series)
+                await session.commit()
+
             logger.info(
                 "Processed vault %s for user %s (%s): %d features",
                 vault_id,

@@ -38,14 +38,15 @@ def _categorize_transaction(txn_type: str, narration: str) -> str:
     return "EXPENSE" if txn_type_upper == "DEBIT" else "INCOME"
 
 
-def clean_cashflow(raw_data: list[dict[str, Any]]) -> dict[str, float]:
-    """Parse cashflow transactions and resample into weekly statsmodels-ready features."""
+def clean_cashflow(raw_data: list[dict[str, Any]]) -> tuple[dict[str, float], list[float]]:
+    """Parse cashflow transactions and return aggregate features plus monthly net-cashflow series."""
+    empty = {
+        "monthly_income_mean": 0.0,
+        "monthly_expense_mean": 0.0,
+        "cashflow_volatility": 0.0,
+    }
     if not raw_data:
-        return {
-            "monthly_income_mean": 0.0,
-            "monthly_expense_mean": 0.0,
-            "cashflow_volatility": 0.0,
-        }
+        return empty, []
 
     rows: list[dict[str, Any]] = []
     for txn in raw_data:
@@ -67,11 +68,7 @@ def clean_cashflow(raw_data: list[dict[str, Any]]) -> dict[str, float]:
         )
 
     if not rows:
-        return {
-            "monthly_income_mean": 0.0,
-            "monthly_expense_mean": 0.0,
-            "cashflow_volatility": 0.0,
-        }
+        return empty, []
 
     df = pd.DataFrame(rows)
     df["txn_date"] = pd.to_datetime(df["txn_date"])
@@ -80,13 +77,18 @@ def clean_cashflow(raw_data: list[dict[str, Any]]) -> dict[str, float]:
     weekly_net = df["signed_amount"].resample("W").sum().fillna(0.0)
     monthly_income = df.loc[df["category"] == "INCOME", "amount"].resample("ME").sum().fillna(0.0)
     monthly_expense = df.loc[df["category"] == "EXPENSE", "amount"].resample("ME").sum().fillna(0.0)
+    monthly_net = monthly_income.reindex(monthly_expense.index.union(monthly_income.index), fill_value=0.0)
+    monthly_net = monthly_net.subtract(monthly_expense.reindex(monthly_net.index, fill_value=0.0), fill_value=0.0)
+    monthly_net = monthly_net.sort_index()
 
     income_mean = float(monthly_income.mean()) if not monthly_income.empty else 0.0
     expense_mean = float(monthly_expense.mean()) if not monthly_expense.empty else 0.0
     volatility = float(weekly_net.std()) if len(weekly_net) > 1 else 0.0
 
-    return {
+    features = {
         "monthly_income_mean": income_mean,
         "monthly_expense_mean": expense_mean,
         "cashflow_volatility": volatility if not pd.isna(volatility) else 0.0,
     }
+    series = [float(v) for v in monthly_net.values.tolist()]
+    return features, series

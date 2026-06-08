@@ -14,5 +14,6 @@ build/
 .mypy_cache/
 postgres_data/
 synthetic_data/mock_data_100_users.json
+catboost_info/
 models_ai/artifacts/
 .DS_Store

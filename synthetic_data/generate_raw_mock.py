@@ -1,6 +1,19 @@
-"""Generate 100 realistic mock user profiles for all alternative data sources."""
+"""
+Generate realistic mock user profiles using a documented generative process.
 
+Generative model (ground truth is hidden from the ML pipeline):
+  1. Sample latent creditworthiness theta ~ Beta(2, 2) in [0, 1] (higher = safer).
+  2. Sample default outcome Y ~ Bernoulli(p_default) where
+     logit(p_default) = intercept + slope * (0.5 - theta) + epsilon.
+  3. Observable features are noisy functions of theta (not deterministic rules on features).
+  4. Protected-group attribute is sampled independently for fairness analysis.
+"""
+
+from __future__ import annotations
+
+import hashlib
 import json
+import math
 import random
 import uuid
 from datetime import datetime, timedelta
@@ -8,11 +21,13 @@ from pathlib import Path
 
 from faker import Faker
 
+from preprocessing.clean_geo import latlong_to_pincode
+
 fake = Faker("en_IN")
 
 OUTPUT_PATH = Path(__file__).parent / "mock_data_100_users.json"
+GLOBAL_SEED = 42
 
-TELECOM_STATUSES = ["paid", "paid", "paid", "late", "defaulted", "missed"]
 ECOMMERCE_CATEGORIES = [
     "electronics",
     "groceries",
@@ -27,6 +42,8 @@ ECOMMERCE_CATEGORIES = [
 ]
 RISK_APPETITES = ["low", "medium", "high"]
 SAVINGS_FREQS = ["weekly", "monthly", "quarterly", "rarely", "never"]
+PROTECTED_GROUPS = ["general", "obc", "sc", "st", "minority"]
+BORROWER_TYPES = ["individual", "msme"]
 
 INDIA_BOUNDS = {
     "lat_min": 8.0,
@@ -42,135 +59,280 @@ NARRATION_TEMPLATES = [
     "IMPS/TRANSFER/{ref}/Self",
     "UPI/MERCHANT/{ref}/Fuel",
     "DEBIT/ATM/WDL/{ref}",
+    "DEBIT/ATM/WDL/{ref}",
     "CREDIT/CASHBACK/{ref}",
     "UPI/BILLPAY/{ref}/Electricity",
 ]
 
+STRESS_BY_THETA = [
+    (
+        0.2,
+        "I sometimes skip savings to buy things I want when I see a sale.",
+        "high",
+        "rarely",
+    ),
+    (
+        0.35,
+        "I tend to avoid checking my bank balance when I know expenses are high.",
+        "high",
+        "never",
+    ),
+    (
+        0.55,
+        "I worry about debt but try to pay creditors on time whenever possible.",
+        "medium",
+        "monthly",
+    ),
+    (
+        0.75,
+        "When money is tight, I delay non-essential spending and focus on rent and groceries.",
+        "low",
+        "monthly",
+    ),
+    (
+        0.9,
+        "I prioritize paying my utility bills first before business inventory purchases.",
+        "low",
+        "weekly",
+    ),
+]
 
-def generate_telecom_invoices(count: int = 12) -> list[dict]:
+
+def _user_rng(user_id: str) -> random.Random:
+    digest = hashlib.sha256(user_id.encode()).hexdigest()
+    seed = int(digest[:16], 16)
+    return random.Random(seed)
+
+
+def _sigmoid(x: float) -> float:
+    return 1.0 / (1.0 + math.exp(-x))
+
+
+def sample_latent_and_default(rng: random.Random) -> tuple[float, int]:
+    """Sample latent creditworthiness and Bernoulli default label."""
+    theta = rng.betavariate(2.0, 2.0)
+    noise = rng.gauss(0.0, 0.25)
+    logit_pd = -2.5 + 4.0 * (0.5 - theta) + noise
+    p_default = _sigmoid(logit_pd)
+    default_label = 1 if rng.random() < p_default else 0
+    return theta, default_label
+
+
+def generate_telecom_invoices(user_id: str, theta: float, count: int = 12) -> list[dict]:
+    rng = _user_rng(f"{user_id}:telecom")
     invoices = []
     base_date = fake.date_between(start_date="-1y", end_date="-1m")
+    late_prob = max(0.02, 0.35 - 0.30 * theta + rng.uniform(-0.05, 0.05))
+    miss_prob = max(0.01, 0.15 - 0.12 * theta + rng.uniform(-0.03, 0.03))
 
     for i in range(count):
         invoice_date = base_date + timedelta(days=30 * i)
         due_date = invoice_date + timedelta(days=15)
-        status = random.choice(TELECOM_STATUSES)
-        payment_date = None
-
-        if status == "paid":
-            payment_date = due_date + timedelta(days=random.randint(-2, 3))
-        elif status == "late":
-            payment_date = due_date + timedelta(days=random.randint(5, 20))
-        elif status in {"defaulted", "missed", "unpaid"}:
+        roll = rng.random()
+        if roll < miss_prob:
+            status = rng.choice(["defaulted", "missed"])
             payment_date = None
+        elif roll < miss_prob + late_prob:
+            status = "late"
+            payment_date = due_date + timedelta(days=rng.randint(5, 20))
+        else:
+            status = "paid"
+            payment_date = due_date + timedelta(days=rng.randint(-2, 3))
 
         invoices.append(
             {
                 "invoice_date": invoice_date.isoformat(),
                 "due_date": due_date.isoformat(),
                 "payment_date": payment_date.isoformat() if payment_date else None,
-                "billed_amount": round(random.uniform(299, 1499), 2),
+                "billed_amount": round(rng.uniform(299, 1499), 2),
                 "status": status,
             }
         )
-
     return invoices
 
 
-def generate_ecommerce_orders(count: int = 20) -> list[dict]:
+def _pick_delivery_pin(
+    rng: random.Random,
+    *,
+    stable: bool,
+    home_pin: str,
+    secondary_pin: str,
+) -> str:
+    if not stable:
+        return fake.postcode()
+    roll = rng.random()
+    if roll < 0.80:
+        return home_pin
+    if roll < 0.90:
+        return secondary_pin
+    return fake.postcode()
+
+
+def generate_ecommerce_orders(user_id: str, theta: float, count: int = 20) -> list[dict]:
+    rng = _user_rng(f"{user_id}:ecommerce")
+    stable = rng.random() < (0.45 + 0.45 * theta)
+    home_lat = rng.uniform(INDIA_BOUNDS["lat_min"], INDIA_BOUNDS["lat_max"])
+    home_long = rng.uniform(INDIA_BOUNDS["long_min"], INDIA_BOUNDS["long_max"])
+    work_lat = home_lat + rng.uniform(-0.05, 0.05)
+    work_long = home_long + rng.uniform(-0.05, 0.05)
+    home_pin = latlong_to_pincode(home_lat, home_long)
+    secondary_pin = latlong_to_pincode(work_lat, work_long)
+    necessity_bias = 0.35 + 0.45 * theta
+
     orders = []
     for _ in range(count):
         ts = fake.date_time_between(start_date="-180d", end_date="now")
+        category = (
+            rng.choice(["groceries", "utilities", "health", "education", "household"])
+            if rng.random() < necessity_bias
+            else rng.choice(ECOMMERCE_CATEGORIES)
+        )
+        rating_base = 2.8 + 1.8 * theta
         orders.append(
             {
-                "order_id": f"ORD-{fake.uuid4()[:8].upper()}",
+                "order_id": f"ORD-{uuid.uuid4().hex[:8].upper()}",
                 "timestamp": ts.isoformat(),
-                "item_category": random.choice(ECOMMERCE_CATEGORIES),
-                "amount": round(random.uniform(199, 25000), 2),
-                "merchant_id": f"M-{fake.uuid4()[:6].upper()}",
-                "merchant_rating_at_purchase": round(random.uniform(2.5, 5.0), 1),
+                "item_category": category,
+                "amount": round(rng.uniform(199, 25000), 2),
+                "merchant_id": f"M-{uuid.uuid4().hex[:6].upper()}",
+                "merchant_rating_at_purchase": round(
+                    max(2.5, min(5.0, rating_base + rng.uniform(-0.4, 0.4))),
+                    1,
+                ),
+                "delivery_pin_code": _pick_delivery_pin(
+                    rng,
+                    stable=stable,
+                    home_pin=home_pin,
+                    secondary_pin=secondary_pin,
+                ),
             }
         )
     return orders
 
 
-def generate_geo_locations(count: int = 50) -> list[dict]:
-    home_lat = random.uniform(INDIA_BOUNDS["lat_min"], INDIA_BOUNDS["lat_max"])
-    home_long = random.uniform(INDIA_BOUNDS["long_min"], INDIA_BOUNDS["long_max"])
-    work_lat = home_lat + random.uniform(-0.05, 0.05)
-    work_long = home_long + random.uniform(-0.05, 0.05)
+def generate_geo_locations(user_id: str, theta: float, count: int = 50) -> list[dict]:
+    rng = _user_rng(f"{user_id}:geo")
+    home_lat = rng.uniform(INDIA_BOUNDS["lat_min"], INDIA_BOUNDS["lat_max"])
+    home_long = rng.uniform(INDIA_BOUNDS["long_min"], INDIA_BOUNDS["long_max"])
+    spread = max(0.002, 0.02 - 0.018 * theta)
+    work_lat = home_lat + rng.uniform(-spread, spread)
+    work_long = home_long + rng.uniform(-spread, spread)
 
     locations = []
     base_time = datetime.now() - timedelta(days=30)
-
     for i in range(count):
-        anchor = home_lat if i % 3 != 0 else work_lat
+        anchor_lat = home_lat if i % 3 != 0 else work_lat
         anchor_long = home_long if i % 3 != 0 else work_long
         locations.append(
             {
                 "timestamp": (base_time + timedelta(hours=i * 6)).isoformat(),
-                "lat": round(anchor + random.uniform(-0.002, 0.002), 6),
-                "long": round(anchor_long + random.uniform(-0.002, 0.002), 6),
-                "accuracy_meters": random.randint(5, 50),
+                "lat": round(anchor_lat + rng.uniform(-spread, spread), 6),
+                "long": round(anchor_long + rng.uniform(-spread, spread), 6),
+                "accuracy_meters": rng.randint(5, 50),
             }
         )
-
     return locations
 
 
-def generate_cashflow_transactions(count: int = 40) -> list[dict]:
-    transactions = []
+def generate_cashflow_transactions(user_id: str, theta: float, count: int = 40) -> list[dict]:
+    rng = _user_rng(f"{user_id}:cashflow")
     base_date = fake.date_between(start_date="-120d", end_date="-1d")
+    income_scale = 8000 + 42000 * theta
+    volatility = max(0.05, 0.35 - 0.25 * theta)
 
+    transactions = []
     for i in range(count):
         txn_date = base_date + timedelta(days=i * 3)
-        txn_type = random.choice(["CREDIT", "DEBIT", "DEBIT", "DEBIT"])
-        ref = fake.uuid4()[:8].upper()
-        narration = random.choice(NARRATION_TEMPLATES).format(ref=ref)
+        is_income = rng.random() < (0.18 + 0.12 * theta)
+        txn_type = "CREDIT" if is_income else "DEBIT"
+        ref = uuid.uuid4().hex[:8].upper()
+        if is_income:
+            amount = round(rng.uniform(income_scale * 0.8, income_scale * 1.2), 2)
+            narration = f"NEFT/SALARY/{ref}"
+        else:
+            base_spend = income_scale * rng.uniform(0.15, 0.45) * (1 + volatility * rng.gauss(0, 1))
+            amount = round(max(100, base_spend), 2)
+            narration = rng.choice(NARRATION_TEMPLATES).format(ref=ref)
 
         transactions.append(
             {
                 "txn_date": txn_date.isoformat(),
                 "type": txn_type,
-                "amount": round(random.uniform(100, 50000), 2),
+                "amount": amount,
                 "narration": narration,
             }
         )
-
     return transactions
 
 
-def generate_survey() -> dict:
-    stress_responses = [
-        "I prioritize paying my utility bills first before business inventory purchases.",
-        "When money is tight, I delay non-essential spending and focus on rent and groceries.",
-        "I sometimes skip savings to buy things I want when I see a sale.",
-        "I worry about debt but try to pay creditors on time whenever possible.",
-        "I tend to avoid checking my bank balance when I know expenses are high.",
-    ]
+def _noisy_trait(theta: float, rng: random.Random, noise: float = 0.12) -> float:
+    value = theta + rng.gauss(0.0, noise)
+    return round(max(0.0, min(1.0, value)), 4)
+
+
+def generate_survey(user_id: str, theta: float) -> dict:
+    """Generate psychometric trait payload as noisy functions of latent creditworthiness."""
+    rng = _user_rng(f"{user_id}:psychometric")
+    traits = {
+        "conscientiousness": _noisy_trait(theta, rng),
+        "locus_of_control": _noisy_trait(theta, rng),
+        "financial_self_efficacy": _noisy_trait(theta, rng),
+        "present_bias": _noisy_trait(1.0 - theta, rng),
+        "debt_attitude": _noisy_trait(theta, rng),
+        "response_validity": round(max(0.6, min(1.0, 0.85 + rng.gauss(0, 0.08))), 4),
+    }
+    best = min(STRESS_BY_THETA, key=lambda item: abs(item[0] - theta))
+    _, text, _, _ = best
     return {
-        "risk_appetite": random.choice(RISK_APPETITES),
-        "savings_freq": random.choice(SAVINGS_FREQS),
-        "stress_response_text": random.choice(stress_responses),
+        "language": "en",
+        "assessment_version": "1.0",
+        "traits": traits,
+        **traits,
+        "answers": {"open_1": text},
+        "transcript": [{"role": "user", "text": text}],
     }
 
 
-def generate_user_profile() -> dict:
+def generate_user_profile(rng: random.Random | None = None) -> dict:
     user_id = str(uuid.uuid4())
-    return {
+    local_rng = rng or _user_rng(user_id)
+    theta, default_label = sample_latent_and_default(local_rng)
+    protected_group = local_rng.choice(PROTECTED_GROUPS)
+    borrower_type = "msme" if local_rng.random() < 0.25 else "individual"
+
+    profile = {
         "user_id": user_id,
-        "telecom": {"user_id": user_id, "invoices": generate_telecom_invoices()},
-        "ecommerce": {"user_id": user_id, "orders": generate_ecommerce_orders()},
-        "geo": {"user_id": user_id, "locations": generate_geo_locations()},
-        "cashflow": {"user_id": user_id, "transactions": generate_cashflow_transactions()},
-        "survey": {"user_id": user_id, **generate_survey()},
+        "telecom": {"user_id": user_id, "invoices": generate_telecom_invoices(user_id, theta)},
+        "ecommerce": {"user_id": user_id, "orders": generate_ecommerce_orders(user_id, theta)},
+        "geo": {"user_id": user_id, "locations": generate_geo_locations(user_id, theta)},
+        "cashflow": {"user_id": user_id, "transactions": generate_cashflow_transactions(user_id, theta)},
+        "survey": {"user_id": user_id, **generate_survey(user_id, theta)},
+        "_ground_truth": {
+            "latent_creditworthiness": round(theta, 4),
+            "default_label": default_label,
+            "protected_group": protected_group,
+            "borrower_type": borrower_type,
+        },
     }
+    if borrower_type == "msme":
+        profile["msme"] = {
+            "user_id": user_id,
+            "business_name": fake.company(),
+            "gst_turnover_monthly": round(50000 + 450000 * theta + local_rng.uniform(-20000, 20000), 2),
+            "merchant_rating_avg": round(2.8 + 1.8 * theta + local_rng.uniform(-0.3, 0.3), 2),
+            "years_in_business": local_rng.randint(1, 12),
+        }
+    return profile
 
 
 def main() -> None:
-    profiles = [generate_user_profile() for _ in range(100)]
+    master_rng = random.Random(GLOBAL_SEED)
+    profiles = [generate_user_profile(master_rng) for _ in range(100)]
     OUTPUT_PATH.write_text(json.dumps(profiles, indent=2), encoding="utf-8")
+    default_rate = sum(p["_ground_truth"]["default_label"] for p in profiles) / len(profiles)
     print(f"Generated {len(profiles)} user profiles -> {OUTPUT_PATH}")
+    print(f"  Synthetic default rate: {default_rate:.1%}")
+    print(f"  MSME profiles: {sum(1 for p in profiles if p['_ground_truth']['borrower_type'] == 'msme')}")
 
 
 if __name__ == "__main__":

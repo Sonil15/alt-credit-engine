@@ -1,12 +1,13 @@
 """Shared helpers for reading and writing ML feature rows."""
 
+import json
 from uuid import UUID
 
 import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.db_models import MLFeature
+from models.db_models import FeatureSeries, MLFeature
 
 
 async def fetch_features_long(session: AsyncSession) -> pd.DataFrame:
@@ -40,6 +41,14 @@ async def fetch_features_wide(session: AsyncSession) -> pd.DataFrame:
     return wide
 
 
+async def fetch_user_features_wide(session: AsyncSession, user_id: str) -> pd.DataFrame:
+    """Return wide feature row for a single user."""
+    wide = await fetch_features_wide(session)
+    if wide.empty:
+        return pd.DataFrame()
+    return wide[wide["user_id"].astype(str) == str(user_id)]
+
+
 async def upsert_feature(session: AsyncSession, user_id: UUID | str, feature_name: str, value: float) -> None:
     """Append a feature row (latest wins on read)."""
     session.add(
@@ -59,3 +68,48 @@ async def upsert_features_batch(
         for feature_name, value in features.items():
             await upsert_feature(session, user_id, feature_name, value)
     await session.commit()
+
+
+async def upsert_series(
+    session: AsyncSession,
+    user_id: UUID | str,
+    series_name: str,
+    values: list[float],
+) -> None:
+    """Store or replace a named time series for a user."""
+    session.add(
+        FeatureSeries(
+            user_id=UUID(str(user_id)),
+            series_name=series_name,
+            values_json=json.dumps(values),
+        )
+    )
+
+
+async def fetch_series(session: AsyncSession, user_id: str, series_name: str) -> list[float] | None:
+    """Return latest series values for a user, or None if missing."""
+    result = await session.execute(
+        select(FeatureSeries.values_json, FeatureSeries.created_at)
+        .where(FeatureSeries.user_id == UUID(str(user_id)))
+        .where(FeatureSeries.series_name == series_name)
+        .order_by(FeatureSeries.created_at.desc())
+        .limit(1)
+    )
+    row = result.first()
+    if row is None:
+        return None
+    return json.loads(row[0])
+
+
+async def fetch_all_series(session: AsyncSession, series_name: str) -> dict[str, list[float]]:
+    """Return latest series per user for a given series name."""
+    result = await session.execute(
+        select(FeatureSeries.user_id, FeatureSeries.values_json, FeatureSeries.created_at)
+        .where(FeatureSeries.series_name == series_name)
+        .order_by(FeatureSeries.created_at)
+    )
+    rows = result.all()
+    latest: dict[str, list[float]] = {}
+    for user_id, values_json, _ in rows:
+        latest[str(user_id)] = json.loads(values_json)
+    return latest

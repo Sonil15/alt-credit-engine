@@ -1,32 +1,27 @@
 """Fuse econometric + AI outputs into interpretable credit scores."""
 
+from __future__ import annotations
+
+import json
 import logging
 from typing import Any
+from uuid import UUID
 
-import numpy as np
 import pandas as pd
-import shap
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.feature_store import fetch_features_wide
-from models_ai.catboost_model import (
-    FEATURE_COLUMNS,
-    get_feature_matrix_for_user,
-    load_model,
-    predict_pd,
-)
+from convergence.fairness import compute_fairness_report
+from convergence.reason_codes import format_reason_codes, shap_to_reason_codes
+from convergence.scorecard import score_from_pd_and_features
+from core.feature_store import fetch_features_wide, fetch_user_features_wide
+from core.model_cache import get_cached_explainer, get_cached_model, get_model_version
+from models.db_models import ScoreDecision
+from models_ai.catboost_model import get_feature_matrix_for_user, predict_pd
+from models_ai.constants import FEATURE_COLUMNS
 
 logger = logging.getLogger(__name__)
 
 SPATIAL_VARIANCE_THRESHOLD = 50.0
-SCORE_MIN = 300
-SCORE_MAX = 900
-
-
-def pd_to_credit_score(probability_of_default: float) -> int:
-    """Map PD (0-1) to alternate credit score (300-900)."""
-    score = SCORE_MAX - (probability_of_default * (SCORE_MAX - SCORE_MIN))
-    return int(round(max(SCORE_MIN, min(SCORE_MAX, score))))
 
 
 def check_red_flags(row: pd.Series) -> tuple[bool, str | None]:
@@ -53,13 +48,8 @@ def _decision_from_score(credit_score: int, auto_reject: bool) -> str:
     return "REJECT"
 
 
-def extract_top_shap_drivers(
-    model,
-    feature_row: pd.DataFrame,
-    top_n: int = 3,
-) -> list[dict[str, float]]:
+def extract_top_shap_drivers(model, explainer, feature_row: pd.DataFrame, top_n: int = 3) -> list[dict[str, float]]:
     """Return top N SHAP feature drivers for a single user."""
-    explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(feature_row[FEATURE_COLUMNS])
 
     if isinstance(shap_values, list):
@@ -75,33 +65,49 @@ def extract_top_shap_drivers(
     return contributions[:top_n]
 
 
-async def score_user(session: AsyncSession, user_id: str) -> dict[str, Any]:
-    """Compute full credit score payload for a single user."""
-    wide = await fetch_features_wide(session)
-    if wide.empty:
-        raise ValueError("No ml_features available. Ingest data and run training first.")
+async def _persist_decision(session: AsyncSession, payload: dict[str, Any]) -> None:
+    session.add(
+        ScoreDecision(
+            user_id=UUID(str(payload["user_id"])),
+            credit_score=int(payload["credit_score"]),
+            probability_of_default=float(payload["probability_of_default"]),
+            decision=str(payload["decision"]),
+            model_version=str(payload.get("model_version", "unknown")),
+            auto_reject=1 if payload.get("auto_reject") else 0,
+            reject_reason=payload.get("reject_reason"),
+            reason_codes_json=json.dumps(payload.get("reason_codes", [])),
+        )
+    )
+    await session.commit()
 
-    wide["user_id"] = wide["user_id"].astype(str)
-    user_row = wide[wide["user_id"] == str(user_id)]
+
+async def score_user(session: AsyncSession, user_id: str, *, persist: bool = True) -> dict[str, Any]:
+    """Compute full credit score payload for a single user."""
+    user_row = await fetch_user_features_wide(session, user_id)
     if user_row.empty:
         raise ValueError(f"User {user_id} not found in ml_features")
 
     auto_reject, reject_reason = check_red_flags(user_row.iloc[0])
 
-    model = load_model()
+    model = get_cached_model()
+    explainer = get_cached_explainer()
     pd_df = predict_pd(model, user_row)
     probability_of_default = float(pd_df.iloc[0]["probability_of_default"])
 
     if auto_reject:
         probability_of_default = 1.0
 
-    credit_score = pd_to_credit_score(probability_of_default)
+    feature_row = get_feature_matrix_for_user(user_row, user_id)
+    scorecard = score_from_pd_and_features(probability_of_default, user_row.iloc[0])
+    credit_score = scorecard.credit_score
     decision = _decision_from_score(credit_score, auto_reject)
 
-    feature_row = get_feature_matrix_for_user(wide, user_id)
-    shap_drivers = extract_top_shap_drivers(model, feature_row)
+    shap_drivers = extract_top_shap_drivers(model, explainer, feature_row)
+    reason_codes = shap_to_reason_codes(shap_drivers)
+    if auto_reject and reject_reason:
+        reason_codes.insert(0, reject_reason)
 
-    return {
+    result = {
         "user_id": str(user_id),
         "credit_score": credit_score,
         "probability_of_default": round(probability_of_default, 4),
@@ -109,7 +115,16 @@ async def score_user(session: AsyncSession, user_id: str) -> dict[str, Any]:
         "auto_reject": auto_reject,
         "reject_reason": reject_reason,
         "shap_drivers": shap_drivers,
+        "reason_codes": reason_codes,
+        "reason_codes_text": format_reason_codes(reason_codes),
+        "factor_points": scorecard.factor_points,
+        "model_version": get_model_version(),
     }
+
+    if persist:
+        await _persist_decision(session, result)
+
+    return result
 
 
 async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
@@ -118,10 +133,89 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
     if wide.empty:
         return []
 
+    model = get_cached_model()
+    explainer = get_cached_explainer()
+    pd_df = predict_pd(model, wide)
+
     results = []
-    for user_id in wide["user_id"].astype(str).unique():
+    for _, row in wide.iterrows():
+        user_id = str(row["user_id"])
         try:
-            results.append(await score_user(session, user_id))
+            user_row = wide[wide["user_id"].astype(str) == user_id]
+            auto_reject, reject_reason = check_red_flags(user_row.iloc[0])
+            pd_row = pd_df[pd_df["user_id"] == user_id]
+            probability_of_default = float(pd_row.iloc[0]["probability_of_default"])
+            if auto_reject:
+                probability_of_default = 1.0
+
+            feature_row = get_feature_matrix_for_user(wide, user_id)
+            scorecard = score_from_pd_and_features(probability_of_default, user_row.iloc[0])
+            credit_score = scorecard.credit_score
+            decision = _decision_from_score(credit_score, auto_reject)
+            shap_drivers = extract_top_shap_drivers(model, explainer, feature_row)
+            reason_codes = shap_to_reason_codes(shap_drivers)
+            if auto_reject and reject_reason:
+                reason_codes.insert(0, reject_reason)
+
+            result = {
+                "user_id": user_id,
+                "credit_score": credit_score,
+                "probability_of_default": round(probability_of_default, 4),
+                "decision": decision,
+                "auto_reject": auto_reject,
+                "reject_reason": reject_reason,
+                "shap_drivers": shap_drivers,
+                "reason_codes": reason_codes,
+                "reason_codes_text": format_reason_codes(reason_codes),
+                "factor_points": scorecard.factor_points,
+                "model_version": get_model_version(),
+            }
+            await _persist_decision(session, result)
+            results.append(result)
         except Exception:
             logger.exception("Failed to score user %s", user_id)
     return results
+
+
+async def portfolio_summary(session: AsyncSession) -> dict[str, Any]:
+    """Aggregate portfolio metrics for bank dashboard."""
+    scores = await score_all_users(session)
+    wide = await fetch_features_wide(session)
+    if not scores:
+        return {
+            "total_users": 0,
+            "approval_rate": 0.0,
+            "review_rate": 0.0,
+            "reject_rate": 0.0,
+            "expected_default_rate": 0.0,
+            "avg_score": 0.0,
+            "score_distribution": {"300-549": 0, "550-749": 0, "750-900": 0},
+            "fairness": compute_fairness_report([], wide),
+        }
+
+    total = len(scores)
+    approvals = sum(1 for s in scores if s["decision"] == "APPROVE")
+    reviews = sum(1 for s in scores if s["decision"] == "REVIEW")
+    rejects = sum(1 for s in scores if s["decision"] == "REJECT")
+    avg_pd = sum(s["probability_of_default"] for s in scores) / total
+    avg_score = sum(s["credit_score"] for s in scores) / total
+
+    distribution = {"300-549": 0, "550-749": 0, "750-900": 0}
+    for s in scores:
+        if s["credit_score"] < 550:
+            distribution["300-549"] += 1
+        elif s["credit_score"] < 750:
+            distribution["550-749"] += 1
+        else:
+            distribution["750-900"] += 1
+
+    return {
+        "total_users": total,
+        "approval_rate": round(approvals / total, 4),
+        "review_rate": round(reviews / total, 4),
+        "reject_rate": round(rejects / total, 4),
+        "expected_default_rate": round(avg_pd, 4),
+        "avg_score": round(avg_score, 2),
+        "score_distribution": distribution,
+        "fairness": compute_fairness_report(scores, wide),
+    }

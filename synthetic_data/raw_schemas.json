@@ -25,7 +25,8 @@
           "item_category": "electronics | groceries | luxury | fashion | travel | utilities | health | education | household | entertainment",
           "amount": "float",
           "merchant_id": "string",
-          "merchant_rating_at_purchase": "float 1.0-5.0"
+          "merchant_rating_at_purchase": "float 1.0-5.0",
+          "delivery_pin_code": "string (6-digit Indian PIN)"
         }
       ]
     }

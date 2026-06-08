@@ -2,6 +2,8 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any
 
+from preprocessing.clean_geo import historical_spatial_variance
+
 NECESSITY_CATEGORIES = {"groceries", "utilities", "health", "education", "household"}
 DISCRETIONARY_CATEGORIES = {"luxury", "electronics", "entertainment", "travel", "fashion"}
 
@@ -23,6 +25,8 @@ def clean_ecommerce(raw_data: list[dict[str, Any]]) -> dict[str, float]:
             "necessity_ratio": 0.0,
             "avg_merchant_rating": 0.0,
             "monthly_spend_volatility": 0.0,
+            "historical_spatial_variance": 0.0,
+            "distinct_pin_codes": 0.0,
         }
 
     necessity_spend = 0.0
@@ -63,8 +67,10 @@ def clean_ecommerce(raw_data: list[dict[str, Any]]) -> dict[str, float]:
     else:
         volatility = 0.0
 
-    return {
+    features = {
         "necessity_ratio": float(necessity_ratio),
         "avg_merchant_rating": float(avg_rating),
         "monthly_spend_volatility": float(volatility),
     }
+    features.update(historical_spatial_variance(raw_data))
+    return features

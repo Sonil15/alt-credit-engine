@@ -1,163 +1,121 @@
 # Alt-Credit Engine
 
-Privacy-preserving alternate credit scoring system for thin-file borrowers in India. Ingests alternative data (telecom, e-commerce, geolocation, cashflow, psychometric survey), encrypts it at rest, extracts ML features, and produces a 300–900 credit score with SHAP explainability.
+Privacy-preserving alternate credit scoring system for thin-file borrowers in India. Built for the **UCO Bank hackathon** — ingests alternative data (telecom, e-commerce, geolocation, cashflow, psychometric survey), encrypts it at rest, extracts ML features, and produces a **300–900 credit score** with SHAP explainability, adverse-action reason codes, and portfolio fairness monitoring.
 
 ## Architecture
 
 ```
-Ingest API → AES-256 Vault → Preprocessing → ml_features
-                                              ↓
-                                    ECM (statsmodels) + CatBoost
-                                              ↓
-                              Convergence (rules + SHAP) → Credit Score
+AA Consent Gateway → Ingest API → AES-256 Vault → Preprocessing → ml_features + feature_series
+                                                                        ↓
+                                                              ECM (real time series) + CatBoost
+                                                                        ↓
+                                    Convergence (PDO scorecard + SHAP + reason codes) → Audit Trail
+                                                                        ↓
+                                              Bank Dashboard (portfolio, model card, fairness)
 ```
 
-## Prerequisites
+## Key Improvements (Hackathon-Ready)
+
+| Feature | Description |
+|---------|-------------|
+| **Generative ground truth** | Latent creditworthiness → Bernoulli default; model learns from noisy features, not circular rules |
+| **Real econometrics** | ADF/ECM on actual monthly cashflow / telecom payment series |
+| **PDO scorecard** | Log-odds to points (base 600, PDO 50, range 300–900) |
+| **Model card** | Holdout AUC, Gini, KS, calibration, CV metrics at `/score/model/card` |
+| **Reason codes** | Plain-language adverse action reasons from SHAP drivers |
+| **Fairness report** | Disparate impact ratio across protected groups |
+| **RBI AA consent** | Account Aggregator-style consent with purpose, expiry, revocation |
+| **Audit trail** | Every decision logged to `score_decisions` table |
+| **Deployment** | Docker + docker-compose + Railway config |
+| **Multilingual psychometrics** | Agent-guided assessment in EN/HI/BN with deterministic trait scoring + voice support |
+
+## Psychometric Assessment
+
+| URL | Description |
+|-----|-------------|
+| http://localhost:8000/assessment | Multilingual agentic psychometric chat (EN/HI/BN, voice + text) |
+| http://localhost:8000/consent | AA consent gateway → redirects to assessment |
+
+Constructs measured: conscientiousness, locus of control, financial self-efficacy, present bias, debt attitude. The agent handles conversation; a fixed rubric produces the score.
 
 - Python 3.11+
 - Docker & Docker Compose
-- Groq API key (for survey NLP; falls back to keyword heuristics if unset)
+- Groq API key (optional; survey NLP falls back to keyword heuristics)
 
-## Quick Start
-
-### 1. Environment
+## Quick Start (Local)
 
 ```bash
 cp .env.example .env
-# Edit .env: set AES_SECRET_KEY (64 hex chars) and GROQ_API_KEY
-```
-
-### 2. Start PostgreSQL
-
-```bash
-docker compose up -d
-```
-
-### 3. Install dependencies
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
+docker compose up -d postgres
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-### 4. Generate mock data (if not already present)
-
-```bash
 python -m synthetic_data.generate_raw_mock
-```
-
-### 5. Start the API
-
-```bash
 uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### 6. Load mock users into the database
-
-```bash
+# In another terminal:
 python -m synthetic_data.load_mock_data
-# Optional: load fewer users for quick testing
-python -m synthetic_data.load_mock_data --limit 10
-```
-
-Wait ~30–60 seconds for background preprocessing to complete (Groq calls for survey data).
-
-### 7. Train models
-
-```bash
 python -m models_ai.train
 ```
 
-Or via API:
+## Quick Start (Docker — Full Stack)
 
 ```bash
-curl -X POST http://localhost:8000/score/train
+cp .env.example .env
+# Set AUTO_SEED_ON_STARTUP=true in .env for auto demo data
+docker compose up --build
 ```
 
-### 8. Get a credit score
-
-```bash
-# List all scores
-curl http://localhost:8000/score/
-
-# Score a specific user
-curl http://localhost:8000/score/{user_id}
-```
+Open http://localhost:8000/dashboard
 
 ## Demo UI
 
 | URL | Description |
 |-----|-------------|
-| http://localhost:8000/consent | Mobile consent gateway + psychometric survey |
-| http://localhost:8000/dashboard | Bank LOS dashboard with score, PD gauge, SHAP chart |
+| http://localhost:8000/consent | RBI AA consent gateway → psychometric assessment |
+| http://localhost:8000/assessment | Multilingual agentic psychometric chat (EN/HI/BN, voice + text) |
+| http://localhost:8000/dashboard | Bank LOS dashboard with portfolio, model card, fairness |
 | http://localhost:8000/docs | FastAPI Swagger UI |
-
-## Live Demo with ngrok
-
-Expose the local API to a physical phone during a pitch:
-
-```bash
-# Install ngrok: https://ngrok.com/download
-ngrok http 8000
-```
-
-Use the ngrok HTTPS URL on your phone:
-- Consent Gateway: `https://<ngrok-id>.ngrok.io/consent`
-- Bank Dashboard: `https://<ngrok-id>.ngrok.io/dashboard`
-
-Run the backend and Docker on your presentation laptop; judges can interact from their phones.
+| http://localhost:8000/consent/compliance | Regulatory compliance summary |
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health` | Health check |
-| GET | `/consent/authorize` | Mock OAuth authorization URL |
-| POST | `/consent/token` | Mock OAuth token exchange |
-| POST | `/ingest/{data_type}` | Ingest raw payload (telecom, ecommerce, geo, cashflow, survey) |
-| GET | `/score/{user_id}` | Credit score + PD + SHAP drivers |
-| GET | `/score/` | All user scores |
-| POST | `/score/train` | Run ECM + CatBoost training |
-| GET | `/consent` | Consent gateway UI |
-| GET | `/dashboard` | Bank LOS dashboard UI |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/health` | — | Health check + model version |
+| GET | `/consent/authorize` | — | RBI AA consent authorization |
+| POST | `/consent/token` | — | AA token exchange |
+| POST | `/consent/revoke` | — | Revoke consent (DPDP) |
+| POST | `/ingest/{data_type}` | — | Ingest encrypted payload |
+| POST | `/ingest/ground_truth` | API Key | Store generative labels (training only) |
+| GET | `/score/{user_id}` | — | Credit score + reason codes |
+| GET | `/score/` | — | All user scores |
+| GET | `/score/portfolio/summary` | — | Portfolio + fairness metrics |
+| GET | `/score/model/card` | — | Model validation metrics |
+| POST | `/score/train` | API Key | Train ECM + CatBoost |
+| GET | `/assessment` | — | Multilingual psychometric UI |
+| POST | `/assessment/start` | — | Start agentic assessment session |
+| POST | `/assessment/answer` | — | Submit answer to current item |
 
-## Project Structure
+## Deployment Options
 
+| Platform | Best For | Tradeoff |
+|----------|----------|----------|
+| **Railway** (recommended) | Always-on demo URL | Cost after free tier |
+| **Render** | Free hosting | Cold starts on free tier |
+| **docker-compose on Mumbai VM** | Data localization story | You manage ops |
+| **ngrok** | Live pitch from laptop | Ephemeral URL |
+
+See `railway.toml` and `Dockerfile` for container deployment. Set `AUTO_SEED_ON_STARTUP=true` so judges see populated data.
+
+## Compliance
+
+See [docs/COMPLIANCE.md](docs/COMPLIANCE.md) for RBI AA, DPDP Act 2023, and Digital Lending Guidelines alignment.
+
+## Testing
+
+```bash
+pytest tests/ -v
 ```
-alt-credit-engine/
-├── api/                    # FastAPI routes
-├── core/                   # Config, DB, encryption, feature store
-├── models/                 # SQLAlchemy ORM + Pydantic schemas
-├── preprocessing/          # Data cleaners (Phase 1–2)
-├── synthetic_data/         # Mock data generation + bulk loader
-├── models_econometric/     # ADF + ECM resilience coefficient
-├── models_ai/              # CatBoost PD model + training script
-├── convergence/            # Score fusion, red-flag rules, SHAP
-└── frontend/               # Jinja2 HTML templates
-```
-
-## Scoring Logic
-
-1. **Red-flag overrides** (deterministic, before AI):
-   - High geographic instability + zero income → auto-reject
-   - 5+ missed telecom payments → auto-reject
-
-2. **CatBoost PD** (0.0–1.0): trained on synthetic labels derived from feature heuristics
-
-3. **Credit score**: `900 - (PD × 600)`, clamped to 300–900
-
-4. **Decision**: APPROVE (≥750), REVIEW (550–749), REJECT (<550 or red-flag)
-
-5. **SHAP**: top 3 feature drivers per user for interpretability
-
-## Development Notes
-
-- Raw PII never enters models — only tokenized `ml_features` table
-- Survey NLP uses Groq (`llama3-8b-8192`) with keyword fallback
-- CatBoost model artifact saved to `models_ai/artifacts/catboost_model.cbm`
-- Re-run `python -m models_ai.train` after loading new users
 
 ## License
 
-Hackathon prototype — not for production use.
+Hackathon prototype — not for production use without regulatory approval.

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Alt-Credit — Psychometric Assessment</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a; color: #e2e8f0; min-height: 100vh;
+      display: flex; justify-content: center; padding: 16px;
+    }
+    .phone {
+      width: 100%; max-width: 420px; background: #1e293b; border-radius: 24px;
+      overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5); display: flex; flex-direction: column; height: 90vh;
+    }
+    .header { padding: 16px 20px; border-bottom: 1px solid #334155; }
+    .header h1 { font-size: 18px; color: #f8fafc; }
+    .header p { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    .lang-bar { display: flex; gap: 8px; margin-top: 10px; }
+    .lang-btn {
+      flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #334155;
+      background: #0f172a; color: #94a3b8; cursor: pointer; font-size: 12px;
+    }
+    .lang-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+    .chat { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .bubble {
+      max-width: 85%; padding: 12px 14px; border-radius: 16px; font-size: 14px; line-height: 1.45;
+    }
+    .bubble.agent { background: #0f172a; align-self: flex-start; border-bottom-left-radius: 4px; }
+    .bubble.user { background: #2563eb; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .options { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .opt-btn {
+      padding: 10px 12px; border-radius: 10px; border: 1px solid #334155;
+      background: #1e293b; color: #e2e8f0; cursor: pointer; text-align: left; font-size: 13px;
+    }
+    .opt-btn:hover { border-color: #3b82f6; }
+    .input-bar {
+      padding: 12px 16px; border-top: 1px solid #334155; display: flex; gap: 8px; align-items: center;
+    }
+    .input-bar input {
+      flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #334155;
+      background: #0f172a; color: #f1f5f9; font-size: 14px;
+    }
+    .icon-btn {
+      width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
+      background: #334155; color: white; font-size: 18px;
+    }
+    .icon-btn.primary { background: #2563eb; }
+    .icon-btn.recording { background: #dc2626; animation: pulse 1s infinite; }
+    @keyframes pulse { 50% { opacity: 0.6; } }
+    .progress { font-size: 11px; color: #64748b; padding: 0 16px 8px; }
+    .result-panel { padding: 24px; text-align: center; }
+    .score { font-size: 42px; font-weight: 800; color: #22c55e; margin: 12px 0; }
+    .badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+    .badge-APPROVE { background: #14532d; color: #86efac; }
+    .badge-REVIEW { background: #713f12; color: #fde68a; }
+    .badge-REJECT { background: #7f1d1d; color: #fca5a5; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="header">
+      <h1>Psychometric Assessment</h1>
+      <p>RBI AA Consent · Trait-based · Agent-guided</p>
+      <div class="lang-bar" id="lang-bar">
+        <button class="lang-btn active" data-lang="en">English</button>
+        <button class="lang-btn" data-lang="hi">हिन्दी</button>
+        <button class="lang-btn" data-lang="bn">বাংলা</button>
+      </div>
+    </div>
+    <div class="progress" id="progress">Starting...</div>
+    <div class="chat" id="chat"></div>
+    <div id="result-panel" class="result-panel hidden">
+      <p style="color:#94a3b8;font-size:14px;">Your Alternate Credit Score</p>
+      <div class="score" id="score-display">—</div>
+      <div class="badge badge-REVIEW" id="decision-badge">—</div>
+      <p style="color:#94a3b8;font-size:13px;margin-top:12px;" id="pd-display"></p>
+      <button class="icon-btn primary" style="width:100%;border-radius:12px;margin-top:16px;height:48px;"
+        onclick="window.location='/dashboard?user_id=' + userId">View Bank Dashboard</button>
+    </div>
+    <div class="input-bar" id="input-bar">
+      <button class="icon-btn" id="mic-btn" title="Speak answer">🎤</button>
+      <input type="text" id="answer-input" placeholder="Type your answer...">
+      <button class="icon-btn primary" id="send-btn">➤</button>
+    </div>
+  </div>
+
+  <script src="/static/voice.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    let userId = params.get('user_id') || crypto.randomUUID();
+    let language = params.get('lang') || 'en';
+    let sessionId = null;
+    let currentItem = null;
+    let voice = VoiceProvider.createVoiceProvider();
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('answer-input');
+    const micBtn = document.getElementById('mic-btn');
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.lang === language);
+      btn.onclick = () => {
+        if (sessionId) return;
+        language = btn.dataset.lang;
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      };
+    });
+
+    function addBubble(text, role) {
+      const div = document.createElement('div');
+      div.className = 'bubble ' + role;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function renderOptions(item) {
+      if (!item.options || !item.options.length) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'options';
+      item.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.textContent = opt.value + '. ' + opt.label;
+        btn.onclick = () => submitAnswer(String(opt.value));
+        wrap.appendChild(btn);
+      });
+      chat.appendChild(wrap);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function startSession() {
+      const resp = await fetch('/assessment/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, language }),
+      });
+      const data = await resp.json();
+      sessionId = data.session_id;
+      userId = data.user_id;
+      addBubble(data.message, 'agent');
+      if (voice.synth) await voice.speak(data.message, language);
+      handleItem(data.item);
+      document.getElementById('progress').textContent = `Progress: ${Math.round(data.progress * 100)}%`;
+    }
+
+    function handleItem(item) {
+      if (!item) return;
+      currentItem = item;
+      addBubble(item.prompt + (item.hint ? '\n\n' + item.hint : ''), 'agent');
+      if (voice.synth) voice.speak(item.prompt, language);
+      renderOptions(item);
+    }
+
+    async function submitAnswer(answer) {
+      if (!sessionId || !currentItem || !answer.trim()) return;
+      addBubble(answer.trim(), 'user');
+      input.value = '';
+
+      const resp = await fetch('/assessment/answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, item_id: currentItem.item_id, answer: answer.trim() }),
+      });
+      const data = await resp.json();
+      document.getElementById('progress').textContent = `Progress: ${Math.round(data.progress * 100)}%`;
+
+      if (data.needs_clarification) {
+        addBubble(data.message, 'agent');
+        if (voice.synth) voice.speak(data.message, language);
+        handleItem(data.item);
+        return;
+      }
+
+      if (data.completed) {
+        addBubble(data.message, 'agent');
+        document.getElementById('input-bar').classList.add('hidden');
+        await finishAndScore();
+        return;
+      }
+
+      if (data.message) addBubble(data.message, 'agent');
+      handleItem(data.item);
+    }
+
+    async function finishAndScore() {
+      await new Promise(r => setTimeout(r, 3000));
+      try {
+        const resp = await fetch('/score/' + userId);
+        if (!resp.ok) throw new Error('Score pending');
+        const score = await resp.json();
+        document.getElementById('chat').classList.add('hidden');
+        document.getElementById('result-panel').classList.remove('hidden');
+        document.getElementById('score-display').textContent = score.credit_score;
+        const badge = document.getElementById('decision-badge');
+        badge.textContent = score.decision;
+        badge.className = 'badge badge-' + score.decision;
+        document.getElementById('pd-display').textContent =
+          'PD: ' + (score.probability_of_default * 100).toFixed(1) + '% · ' + (score.reason_codes_text || '');
+      } catch (_) {
+        document.getElementById('result-panel').classList.remove('hidden');
+        document.getElementById('score-display').textContent = 'Submitted';
+        document.getElementById('decision-badge').textContent = 'PROCESSING';
+        document.getElementById('pd-display').textContent = 'Assessment saved. Score available after model training.';
+      }
+    }
+
+    document.getElementById('send-btn').onclick = () => submitAnswer(input.value);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') submitAnswer(input.value); });
+
+    micBtn.onclick = async () => {
+      if (!voice.recognition) {
+        addBubble('Voice not supported — please type your answer.', 'agent');
+        return;
+      }
+      micBtn.classList.add('recording');
+      try {
+        const transcript = await voice.listen(language);
+        input.value = transcript;
+        await submitAnswer(transcript);
+      } catch (err) {
+        addBubble('Could not capture voice: ' + err.message, 'agent');
+      } finally {
+        micBtn.classList.remove('recording');
+      }
+    };
+
+    startSession();
+  </script>
+</body>
+</html>

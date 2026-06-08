@@ -2,9 +2,11 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import consent, frontend, ingestion, scoring
+from api.routes import assessment, consent, frontend, ingestion, scoring
 from core.database import init_db
+from core.model_cache import get_model_version, init_model_cache
 from models.pydantic_schemas import HealthResponse
 
 logging.basicConfig(level=logging.INFO)
@@ -15,19 +17,32 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("Initializing database tables...")
     await init_db()
-    logger.info("Alt-Credit Engine ready.")
+    init_model_cache()
+    logger.info("Alt-Credit Engine ready (model=%s).", get_model_version())
     yield
-    logger.info("Shutting down Alt-Credit Engine.")
+    logger.info("Shut down Alt-Credit Engine.")
 
 
 app = FastAPI(
     title="Alt-Credit Engine",
-    description="Privacy-preserving alternative credit scoring API",
-    version="0.2.0",
+    description="Privacy-preserving alternative credit scoring API for UCO Bank hackathon",
+    version="1.0.0",
     lifespan=lifespan,
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+frontend.mount_static(app)
+
+app.include_router(assessment.router)
 app.include_router(consent.router)
+app.include_router(consent.geo_router)
 app.include_router(ingestion.router)
 app.include_router(scoring.router)
 app.include_router(frontend.router)
@@ -35,4 +50,8 @@ app.include_router(frontend.router)
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
-    return HealthResponse(status="ok", service="alt-credit-engine")
+    return HealthResponse(
+        status="ok",
+        service="alt-credit-engine",
+        model_version=get_model_version(),
+    )

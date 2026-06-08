@@ -5,6 +5,7 @@ import logging
 import sys
 
 from core.database import AsyncSessionLocal
+from core.model_cache import reload_model_cache
 from models_ai.catboost_model import train_from_db
 from models_econometric.ecm_model import run_ecm_pipeline
 
@@ -14,18 +15,24 @@ logger = logging.getLogger(__name__)
 
 async def main() -> None:
     async with AsyncSessionLocal() as session:
-        logger.info("Running ECM pipeline...")
+        logger.info("Running ECM pipeline on real time series...")
         ecm_result = await run_ecm_pipeline(session)
         logger.info("ECM result: %s", ecm_result)
 
-        logger.info("Training CatBoost model...")
+        logger.info("Training CatBoost model with generative ground-truth labels...")
         train_result = await train_from_db(session)
         logger.info("Training result: %s", train_result)
 
+    reload_model_cache()
+
+    metrics = train_result.get("metrics", {})
+    cv = train_result.get("cv_metrics", {})
     print("Training complete.")
     print(f"  Users (ECM): {ecm_result['users_processed']}")
     print(f"  Users (CatBoost): {train_result['users_trained']}")
-    print(f"  Synthetic default rate: {train_result['default_rate']:.2%}")
+    print(f"  Default rate: {train_result['default_rate']:.2%}")
+    print(f"  Holdout AUC: {metrics.get('auc', 0):.4f}  Gini: {metrics.get('gini', 0):.4f}  KS: {metrics.get('ks', 0):.4f}")
+    print(f"  CV AUC: {cv.get('cv_auc_mean', 0):.4f} (+/- {cv.get('cv_auc_std', 0):.4f})")
     print(f"  Model saved: {train_result['model_path']}")
 
 

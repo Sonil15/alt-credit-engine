@@ -35,15 +35,17 @@ async def _ingest_user(
     profile: dict,
     *,
     delay_between_types: float,
+    api_key: str | None = None,
 ) -> tuple[str, int, int]:
     user_id = profile["user_id"]
     success = 0
     failed = 0
+    headers = {"X-API-Key": api_key} if api_key else {}
 
     for data_type in DATA_TYPES:
         payload = profile[data_type]
         try:
-            response = await client.post(f"/ingest/{data_type}", json=payload)
+            response = await client.post(f"/ingest/{data_type}", json=payload, headers=headers)
             response.raise_for_status()
             success += 1
         except httpx.HTTPError as exc:
@@ -51,6 +53,22 @@ async def _ingest_user(
             logger.error("Failed ingest %s for user %s: %s", data_type, user_id, exc)
         if delay_between_types:
             await asyncio.sleep(delay_between_types)
+
+    ground_truth = profile.get("_ground_truth", {})
+    if ground_truth:
+        label_payload = {
+            "user_id": user_id,
+            "default_label": ground_truth.get("default_label", 0),
+            "protected_group": ground_truth.get("protected_group", "general"),
+            "borrower_type": ground_truth.get("borrower_type", "individual"),
+        }
+        try:
+            response = await client.post("/ingest/ground_truth", json=label_payload, headers=headers)
+            response.raise_for_status()
+            success += 1
+        except httpx.HTTPError as exc:
+            failed += 1
+            logger.error("Failed ground_truth ingest for user %s: %s", user_id, exc)
 
     return user_id, success, failed
 
@@ -61,6 +79,7 @@ async def load_profiles(
     limit: int | None = None,
     delay_between_types: float = 0.0,
     delay_between_users: float = 0.05,
+    api_key: str | None = None,
 ) -> dict:
     if not MOCK_DATA_PATH.exists():
         raise FileNotFoundError(
@@ -81,6 +100,7 @@ async def load_profiles(
                 client,
                 profile,
                 delay_between_types=delay_between_types,
+                api_key=api_key,
             )
             totals["success"] += success
             totals["failed"] += failed
@@ -115,6 +135,7 @@ def main() -> None:
         default=0.05,
         help="Seconds to wait between users",
     )
+    parser.add_argument("--api-key", default=None, help="X-API-Key header for protected endpoints")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -130,6 +151,7 @@ def main() -> None:
                 limit=args.limit,
                 delay_between_types=args.delay_types,
                 delay_between_users=args.delay_users,
+                api_key=args.api_key,
             )
         )
     except Exception as exc:

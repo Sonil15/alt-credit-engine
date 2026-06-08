@@ -4,99 +4,62 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pandas as pd
-from catboost import CatBoostClassifier, Pool
+from catboost import CatBoostClassifier
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.feature_store import fetch_features_wide
+from core.seeds import CATBOOST_RANDOM_SEED
+from models_ai.constants import FEATURE_COLUMNS, LABEL_COLUMN, fill_missing_features
+from models_ai.validation import (
+    build_model_card,
+    cross_validate_metrics,
+    evaluate_model,
+    save_model_card,
+    train_test_split_data,
+)
 
 logger = logging.getLogger(__name__)
 
 MODEL_DIR = Path(__file__).parent / "artifacts"
 MODEL_PATH = MODEL_DIR / "catboost_model.cbm"
 
-FEATURE_COLUMNS = [
-    "avg_days_late",
-    "missed_payments_count",
-    "necessity_ratio",
-    "avg_merchant_rating",
-    "monthly_spend_volatility",
-    "spatial_variance_score",
-    "anchor_count",
-    "monthly_income_mean",
-    "monthly_expense_mean",
-    "cashflow_volatility",
-    "risk_appetite",
-    "savings_freq",
-    "financial_stress_score",
-    "intent_label_score",
-    "resilience_coefficient",
-    "adf_statistic",
-    "adf_pvalue",
-    "is_stationary",
-]
 
-LABEL_COLUMN = "default_label"
+def extract_labels(df: pd.DataFrame) -> pd.Series:
+    """Read ground-truth default labels stored during mock data ingestion."""
+    if LABEL_COLUMN not in df.columns:
+        raise ValueError(
+            f"Missing {LABEL_COLUMN} in ml_features. "
+            "Reload mock data with ground_truth ingestion enabled."
+        )
+    return df[LABEL_COLUMN].fillna(0).astype(int)
 
 
-def _fill_missing_features(df: pd.DataFrame) -> pd.DataFrame:
-    for col in FEATURE_COLUMNS:
-        if col not in df.columns:
-            df[col] = 0.0
-    return df[FEATURE_COLUMNS].fillna(0.0)
-
-
-def generate_synthetic_labels(df: pd.DataFrame) -> pd.Series:
-    """
-    Hackathon-only heuristic labels for training when no ground truth exists.
-    High risk signals => default_label = 1.
-    """
-    labels = pd.Series(0, index=df.index, dtype=int)
-
-    high_late = df.get("avg_days_late", pd.Series(0, index=df.index)).fillna(0) > 10
-    high_missed = df.get("missed_payments_count", pd.Series(0, index=df.index)).fillna(0) >= 3
-    high_volatility = df.get("cashflow_volatility", pd.Series(0, index=df.index)).fillna(0) > 5000
-    low_resilience = df.get("resilience_coefficient", pd.Series(0.5, index=df.index)).fillna(0.5) < 0.2
-    high_stress = df.get("financial_stress_score", pd.Series(0, index=df.index)).fillna(0) > 0.7
-    zero_income = df.get("monthly_income_mean", pd.Series(0, index=df.index)).fillna(0) <= 0
-
-    risk_score = (
-        high_late.astype(int)
-        + high_missed.astype(int)
-        + high_volatility.astype(int)
-        + low_resilience.astype(int)
-        + high_stress.astype(int)
-        + zero_income.astype(int)
-    )
-    labels = (risk_score >= 2).astype(int)
-    return labels
-
-
-def train_catboost(df: pd.DataFrame) -> CatBoostClassifier:
-    """Train CatBoost on wide feature matrix with synthetic labels."""
+def train_catboost(
+    df: pd.DataFrame,
+    label_series: pd.Series | None = None,
+) -> CatBoostClassifier:
+    """Train CatBoost on wide feature matrix using generative ground-truth labels."""
     if df.empty or len(df) < 5:
         raise ValueError("Need at least 5 users with features to train CatBoost")
 
-    df = _fill_missing_features(df.copy())
-    y = generate_synthetic_labels(df)
+    features = fill_missing_features(df.copy())
+    y = label_series if label_series is not None else extract_labels(df)
 
     if y.nunique() < 2:
-        # Ensure both classes exist for training
-        y.iloc[0] = 0
-        y.iloc[-1] = 1
+        raise ValueError("Need both default and non-default labels for training")
 
     model = CatBoostClassifier(
-        iterations=100,
+        iterations=150,
         depth=4,
-        learning_rate=0.1,
+        learning_rate=0.08,
         loss_function="Logloss",
         eval_metric="AUC",
-        random_seed=42,
+        random_seed=CATBOOST_RANDOM_SEED,
         verbose=False,
         auto_class_weights="Balanced",
     )
-    model.fit(df[FEATURE_COLUMNS], y)
+    model.fit(features, y)
     return model
 
 
@@ -119,7 +82,7 @@ def load_model(path: Path | None = None) -> CatBoostClassifier:
 
 def predict_pd(model: CatBoostClassifier, df: pd.DataFrame) -> pd.DataFrame:
     """Return user_id and probability_of_default for each row."""
-    features = _fill_missing_features(df.copy())
+    features = fill_missing_features(df.copy())
     probabilities = model.predict_proba(features)[:, 1]
     return pd.DataFrame(
         {
@@ -133,21 +96,42 @@ def get_feature_matrix_for_user(df: pd.DataFrame, user_id: str) -> pd.DataFrame:
     row = df[df["user_id"].astype(str) == str(user_id)]
     if row.empty:
         raise ValueError(f"No features found for user {user_id}")
-    return _fill_missing_features(row.copy())
+    return fill_missing_features(row.copy())
 
 
 async def train_from_db(session: AsyncSession) -> dict[str, Any]:
-    """Load features from DB, train CatBoost, save artifact."""
+    """Load features from DB, train CatBoost with validation, save artifact + model card."""
     wide = await fetch_features_wide(session)
     if wide.empty:
         raise ValueError("No ml_features available for training")
 
-    model = train_catboost(wide)
+    labels = extract_labels(wide)
+    features = fill_missing_features(wide.copy())
+
+    X_train, X_test, y_train, y_test = train_test_split_data(features, labels)
+    model = train_catboost(
+        X_train.reset_index(drop=True),
+        label_series=y_train.reset_index(drop=True),
+    )
+
+    holdout_metrics = evaluate_model(model, X_test, y_test)
+    cv_metrics = cross_validate_metrics(features, labels)
+
     path = save_model(model)
-    labels = generate_synthetic_labels(_fill_missing_features(wide.copy()))
+    card = build_model_card(
+        holdout_metrics,
+        users_trained=len(wide),
+        feature_columns=FEATURE_COLUMNS,
+        cv_metrics=cv_metrics,
+    )
+    save_model_card(card)
+
     return {
         "users_trained": len(wide),
         "default_rate": float(labels.mean()),
         "model_path": str(path),
         "feature_count": len(FEATURE_COLUMNS),
+        "model_version": card["model_version"],
+        "metrics": holdout_metrics,
+        "cv_metrics": cv_metrics,
     }

@@ -119,8 +119,8 @@
       <span>Consent Gateway</span>
     </div>
     <div class="header">
-      <h1>Share Your Data</h1>
-      <p>Grant consent to build your alternate credit profile</p>
+      <h1>RBI Account Aggregator Consent</h1>
+      <p>Grant consent to UCO Bank for alternate credit assessment</p>
     </div>
     <div class="content">
       <div class="progress">
@@ -129,9 +129,13 @@
         <div class="dot" id="dot3"></div>
       </div>
 
-      <!-- Step 1: Consent -->
+      <!-- Step 1: AA Consent -->
       <div class="step active" id="step1">
-        <p style="font-size:14px;color:#94a3b8;margin-bottom:8px;">Select data sources to share:</p>
+        <p style="font-size:13px;color:#64748b;margin-bottom:12px;line-height:1.5;">
+          <strong>Data Fiduciary:</strong> UCO Bank · <strong>Purpose:</strong> Thin-file credit assessment<br>
+          <strong>Framework:</strong> RBI Account Aggregator · <strong>Expires:</strong> 24 hours · <a href="/consent/compliance" style="color:#60a5fa;">Compliance</a>
+        </p>
+        <p style="font-size:14px;color:#94a3b8;margin-bottom:8px;">Select FI data scopes to share:</p>
         <ul class="scope-list">
           <li><input type="checkbox" id="scope-telecom" checked> Telecom bills</li>
           <li><input type="checkbox" id="scope-ecommerce" checked> E-commerce history</li>
@@ -142,29 +146,13 @@
         <button class="btn btn-primary" onclick="goToStep(2)">Continue</button>
       </div>
 
-      <!-- Step 2: Survey -->
+      <!-- Step 2: Psychometric Assessment -->
       <div class="step" id="step2">
-        <label class="field">Risk Appetite</label>
-        <select id="risk_appetite">
-          <option value="low">Low — I avoid financial risk</option>
-          <option value="medium" selected>Medium — Balanced approach</option>
-          <option value="high">High — Willing to take risks</option>
-        </select>
-
-        <label class="field">Savings Frequency</label>
-        <select id="savings_freq">
-          <option value="weekly">Weekly</option>
-          <option value="monthly" selected>Monthly</option>
-          <option value="quarterly">Quarterly</option>
-          <option value="rarely">Rarely</option>
-          <option value="never">Never</option>
-        </select>
-
-        <label class="field">How do you handle financial stress?</label>
-        <textarea id="stress_response_text" placeholder="Describe how you prioritize bills and expenses when money is tight...">I prioritize paying my utility bills first before business inventory purchases.</textarea>
-
-        <button class="btn btn-primary" onclick="submitAll()">Submit & Get Score</button>
-        <div class="error" id="error-msg"></div>
+        <p style="font-size:14px;color:#94a3b8;margin-bottom:16px;line-height:1.5;">
+          Next, complete a short psychometric assessment in your preferred language (English, Hindi, or Bengali).
+          You can answer by typing or speaking. The agent guides you — scoring uses a fixed, auditable rubric.
+        </p>
+        <button class="btn btn-primary" onclick="startAssessment()">Start Psychometric Assessment</button>
       </div>
 
       <!-- Step 3: Result -->
@@ -194,58 +182,8 @@
       }
     }
 
-    async function submitAll() {
-      const errorEl = document.getElementById('error-msg');
-      errorEl.textContent = '';
-      document.getElementById('loading').style.display = 'block';
-      document.getElementById('step2').classList.remove('active');
-
-      const surveyPayload = {
-        user_id: userId,
-        risk_appetite: document.getElementById('risk_appetite').value,
-        savings_freq: document.getElementById('savings_freq').value,
-        stress_response_text: document.getElementById('stress_response_text').value,
-      };
-
-      try {
-        // Ingest survey (real data from user)
-        await fetch('/ingest/survey', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(surveyPayload),
-        });
-
-        // Wait briefly for background preprocessing of survey
-        await new Promise(r => setTimeout(r, 3000));
-
-        // Try to get score (may need training first)
-        let scoreResp = await fetch('/score/' + userId);
-        if (scoreResp.status === 404 || scoreResp.status === 503) {
-          // User not in DB yet — show demo message
-          document.getElementById('loading').style.display = 'none';
-          goToStep(3);
-          document.getElementById('score-display').textContent = 'Pending';
-          document.getElementById('decision-badge').textContent = 'DATA SUBMITTED';
-          document.getElementById('decision-badge').className = 'badge badge-review';
-          document.getElementById('pd-display').textContent = 'Survey submitted. Run bulk loader + training for full score.';
-          document.getElementById('user-id-display').textContent = 'User ID: ' + userId;
-          return;
-        }
-
-        const data = await scoreResp.json();
-        document.getElementById('loading').style.display = 'none';
-        goToStep(3);
-        document.getElementById('score-display').textContent = data.credit_score;
-        const badge = document.getElementById('decision-badge');
-        badge.textContent = data.decision;
-        badge.className = 'badge badge-' + data.decision.toLowerCase();
-        document.getElementById('pd-display').textContent = 'PD: ' + (data.probability_of_default * 100).toFixed(1) + '%';
-        document.getElementById('user-id-display').textContent = 'User ID: ' + userId;
-      } catch (err) {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('step2').classList.add('active');
-        errorEl.textContent = 'Submission failed: ' + err.message;
-      }
+    function startAssessment() {
+      window.location = '/assessment?user_id=' + userId;
     }
   </script>
 </body>

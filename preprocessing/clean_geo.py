@@ -1,8 +1,35 @@
 import math
+from collections import Counter
 from typing import Any
 
 import numpy as np
 from sklearn.cluster import DBSCAN
+
+
+def latlong_to_pincode(lat: float, long: float, cell_deg: float = 0.5) -> str:
+    """Deterministic mock reverse-geocoder: map lat/long to a stable 6-digit PIN."""
+    row = int((lat - 8.0) / cell_deg)
+    col = int((long - 68.0) / cell_deg)
+    code = 110000 + (row * 60 + col) * 7 % 889999
+    return str(code)
+
+
+def historical_spatial_variance(orders: list[dict[str, Any]]) -> dict[str, float]:
+    """Compute normalized Shannon entropy of delivery_pin_code frequency distribution."""
+    pins = [o.get("delivery_pin_code") for o in orders if o.get("delivery_pin_code")]
+    if not pins:
+        return {"historical_spatial_variance": 0.0, "distinct_pin_codes": 0.0}
+
+    counts = Counter(pins)
+    total = len(pins)
+    k = len(counts)
+    entropy = -sum((c / total) * math.log2(c / total) for c in counts.values())
+    norm = entropy / math.log2(k) if k > 1 else 0.0
+
+    return {
+        "historical_spatial_variance": float(norm),
+        "distinct_pin_codes": float(k),
+    }
 
 
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
