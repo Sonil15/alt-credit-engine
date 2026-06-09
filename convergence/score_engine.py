@@ -14,6 +14,7 @@ from convergence.fairness import compute_fairness_report
 from convergence.reason_codes import format_reason_codes, shap_to_reason_codes
 from convergence.scorecard import score_from_pd_and_features
 from core.feature_store import fetch_features_wide, fetch_user_features_wide
+from core.json_utils import safe_float
 from core.model_cache import get_cached_explainer, get_cached_model, get_model_version
 from models.db_models import ScoreDecision
 from models_ai.catboost_model import get_feature_matrix_for_user, predict_pd
@@ -25,13 +26,13 @@ SPATIAL_VARIANCE_THRESHOLD = 50.0
 
 
 def check_red_flags(row: pd.Series) -> tuple[bool, str | None]:
-    spatial = float(row.get("spatial_variance_score", 0.0) or 0.0)
-    income = float(row.get("monthly_income_mean", 0.0) or 0.0)
+    spatial = safe_float(row.get("spatial_variance_score", 0.0))
+    income = safe_float(row.get("monthly_income_mean", 0.0))
 
     if spatial > SPATIAL_VARIANCE_THRESHOLD and income <= 0:
         return True, "Auto-reject: high geographic instability with zero baseline income"
 
-    missed = float(row.get("missed_payments_count", 0.0) or 0.0)
+    missed = safe_float(row.get("missed_payments_count", 0.0))
     if missed >= 5:
         return True, "Auto-reject: excessive missed telecom payments"
 
@@ -58,7 +59,7 @@ def extract_top_shap_drivers(model, explainer, feature_row: pd.DataFrame, top_n:
         values = shap_values[0]
 
     contributions = [
-        {"feature": name, "shap_value": float(val)}
+        {"feature": name, "shap_value": safe_float(val)}
         for name, val in zip(FEATURE_COLUMNS, values, strict=True)
     ]
     contributions.sort(key=lambda item: abs(item["shap_value"]), reverse=True)
@@ -92,7 +93,7 @@ async def score_user(session: AsyncSession, user_id: str, *, persist: bool = Tru
     model = get_cached_model()
     explainer = get_cached_explainer()
     pd_df = predict_pd(model, user_row)
-    probability_of_default = float(pd_df.iloc[0]["probability_of_default"])
+    probability_of_default = safe_float(pd_df.iloc[0]["probability_of_default"])
 
     if auto_reject:
         probability_of_default = 1.0
@@ -144,7 +145,7 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
             user_row = wide[wide["user_id"].astype(str) == user_id]
             auto_reject, reject_reason = check_red_flags(user_row.iloc[0])
             pd_row = pd_df[pd_df["user_id"] == user_id]
-            probability_of_default = float(pd_row.iloc[0]["probability_of_default"])
+            probability_of_default = safe_float(pd_row.iloc[0]["probability_of_default"])
             if auto_reject:
                 probability_of_default = 1.0
 

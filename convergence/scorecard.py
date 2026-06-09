@@ -8,6 +8,8 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from core.json_utils import safe_float
+
 # Calibrated for 300-900 range: base score 600 at 50:1 odds, PDO=50
 BASE_SCORE = 600
 BASE_ODDS = 50.0  # good:bad = 50:1 at base score
@@ -74,7 +76,7 @@ def compute_factor_points(row: pd.Series, feature_names: list[str] | None = None
     points: dict[str, float] = {}
     for name in names:
         weight = FACTOR_WEIGHTS.get(name, 0.0)
-        value = float(row.get(name, 0.0) or 0.0)
+        value = safe_float(row.get(name, 0.0))
         points[name] = round(weight * value, 2)
     return points
 

@@ -1,5 +1,6 @@
 """Shared model constants and feature helpers."""
 
+import numpy as np
 import pandas as pd
 
 FEATURE_COLUMNS = [
@@ -32,4 +33,4 @@ def fill_missing_features(df: pd.DataFrame) -> pd.DataFrame:
     for col in FEATURE_COLUMNS:
         if col not in df.columns:
             df[col] = 0.0
-    return df[FEATURE_COLUMNS].fillna(0.0)
+    return df[FEATURE_COLUMNS].replace([np.inf, -np.inf], 0.0).fillna(0.0)
