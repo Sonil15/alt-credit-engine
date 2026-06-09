@@ -70,6 +70,7 @@ Open http://localhost:8000/dashboard
 
 | URL | Description |
 |-----|-------------|
+| http://localhost:8000/ | Welcome page — dashboard or borrower consent flow |
 | http://localhost:8000/consent | RBI AA consent gateway → psychometric assessment |
 | http://localhost:8000/assessment | Multilingual agentic psychometric chat (EN/HI/BN, voice + text) |
 | http://localhost:8000/dashboard | Bank LOS dashboard with portfolio, model card, fairness |

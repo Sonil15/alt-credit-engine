@@ -12,6 +12,12 @@ STATIC_DIR = TEMPLATES_DIR / "static"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
+@router.get("/", response_class=HTMLResponse)
+async def home(request: Request) -> HTMLResponse:
+    """Landing page with paths to dashboard and borrower consent flow."""
+    return templates.TemplateResponse(request, "index.html", {"request": request})
+
+
 @router.get("/consent", response_class=HTMLResponse)
 async def consent_gateway(request: Request) -> HTMLResponse:
     """Mobile consent gateway UI."""
