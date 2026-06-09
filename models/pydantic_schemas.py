@@ -3,7 +3,9 @@ from enum import Enum
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from core.json_utils import safe_float, sanitize_for_json
 
 
 class DataType(str, Enum):
@@ -190,6 +192,11 @@ class ShapDriver(BaseModel):
     feature: str
     shap_value: float
 
+    @field_validator("shap_value", mode="before")
+    @classmethod
+    def _sanitize_shap_value(cls, value: Any) -> float:
+        return safe_float(value)
+
 
 class CreditScoreResponse(BaseModel):
     user_id: str
@@ -203,6 +210,23 @@ class CreditScoreResponse(BaseModel):
     reason_codes_text: str = ""
     factor_points: dict[str, float] = {}
     model_version: str = "unknown"
+
+    @field_validator("probability_of_default", mode="before")
+    @classmethod
+    def _sanitize_probability_of_default(cls, value: Any) -> float:
+        return safe_float(value)
+
+    @field_validator("factor_points", mode="before")
+    @classmethod
+    def _sanitize_factor_points(cls, value: Any) -> dict[str, float]:
+        if not isinstance(value, dict):
+            return {}
+        return {str(key): safe_float(item) for key, item in value.items()}
+
+    @field_validator("shap_drivers", mode="before")
+    @classmethod
+    def _sanitize_shap_drivers(cls, value: Any) -> Any:
+        return sanitize_for_json(value)
 
 
 class ModelMetrics(BaseModel):

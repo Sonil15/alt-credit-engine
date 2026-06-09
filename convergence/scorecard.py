@@ -77,7 +77,7 @@ def compute_factor_points(row: pd.Series, feature_names: list[str] | None = None
     for name in names:
         weight = FACTOR_WEIGHTS.get(name, 0.0)
         value = safe_float(row.get(name, 0.0))
-        points[name] = round(weight * value, 2)
+        points[name] = safe_float(round(weight * value, 2))
     return points
 
 

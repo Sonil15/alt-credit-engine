@@ -14,7 +14,7 @@ from convergence.fairness import compute_fairness_report
 from convergence.reason_codes import format_reason_codes, shap_to_reason_codes
 from convergence.scorecard import score_from_pd_and_features
 from core.feature_store import fetch_features_wide, fetch_user_features_wide
-from core.json_utils import safe_float
+from core.json_utils import safe_float, safe_round, sanitize_for_json
 from core.model_cache import get_cached_explainer, get_cached_model, get_model_version
 from models.db_models import ScoreDecision
 from models_ai.catboost_model import get_feature_matrix_for_user, predict_pd
@@ -66,6 +66,11 @@ def extract_top_shap_drivers(model, explainer, feature_row: pd.DataFrame, top_n:
     return contributions[:top_n]
 
 
+def _finalize_score_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Ensure all floats in a score payload are strict-JSON safe."""
+    return sanitize_for_json(payload)
+
+
 async def _persist_decision(session: AsyncSession, payload: dict[str, Any]) -> None:
     session.add(
         ScoreDecision(
@@ -108,19 +113,21 @@ async def score_user(session: AsyncSession, user_id: str, *, persist: bool = Tru
     if auto_reject and reject_reason:
         reason_codes.insert(0, reject_reason)
 
-    result = {
-        "user_id": str(user_id),
-        "credit_score": credit_score,
-        "probability_of_default": round(probability_of_default, 4),
-        "decision": decision,
-        "auto_reject": auto_reject,
-        "reject_reason": reject_reason,
-        "shap_drivers": shap_drivers,
-        "reason_codes": reason_codes,
-        "reason_codes_text": format_reason_codes(reason_codes),
-        "factor_points": scorecard.factor_points,
-        "model_version": get_model_version(),
-    }
+    result = _finalize_score_payload(
+        {
+            "user_id": str(user_id),
+            "credit_score": credit_score,
+            "probability_of_default": safe_round(probability_of_default, 4),
+            "decision": decision,
+            "auto_reject": auto_reject,
+            "reject_reason": reject_reason,
+            "shap_drivers": shap_drivers,
+            "reason_codes": reason_codes,
+            "reason_codes_text": format_reason_codes(reason_codes),
+            "factor_points": scorecard.factor_points,
+            "model_version": get_model_version(),
+        }
+    )
 
     if persist:
         await _persist_decision(session, result)
@@ -158,19 +165,21 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
             if auto_reject and reject_reason:
                 reason_codes.insert(0, reject_reason)
 
-            result = {
-                "user_id": user_id,
-                "credit_score": credit_score,
-                "probability_of_default": round(probability_of_default, 4),
-                "decision": decision,
-                "auto_reject": auto_reject,
-                "reject_reason": reject_reason,
-                "shap_drivers": shap_drivers,
-                "reason_codes": reason_codes,
-                "reason_codes_text": format_reason_codes(reason_codes),
-                "factor_points": scorecard.factor_points,
-                "model_version": get_model_version(),
-            }
+            result = _finalize_score_payload(
+                {
+                    "user_id": user_id,
+                    "credit_score": credit_score,
+                    "probability_of_default": safe_round(probability_of_default, 4),
+                    "decision": decision,
+                    "auto_reject": auto_reject,
+                    "reject_reason": reject_reason,
+                    "shap_drivers": shap_drivers,
+                    "reason_codes": reason_codes,
+                    "reason_codes_text": format_reason_codes(reason_codes),
+                    "factor_points": scorecard.factor_points,
+                    "model_version": get_model_version(),
+                }
+            )
             await _persist_decision(session, result)
             results.append(result)
         except Exception:
