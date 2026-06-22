@@ -13,6 +13,28 @@ class BrowserVoiceProvider {
   constructor() {
     this.synth = window.speechSynthesis || null;
     this.recognition = this._initRecognition();
+    this._voices = [];
+    if (this.synth) {
+      const loadVoices = () => { this._voices = this.synth.getVoices() || []; };
+      loadVoices();
+      // Voices often populate asynchronously; refresh when they do.
+      this.synth.addEventListener("voiceschanged", loadVoices);
+    }
+  }
+
+  /** Best installed voice for a language, or null if the device has none. */
+  _voiceFor(lang) {
+    const target = (LANG_MAP[lang] || LANG_MAP.en).toLowerCase(); // e.g. "bn-in"
+    const base = target.split("-")[0];                            // e.g. "bn"
+    const voices = this._voices.length
+      ? this._voices
+      : (this.synth ? this.synth.getVoices() : []);
+    return (
+      voices.find((v) => v.lang && v.lang.toLowerCase() === target) ||
+      voices.find((v) => v.lang && v.lang.toLowerCase().startsWith(base + "-")) ||
+      voices.find((v) => v.lang && v.lang.toLowerCase() === base) ||
+      null
+    );
   }
 
   _initRecognition() {
@@ -30,10 +52,16 @@ class BrowserVoiceProvider {
 
   speak(text, lang = "en") {
     if (!this.synth || !text) return Promise.resolve();
+    const voice = this._voiceFor(lang);
+    // No installed voice for this language → stay silent instead of letting a
+    // mismatched voice read the script as garbage (e.g. an English voice
+    // speaking Bengali "নমস্কার!" aloud as "exclamation point").
+    if (!voice) return Promise.resolve();
     return new Promise((resolve) => {
       this.synth.cancel();
       const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = LANG_MAP[lang] || LANG_MAP.en;
+      utter.voice = voice;
+      utter.lang = voice.lang;
       utter.rate = 0.95;
       utter.onend = () => resolve();
       utter.onerror = () => resolve();

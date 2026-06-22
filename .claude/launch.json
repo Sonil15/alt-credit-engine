@@ -6,6 +6,12 @@
       "runtimeExecutable": ".venv/bin/uvicorn",
       "runtimeArgs": ["api.main:app", "--port", "8000"],
       "port": 8000
+    },
+    {
+      "name": "alt-credit-sqlite",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "USE_SQLITE=true AUTO_SEED_ON_STARTUP=true .venv/bin/uvicorn api.main:app --port 8000"],
+      "port": 8000
     }
   ]
 }

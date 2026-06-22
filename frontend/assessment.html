@@ -5,9 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>Alt-Credit — Psychometric Assessment</title>
   <style>
+    /* Self-hosted Indic fonts so Bengali/Hindi render even when the device
+       lacks them (otherwise Bengali shows as blank boxes — only ASCII survives). */
+    @font-face {
+      font-family: 'Noto Sans Bengali'; font-style: normal; font-weight: 400; font-display: swap;
+      src: url('/static/fonts/noto-bengali-400.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'Noto Sans Bengali'; font-style: normal; font-weight: 600; font-display: swap;
+      src: url('/static/fonts/noto-bengali-600.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'Noto Sans Devanagari'; font-style: normal; font-weight: 400; font-display: swap;
+      src: url('/static/fonts/noto-devanagari-400.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'Noto Sans Devanagari'; font-style: normal; font-weight: 600; font-display: swap;
+      src: url('/static/fonts/noto-devanagari-600.woff2') format('woff2');
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Bengali", "Noto Sans Devanagari", sans-serif;
       background: #0f172a; color: #e2e8f0; min-height: 100vh;
       display: flex; justify-content: center; padding: 16px;
     }
@@ -24,6 +42,14 @@
       background: #0f172a; color: #94a3b8; cursor: pointer; font-size: 12px;
     }
     .lang-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+    .lang-btn:disabled { opacity: 0.45; cursor: default; }
+    .lang-btn.active:disabled { opacity: 1; }
+    .start-bar { padding: 14px 16px; border-top: 1px solid #334155; }
+    .start-btn {
+      width: 100%; height: 48px; border-radius: 12px; border: none;
+      background: #2563eb; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    .start-btn:hover { background: #1d4ed8; }
     .chat { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
     .bubble {
       max-width: 85%; padding: 12px 14px; border-radius: 16px; font-size: 14px; line-height: 1.45;
@@ -81,34 +107,61 @@
       <button class="icon-btn primary" style="width:100%;border-radius:12px;margin-top:16px;height:48px;"
         onclick="window.location='/dashboard?user_id=' + userId">View Bank Dashboard</button>
     </div>
-    <div class="input-bar" id="input-bar">
+    <div class="start-bar" id="start-bar">
+      <button class="start-btn" id="start-btn">Start Assessment</button>
+    </div>
+    <div class="input-bar hidden" id="input-bar">
       <button class="icon-btn" id="mic-btn" title="Speak answer">🎤</button>
       <input type="text" id="answer-input" placeholder="Type your answer...">
       <button class="icon-btn primary" id="send-btn">➤</button>
     </div>
   </div>
 
-  <script src="/static/voice.js"></script>
+  <script src="/static/voice.js?v=2"></script>
   <script>
     const params = new URLSearchParams(window.location.search);
     let userId = params.get('user_id') || crypto.randomUUID();
     let language = params.get('lang') || 'en';
     let sessionId = null;
+    let started = false;
     let currentItem = null;
     let voice = VoiceProvider.createVoiceProvider();
     const chat = document.getElementById('chat');
     const input = document.getElementById('answer-input');
     const micBtn = document.getElementById('mic-btn');
 
+    const START_LABEL = { en: 'Start Assessment', hi: 'मूल्यांकन शुरू करें', bn: 'মূল্যায়ন শুরু করুন' };
+    const INTRO = {
+      en: 'Choose your language above, then tap the button below to begin.',
+      hi: 'ऊपर अपनी भाषा चुनें, फिर शुरू करने के लिए नीचे दिए बटन पर टैप करें।',
+      bn: 'উপরে আপনার ভাষা বেছে নিন, তারপর শুরু করতে নিচের বোতামে ট্যাপ করুন।',
+    };
+
+    function refreshLangUI() {
+      document.querySelectorAll('.lang-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.lang === language));
+      document.getElementById('start-btn').textContent = START_LABEL[language] || START_LABEL.en;
+      const intro = document.getElementById('intro-bubble');
+      if (intro) intro.textContent = INTRO[language] || INTRO.en;
+    }
+
     document.querySelectorAll('.lang-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.lang === language);
       btn.onclick = () => {
-        if (sessionId) return;
+        if (started) return;            // language locks once the assessment begins
         language = btn.dataset.lang;
-        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        refreshLangUI();
       };
     });
+
+    function beginAssessment() {
+      if (started) return;
+      started = true;
+      document.querySelectorAll('.lang-btn').forEach(b => { b.disabled = true; });
+      document.getElementById('start-bar').classList.add('hidden');
+      document.getElementById('input-bar').classList.remove('hidden');
+      chat.innerHTML = '';            // clear the pre-start intro bubble
+      startSession();
+    }
 
     function addBubble(text, role) {
       const div = document.createElement('div');
@@ -229,7 +282,14 @@
       }
     };
 
-    startSession();
+    // No auto-start: let the borrower pick a language first, then tap Start.
+    document.getElementById('progress').textContent = '';
+    const introBubble = document.createElement('div');
+    introBubble.className = 'bubble agent';
+    introBubble.id = 'intro-bubble';
+    chat.appendChild(introBubble);
+    document.getElementById('start-btn').onclick = beginAssessment;
+    refreshLangUI();
   </script>
 </body>
 </html>
