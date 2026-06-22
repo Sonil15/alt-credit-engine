@@ -35,7 +35,7 @@ class Settings:
     USE_SQLITE: str = os.getenv("USE_SQLITE", "false")
     SQLITE_PATH: str = os.getenv("SQLITE_PATH", "./alt_credit.db")
 
-    # Single connection string (e.g. Render/Railway/Fly provide this). Takes
+    # Single connection string (e.g. Render provides this). Takes
     # precedence over USE_SQLITE and the individual POSTGRES_* vars when set.
     DATABASE_URL_ENV: str = os.getenv("DATABASE_URL", "")
 

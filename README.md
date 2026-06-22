@@ -34,7 +34,7 @@ AA Consent Gateway → Ingest API → AES-256 Vault → Preprocessing → ml_fea
 | **Confidence / thin-file** | Data-sufficiency score from how many pillars are backed by real data; low-confidence files routed to review, never silent auto-approve |
 | **Audit trail** | Every decision logged to `score_decisions` table |
 | **Self-seeding startup** | Demo cohort auto-loads into the DB on first boot (idempotent) — no manual seed/load/train; optional SQLite mode for offline laptop demos |
-| **Deployment** | Docker + docker-compose + Railway config |
+| **Deployment** | Docker + docker-compose; live demo on Render |
 | **Multilingual psychometrics** | Agent-guided assessment in EN/HI/BN with deterministic trait scoring; language is locked after first selection (other buttons hidden); Likert questions use tap-to-select buttons (text input hidden); open-ended questions show the text input; animated processing screen shown while scoring runs |
 
 ## Prerequisites
@@ -45,7 +45,7 @@ AA Consent Gateway → Ingest API → AES-256 Vault → Preprocessing → ml_fea
 
 ## Quick Start (Docker + Postgres — primary / deployed configuration)
 
-This is the configuration used for managed Postgres hosts (e.g. Render, Railway). On first startup the app **self-seeds** the 100-borrower demo cohort (encrypt → vault → preprocess → ECM) and loads the bundled pre-trained CatBoost artifact from `models_ai/artifacts/` — no manual seed/load/train steps needed:
+This is the configuration used for managed Postgres hosts (e.g. Render). On first startup the app **self-seeds** the 100-borrower demo cohort (encrypt → vault → preprocess → ECM) and loads the bundled pre-trained CatBoost artifact from `models_ai/artifacts/` — no manual seed/load/train steps needed:
 
 ```bash
 cp .env.example .env
@@ -68,7 +68,7 @@ pip install -r requirements.txt
 USE_SQLITE=true uvicorn api.main:app --port 8000
 ```
 
-This is only a convenience for local demos — Postgres remains the default and the deployed backend. (A provided `DATABASE_URL`, e.g. on Render or Railway, always takes precedence.)
+This is only a convenience for local demos — Postgres remains the default and the deployed backend. (A provided `DATABASE_URL`, e.g. on Render, always takes precedence.)
 
 ## Demo UI
 
@@ -165,16 +165,24 @@ Example: a ratio of `0.44` means the least-approved group is approved at only 44
 
 Implemented in [`convergence/fairness.py`](convergence/fairness.py); threshold `DISPARATE_IMPACT_THRESHOLD = 0.8`.
 
-## Deployment Options
+## Deployment
+
+The live demo runs on **Render** (Web Service + managed Postgres). In the Render dashboard:
+
+1. Connect this GitHub repo and set **Dockerfile** as the build method
+2. Add a Postgres instance and set `DATABASE_URL` on the web service
+3. Copy remaining env vars from `.env.example` (`API_KEY`, `AES_SECRET_KEY`, etc.)
+4. Set start command to `bash scripts/entrypoint.sh` and health check path to `/health`
+
+Set `SEED_ON_STARTUP=true` (the default) so the demo dashboard is populated on first boot. The legacy `AUTO_SEED_ON_STARTUP` flag in `scripts/entrypoint.sh` triggers an alternate full generate → API load → train path and is not needed when using the bundled model artifact.
+
+Other options for local pitches or production narratives:
 
 | Platform | Best For | Tradeoff |
 |----------|----------|----------|
-| **Railway** (recommended) | Always-on demo URL | Cost after free tier |
-| **Render** | Free hosting | Cold starts on free tier |
+| **Render** (deployed) | Hosted demo URL | Cold starts on free tier |
 | **docker-compose on Mumbai VM** | Data localization story | You manage ops |
 | **ngrok** | Live pitch from laptop | Ephemeral URL |
-
-See `railway.toml` and `Dockerfile` for container deployment. Set `SEED_ON_STARTUP=true` (the default) so the demo dashboard is populated on first boot. The legacy `AUTO_SEED_ON_STARTUP` flag in `scripts/entrypoint.sh` triggers an alternate full generate → API load → train path and is not needed when using the bundled model artifact.
 
 ## Testing Borrower vs Bank Flows
 

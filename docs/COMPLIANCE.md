@@ -25,7 +25,7 @@ This document summarizes how the Alt-Credit Engine prototype aligns with Indian 
 
 - Production deployment should use **India-region** infrastructure (e.g. AWS Mumbai, Azure Central India).
 - `docker-compose.yml` supports self-hosted deployment with encrypted PostgreSQL volumes.
-- See deployment guide in README for Railway/Render (demo) vs Mumbai VM (production narrative).
+- See deployment guide in README for Render (demo) vs Mumbai VM (production narrative).
 
 ## Fairness & Non-Discrimination
 
