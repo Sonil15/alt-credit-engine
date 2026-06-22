@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alt-Credit — Your Assessment Result</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
+    .topbar { background: #0f172a; color: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; }
+    .topbar h1 { font-size: 18px; font-weight: 700; }
+    .topbar .sub { font-size: 13px; color: #94a3b8; }
+    .topbar a { color: #93c5fd; font-size: 13px; text-decoration: none; margin-left: 16px; }
+    .container { max-width: 680px; margin: 40px auto; padding: 0 24px 48px; }
+    .card { background: white; border-radius: 20px; padding: 36px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .card h2 { font-size: 20px; font-weight: 700; color: #334155; margin-bottom: 28px; }
+    .score-hero { text-align: center; margin-bottom: 32px; }
+    .score-num { font-size: 72px; font-weight: 800; color: #2563eb; line-height: 1; }
+    .score-label { font-size: 13px; color: #94a3b8; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .badge { display: inline-block; padding: 8px 20px; border-radius: 24px; font-size: 15px; font-weight: 700; margin-top: 16px; }
+    .badge-APPROVE { background: #dcfce7; color: #166534; }
+    .badge-REVIEW  { background: #fef9c3; color: #854d0e; }
+    .badge-REJECT  { background: #fee2e2; color: #991b1b; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+    .meta-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; }
+    .meta-box .k { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+    .meta-box .v { font-size: 22px; font-weight: 700; margin-top: 6px; color: #0f172a; }
+    .reason-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 16px; font-size: 14px; color: #9a3412; margin-bottom: 24px; }
+    .drivers-title { font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 12px; }
+    .driver-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    .driver-row:last-child { border-bottom: none; }
+    .driver-row .name { color: #475569; }
+    .driver-row .val { font-weight: 700; }
+    .val-up { color: #16a34a; }
+    .val-down { color: #dc2626; }
+    .actions { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+    .btn { padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; display: inline-block; text-align: center; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-secondary { background: #f1f5f9; color: #475569; }
+    .error-box { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 12px; font-size: 14px; }
+    .loading { text-align: center; padding: 60px 24px; color: #94a3b8; font-size: 16px; }
+    .spinner { width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <h1>Alt-Credit</h1>
+      <div class="sub">Your Credit Assessment</div>
+    </div>
+    <div>
+      <a href="/">Home</a>
+      <a id="privacy-link" href="/consent">Privacy Rights</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      Retrieving your assessment…
+    </div>
+
+    <div id="error-section" style="display:none">
+      <div class="error-box" id="error-msg"></div>
+      <div style="margin-top:16px">
+        <a href="/assessment" class="btn btn-primary">Retake Assessment</a>
+      </div>
+    </div>
+
+    <div id="result-section" style="display:none">
+      <div class="card">
+        <h2>Your Credit Score</h2>
+
+        <div class="score-hero">
+          <div class="score-num" id="score-num">—</div>
+          <div class="score-label">out of 900</div>
+          <div><span class="badge" id="decision-badge">—</span></div>
+        </div>
+
+        <div class="meta-grid">
+          <div class="meta-box">
+            <div class="k">Probability of Default</div>
+            <div class="v" id="pd-val">—</div>
+          </div>
+          <div class="meta-box">
+            <div class="k">Confidence</div>
+            <div class="v" id="conf-val">—</div>
+          </div>
+        </div>
+
+        <div id="reason-box" class="reason-box" style="display:none">
+          <strong>Key Factors:</strong> <span id="reason-text"></span>
+        </div>
+
+        <div id="drivers-section" style="display:none">
+          <div class="drivers-title">Top Score Drivers</div>
+          <div id="drivers-list"></div>
+        </div>
+
+        <div class="actions">
+          <a href="/consent" id="privacy-action" class="btn btn-secondary">Privacy Rights</a>
+          <a href="/apply" class="btn btn-secondary">Home</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session');
+
+    if (!sessionId) {
+      showError('No session found. Please complete the assessment first.');
+    } else {
+      loadScore();
+    }
+
+    async function loadScore() {
+      try {
+        const resp = await fetch('/score/me', {
+          headers: { 'X-Session-Id': sessionId },
+        });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.detail || 'Unable to retrieve score.');
+        }
+        const data = await resp.json();
+        renderScore(data);
+      } catch (err) {
+        showError(err.message);
+      }
+    }
+
+    function renderScore(d) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('result-section').style.display = 'block';
+
+      document.getElementById('score-num').textContent = d.credit_score;
+      const badge = document.getElementById('decision-badge');
+      badge.textContent = d.decision;
+      badge.className = 'badge badge-' + d.decision;
+      document.getElementById('pd-val').textContent = (d.probability_of_default * 100).toFixed(1) + '%';
+      document.getElementById('conf-val').textContent = typeof d.confidence_pct === 'number' ? d.confidence_pct.toFixed(0) + '%' : 'N/A';
+
+      if (d.reason_codes_text) {
+        document.getElementById('reason-text').textContent = d.reason_codes_text;
+        document.getElementById('reason-box').style.display = 'block';
+      }
+
+      if (d.shap_drivers && d.shap_drivers.length) {
+        const list = document.getElementById('drivers-list');
+        d.shap_drivers.slice(0, 5).forEach(dr => {
+          const v = dr.shap_value ?? 0;
+          const row = document.createElement('div');
+          row.className = 'driver-row';
+          // positive shap_value = raises PD = hurts score (red); negative = helps (green)
+          const valClass = v > 0 ? 'val-down' : 'val-up';
+          const sign = v > 0 ? '−' : '+';
+          row.innerHTML = `<span class="name">${dr.feature}</span><span class="val ${valClass}">${sign}${Math.abs(v).toFixed(3)}</span>`;
+          list.appendChild(row);
+        });
+        document.getElementById('drivers-section').style.display = 'block';
+      }
+
+      document.getElementById('privacy-link').href = '/consent?user_id=' + encodeURIComponent(d.user_id);
+      document.getElementById('privacy-action').href = '/consent?user_id=' + encodeURIComponent(d.user_id);
+
+      saveApplication({ sessionId, userId: d.user_id, score: d.credit_score, decision: d.decision });
+    }
+
+    function saveApplication(app) {
+      const STORAGE_KEY = 'altcredit_applications';
+      try {
+        const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        const alreadySaved = existing.some(a => a.sessionId === app.sessionId);
+        if (!alreadySaved) {
+          existing.push({ ...app, date: new Date().toISOString() });
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+        }
+      } catch (_) {}
+    }
+
+    function showError(msg) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('result-section').style.display = 'none';
+      document.getElementById('error-msg').textContent = msg;
+      document.getElementById('error-section').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

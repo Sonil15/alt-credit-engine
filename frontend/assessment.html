@@ -170,6 +170,7 @@
     </div>
   </div>
 
+  <script src="/static/voice.js?v=2"></script>
   <script>
     const params = new URLSearchParams(window.location.search);
     let userId = params.get('user_id') || crypto.randomUUID();
@@ -177,6 +178,7 @@
     let sessionId = null;
     let started = false;
     let currentItem = null;
+    let voice = VoiceProvider.createVoiceProvider();
     const chat = document.getElementById('chat');
     const input = document.getElementById('answer-input');
 
@@ -290,6 +292,7 @@
       sessionId = data.session_id;
       userId = data.user_id;
       addBubble(data.message, 'agent');
+      if (voice.synth) await voice.speak(data.message, language);
       handleItem(data.item);
       document.getElementById('progress').textContent = `Progress: ${Math.round(data.progress * 100)}%`;
     }
@@ -298,6 +301,7 @@
       if (!item) return;
       currentItem = item;
       addBubble(item.prompt + (item.hint ? '\n\n' + item.hint : ''), 'agent');
+      if (voice.synth) voice.speak(item.prompt, language);
       renderOptions(item);
       document.getElementById('input-bar').classList.toggle('hidden', item.type !== 'open_ended');
     }
@@ -317,6 +321,7 @@
 
       if (data.needs_clarification) {
         addBubble(data.message, 'agent');
+        if (voice.synth) voice.speak(data.message, language);
         handleItem(data.item);
         return;
       }
@@ -335,25 +340,9 @@
     async function finishAndScore() {
       showProcessingPanel();
       await new Promise(r => setTimeout(r, 3500));
-      try {
-        const resp = await fetch('/score/' + userId);
-        if (!resp.ok) throw new Error('Score pending');
-        const score = await resp.json();
-        document.getElementById('processing-panel').classList.add('hidden');
-        document.getElementById('result-panel').classList.remove('hidden');
-        document.getElementById('score-display').textContent = score.credit_score;
-        const badge = document.getElementById('decision-badge');
-        badge.textContent = score.decision;
-        badge.className = 'badge badge-' + score.decision;
-        document.getElementById('pd-display').textContent =
-          'PD: ' + (score.probability_of_default * 100).toFixed(1) + '% · ' + (score.reason_codes_text || '');
-      } catch (_) {
-        document.getElementById('processing-panel').classList.add('hidden');
-        document.getElementById('result-panel').classList.remove('hidden');
-        document.getElementById('score-display').textContent = 'Submitted';
-        document.getElementById('decision-badge').textContent = 'PROCESSING';
-        document.getElementById('pd-display').textContent = 'Assessment saved. Score available after model training.';
-      }
+      localStorage.setItem('altcredit_last_session', sessionId);
+      localStorage.setItem('altcredit_last_user_id', userId);
+      window.location.href = '/borrower?session=' + encodeURIComponent(sessionId);
     }
 
     document.getElementById('send-btn').onclick = () => submitAnswer(input.value);

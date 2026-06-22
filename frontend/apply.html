@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alt-Credit — Borrower Portal</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
+
+    .topbar { background: #0f172a; color: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .topbar-left h1 { font-size: 18px; font-weight: 700; }
+    .topbar-left .sub { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+    .topbar-right a { color: #93c5fd; font-size: 13px; text-decoration: none; margin-left: 20px; }
+    .topbar-right a:hover { color: white; }
+
+    .hero { background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); color: white; padding: 52px 24px 44px; text-align: center; }
+    .hero-badge { display: inline-block; padding: 5px 14px; border-radius: 999px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); font-size: 12px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; color: #bfdbfe; margin-bottom: 18px; }
+    .hero h2 { font-size: clamp(24px, 4vw, 36px); font-weight: 800; line-height: 1.2; margin-bottom: 12px; }
+    .hero p { font-size: 15px; color: #cbd5e1; max-width: 520px; margin: 0 auto 28px; line-height: 1.6; }
+    .hero-cta { display: inline-block; padding: 14px 32px; background: #2563eb; color: white; font-size: 15px; font-weight: 700; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 14px rgba(37,99,235,0.4); transition: transform 0.15s; }
+    .hero-cta:hover { transform: translateY(-1px); }
+
+    .container { max-width: 760px; margin: 0 auto; padding: 36px 24px 60px; }
+
+    /* Previous applications */
+    .section-title { font-size: 16px; font-weight: 700; color: #334155; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    .section-title .count { background: #e0e7ff; color: #3730a3; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+
+    .empty-state { background: white; border-radius: 16px; padding: 36px 24px; text-align: center; color: #94a3b8; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 32px; }
+    .empty-state .icon { font-size: 32px; margin-bottom: 12px; }
+
+    .app-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+    .app-card { background: white; border-radius: 14px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; text-decoration: none; color: inherit; border: 1px solid transparent; transition: border-color 0.15s, box-shadow 0.15s; }
+    .app-card:hover { border-color: #bfdbfe; box-shadow: 0 4px 16px rgba(37,99,235,0.1); }
+    .app-card-left .date { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+    .app-card-left .uid { font-size: 12px; color: #cbd5e1; font-family: ui-monospace, monospace; }
+    .app-card-score { font-size: 28px; font-weight: 800; color: #2563eb; }
+    .badge { display: inline-block; padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+    .badge-APPROVE { background: #dcfce7; color: #166534; }
+    .badge-REVIEW  { background: #fef9c3; color: #854d0e; }
+    .badge-REJECT  { background: #fee2e2; color: #991b1b; }
+    .badge-PENDING { background: #f1f5f9; color: #64748b; }
+    .app-card-arrow { color: #cbd5e1; font-size: 18px; }
+
+    /* How it works */
+    .steps-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .steps-card h3 { font-size: 15px; font-weight: 700; color: #334155; margin-bottom: 18px; }
+    .step-row { display: grid; grid-template-columns: 36px 1fr; gap: 14px; padding: 11px 0; border-bottom: 1px solid #f1f5f9; align-items: start; }
+    .step-row:last-child { border-bottom: none; }
+    .step-num { width: 36px; height: 36px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .step-row strong { display: block; font-size: 14px; color: #0f172a; margin-bottom: 3px; }
+    .step-row span { font-size: 13px; color: #64748b; line-height: 1.5; }
+
+    .footer { text-align: center; font-size: 13px; color: #94a3b8; margin-top: 36px; }
+    .footer a { color: #2563eb; text-decoration: none; margin: 0 10px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Alt-Credit</h1>
+      <div class="sub">Borrower Portal</div>
+    </div>
+    <div class="topbar-right">
+      <a href="/consent">Privacy Rights</a>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-badge">UCO Bank — Thin-File Credit</div>
+    <h2>Apply for Alternate Credit Scoring</h2>
+    <p>No credit history? No problem. We assess your financial behaviour through consent-based alternative data and a short psychometric assessment.</p>
+    <a class="hero-cta" href="/consent">Start New Application →</a>
+  </div>
+
+  <div class="container">
+
+    <div class="section-title">
+      Previous Applications
+      <span class="count" id="app-count">0</span>
+    </div>
+
+    <div id="empty-state" class="empty-state">
+      <div class="icon">📋</div>
+      No applications yet. Start one above to see your results here.
+    </div>
+
+    <div id="app-list" class="app-list" style="display:none"></div>
+
+    <div class="steps-card">
+      <h3>How it works</h3>
+      <div class="step-row">
+        <div class="step-num">1</div>
+        <div>
+          <strong>Grant consent</strong>
+          <span>Choose which data sources to share — telecom, e-commerce, location, cash flow. You stay in control.</span>
+        </div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">2</div>
+        <div>
+          <strong>Complete the assessment</strong>
+          <span>A short multilingual chat (English, Hindi, Bengali) that measures financial behaviour through psychometric questions.</span>
+        </div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">3</div>
+        <div>
+          <strong>Get your score</strong>
+          <span>Receive a 300–900 alternate credit score, your loan eligibility decision, and the key factors behind it.</span>
+        </div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">4</div>
+        <div>
+          <strong>Bank reviews your application</strong>
+          <span>A UCO Bank loan officer reviews your result and contacts you with the final lending decision.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <a href="/consent/compliance">Privacy &amp; Compliance</a>
+      <a href="/health">System Status</a>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'altcredit_applications';
+
+    function loadApplications() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function render() {
+      const apps = loadApplications();
+      document.getElementById('app-count').textContent = apps.length;
+
+      if (!apps.length) return;
+
+      document.getElementById('empty-state').style.display = 'none';
+      const list = document.getElementById('app-list');
+      list.style.display = 'flex';
+
+      // newest first
+      [...apps].reverse().forEach(app => {
+        const card = document.createElement('a');
+        card.className = 'app-card';
+        card.href = '/borrower?session=' + encodeURIComponent(app.sessionId);
+
+        const date = new Date(app.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        const shortId = app.userId ? app.userId.slice(0, 8) + '…' : 'Unknown';
+        const badgeClass = 'badge-' + (app.decision || 'PENDING');
+        const scoreHtml = app.score ? `<div class="app-card-score">${app.score}</div>` : '<div class="app-card-score" style="color:#cbd5e1">—</div>';
+
+        card.innerHTML = `
+          <div class="app-card-left">
+            <div class="date">${date}</div>
+            <div class="uid">ID: ${shortId}</div>
+          </div>
+          ${scoreHtml}
+          <span class="badge ${badgeClass}">${app.decision || 'PENDING'}</span>
+          <span class="app-card-arrow">›</span>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>

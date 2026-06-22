@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence.score_engine import portfolio_summary, score_all_users, score_user
-from core.auth import require_api_key
+from core.auth import get_session_user_id, require_api_key, require_own_session
 from core.database import AsyncSessionLocal, get_db
 from core.model_cache import get_model_card, get_model_version, reload_model_cache
 from models.pydantic_schemas import (
@@ -22,7 +22,28 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/score", tags=["scoring"])
 
 
-@router.get("/", response_model=list[CreditScoreResponse])
+@router.get("/me", response_model=CreditScoreResponse)
+async def get_my_credit_score(
+    user_id: str = Depends(get_session_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> CreditScoreResponse:
+    """Return the authenticated borrower's own credit score."""
+    try:
+        result = await score_user(db, user_id)
+        return CreditScoreResponse(**result)
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Model not trained. Run `python -m models_ai.train` first.",
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Scoring failed for user %s", user_id)
+        raise HTTPException(status_code=500, detail="Scoring failed") from exc
+
+
+@router.get("/", response_model=list[CreditScoreResponse], dependencies=[Depends(require_api_key)])
 async def list_credit_scores(
     db: AsyncSession = Depends(get_db),
 ) -> list[CreditScoreResponse]:
@@ -37,7 +58,7 @@ async def list_credit_scores(
         ) from exc
 
 
-@router.get("/portfolio/summary", response_model=PortfolioSummaryResponse)
+@router.get("/portfolio/summary", response_model=PortfolioSummaryResponse, dependencies=[Depends(require_api_key)])
 async def get_portfolio_summary(
     db: AsyncSession = Depends(get_db),
 ) -> PortfolioSummaryResponse:
@@ -95,6 +116,7 @@ async def train_models() -> TrainResponse:
 async def get_credit_score(
     user_id: str,
     db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_own_session),
 ) -> CreditScoreResponse:
     """Return alternate credit score, PD, decision, SHAP drivers, and reason codes."""
     try:

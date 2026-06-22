@@ -30,6 +30,18 @@ async def assessment_ui(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "assessment.html", {"request": request})
 
 
+@router.get("/apply", response_class=HTMLResponse)
+async def borrower_portal(request: Request) -> HTMLResponse:
+    """Borrower portal — start application or view previous results."""
+    return templates.TemplateResponse(request, "apply.html", {"request": request})
+
+
+@router.get("/borrower", response_class=HTMLResponse)
+async def borrower_result(request: Request) -> HTMLResponse:
+    """Borrower-only score result page (session-authenticated)."""
+    return templates.TemplateResponse(request, "borrower.html", {"request": request})
+
+
 @router.get("/dashboard", response_class=HTMLResponse)
 async def bank_dashboard(request: Request, user_id: str | None = None) -> HTMLResponse:
     """Bank LOS dashboard UI."""
