@@ -3,8 +3,6 @@
 import logging
 from typing import Any
 
-import shap
-
 from models_ai.catboost_model import load_model
 from models_ai.validation import load_model_card
 
@@ -16,17 +14,15 @@ _model_card: dict[str, Any] | None = None
 
 
 def init_model_cache() -> None:
-    """Load model, SHAP explainer, and model card once at startup."""
-    global _model, _explainer, _model_card
+    """Load model and model card once at startup. SHAP explainer is lazy-initialized."""
+    global _model, _model_card
     try:
         _model = load_model()
-        _explainer = shap.TreeExplainer(_model)
         _model_card = load_model_card()
         logger.info("Model cache initialized (version=%s)", get_model_version())
     except FileNotFoundError:
         logger.warning("Model not found at startup; train before scoring")
         _model = None
-        _explainer = None
         _model_card = None
 
 
@@ -37,9 +33,11 @@ def get_cached_model():
 
 
 def get_cached_explainer():
+    global _explainer
     if _explainer is None:
+        import shap
         model = get_cached_model()
-        return shap.TreeExplainer(model)
+        _explainer = shap.TreeExplainer(model)
     return _explainer
 
 

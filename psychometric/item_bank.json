@@ -13,8 +13,20 @@
       "construct": "conscientiousness",
       "type": "likert",
       "consistency_pair": "con_2",
-      "options": ["1", "2", "3", "4", "5"],
-      "scoring_key": {"1": 0.0, "2": 0.25, "3": 0.5, "4": 0.75, "5": 1.0},
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "scoring_key": {
+        "1": 0.0,
+        "2": 0.25,
+        "3": 0.5,
+        "4": 0.75,
+        "5": 1.0
+      },
       "text": {
         "en": "I pay my bills on time even when money is tight.",
         "hi": "पैसे कम होने पर भी मैं अपने बिल समय पर भरता/भरती हूँ।",
@@ -26,8 +38,20 @@
       "construct": "conscientiousness",
       "type": "likert",
       "consistency_pair": "con_1",
-      "options": ["1", "2", "3", "4", "5"],
-      "scoring_key": {"1": 0.0, "2": 0.25, "3": 0.5, "4": 0.75, "5": 1.0},
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "scoring_key": {
+        "1": 0.0,
+        "2": 0.25,
+        "3": 0.5,
+        "4": 0.75,
+        "5": 1.0
+      },
       "text": {
         "en": "I keep track of my expenses and plan ahead.",
         "hi": "मैं अपने खर्चों का हिसाब रखता/रखती हूँ और पहले से योजना बनाता/बनाती हूँ।",
@@ -38,8 +62,20 @@
       "id": "loc_1",
       "construct": "locus_of_control",
       "type": "likert",
-      "options": ["1", "2", "3", "4", "5"],
-      "scoring_key": {"1": 0.0, "2": 0.25, "3": 0.5, "4": 0.75, "5": 1.0},
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "scoring_key": {
+        "1": 0.0,
+        "2": 0.25,
+        "3": 0.5,
+        "4": 0.75,
+        "5": 1.0
+      },
       "text": {
         "en": "My financial situation depends mostly on my own actions.",
         "hi": "मेरी आर्थिक स्थिति ज़्यादातर मेरे अपने कार्यों पर निर्भर करती है।",
@@ -50,8 +86,20 @@
       "id": "loc_2",
       "construct": "locus_of_control",
       "type": "likert",
-      "options": ["1", "2", "3", "4", "5"],
-      "scoring_key": {"1": 1.0, "2": 0.75, "3": 0.5, "4": 0.25, "5": 0.0},
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "scoring_key": {
+        "1": 1.0,
+        "2": 0.75,
+        "3": 0.5,
+        "4": 0.25,
+        "5": 0.0
+      },
       "text": {
         "en": "Luck plays a bigger role in my finances than my efforts.",
         "hi": "मेरे वित्त में मेरी मेहनत से ज़्यादा भाग्य की भूमिका होती है।",
@@ -62,8 +110,20 @@
       "id": "fse_1",
       "construct": "financial_self_efficacy",
       "type": "likert",
-      "options": ["1", "2", "3", "4", "5"],
-      "scoring_key": {"1": 0.0, "2": 0.25, "3": 0.5, "4": 0.75, "5": 1.0},
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "scoring_key": {
+        "1": 0.0,
+        "2": 0.25,
+        "3": 0.5,
+        "4": 0.75,
+        "5": 1.0
+      },
       "text": {
         "en": "I feel confident managing my monthly budget.",
         "hi": "मुझे अपने मासिक बजट को संभालने में विश्वास है।",
@@ -74,8 +134,20 @@
       "id": "fse_2",
       "construct": "financial_self_efficacy",
       "type": "likert",
-      "options": ["1", "2", "3", "4", "5"],
-      "scoring_key": {"1": 0.0, "2": 0.25, "3": 0.5, "4": 0.75, "5": 1.0},
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "scoring_key": {
+        "1": 0.0,
+        "2": 0.25,
+        "3": 0.5,
+        "4": 0.75,
+        "5": 1.0
+      },
       "text": {
         "en": "I know how to save money even with a small income.",
         "hi": "कम आमदनी होने पर भी मुझे पैसे बचाने का तरीका पता है।",
@@ -86,8 +158,20 @@
       "id": "pb_1",
       "construct": "present_bias",
       "type": "likert",
-      "options": ["1", "2", "3", "4", "5"],
-      "scoring_key": {"1": 1.0, "2": 0.75, "3": 0.5, "4": 0.25, "5": 0.0},
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "scoring_key": {
+        "1": 1.0,
+        "2": 0.75,
+        "3": 0.5,
+        "4": 0.25,
+        "5": 0.0
+      },
       "text": {
         "en": "I often spend on things I want before paying necessary bills.",
         "hi": "मैं अक्सर ज़रूरी बिल भरने से पहले अपनी इच्छाओं पर खर्च कर लेता/लेती हूँ।",
@@ -99,8 +183,20 @@
       "construct": "present_bias",
       "type": "likert",
       "consistency_pair": "pb_1",
-      "options": ["1", "2", "3", "4", "5"],
-      "scoring_key": {"1": 1.0, "2": 0.75, "3": 0.5, "4": 0.25, "5": 0.0},
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "scoring_key": {
+        "1": 1.0,
+        "2": 0.75,
+        "3": 0.5,
+        "4": 0.25,
+        "5": 0.0
+      },
       "text": {
         "en": "I find it hard to delay a purchase even if I cannot afford it now.",
         "hi": "अभी खर्च नहीं कर सकता/सकती होने पर भी मुझे खरीदारी टालना मुश्किल लगता है।",
@@ -111,8 +207,20 @@
       "id": "debt_1",
       "construct": "debt_attitude",
       "type": "likert",
-      "options": ["1", "2", "3", "4", "5"],
-      "scoring_key": {"1": 0.0, "2": 0.25, "3": 0.5, "4": 0.75, "5": 1.0},
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "scoring_key": {
+        "1": 0.0,
+        "2": 0.25,
+        "3": 0.5,
+        "4": 0.75,
+        "5": 1.0
+      },
       "text": {
         "en": "I believe repaying loans on time is a personal responsibility.",
         "hi": "मेरा मानना है कि समय पर ऋण चुकाना व्यक्तिगत ज़िम्मेदारी है।",
@@ -123,8 +231,20 @@
       "id": "debt_2",
       "construct": "debt_attitude",
       "type": "likert",
-      "options": ["1", "2", "3", "4", "5"],
-      "scoring_key": {"1": 1.0, "2": 0.75, "3": 0.5, "4": 0.25, "5": 0.0},
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "scoring_key": {
+        "1": 1.0,
+        "2": 0.75,
+        "3": 0.5,
+        "4": 0.25,
+        "5": 0.0
+      },
       "text": {
         "en": "Missing a loan payment is not a big deal if you pay eventually.",
         "hi": "अगर बाद में भर दें तो ऋण की किस्त छूट जाना कोई बड़ी बात नहीं है।",
@@ -138,15 +258,33 @@
       "options": [],
       "scoring_key": {},
       "text": {
-        "en": "When money is tight, how do you decide what to pay first? (1-2 sentences)",
-        "hi": "पैसे कम होने पर आप पहले क्या भरने का फैसला कैसे करते हैं? (1-2 वाक्य)",
-        "bn": "টাকা কম থাকলে আপনি প্রথমে কী পরিশোধ করবেন তা কীভাবে ঠিক করেন? (১-২ বাক্য)"
+        "en": "When money is tight, how do you decide what to pay first? (1 or 2)",
+        "hi": "पैसे कम होने पर आप पहले क्या भरने का फैसला कैसे करते हैं? (1 या 2)",
+        "bn": "টাকা কম থাকলে আপনি প্রথমে কী পরিশোধ করবেন তা কীভাবে ঠিক করেন? (१ বা २)"
       }
     }
   ],
   "likert_labels": {
-    "en": ["Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree"],
-    "hi": ["पूरी तरह असहमत", "असहमत", "तटस्थ", "सहमत", "पूरी तरह सहमत"],
-    "bn": ["সম্পূর্ণ অসম্মত", "অসম্মত", "নিরপেক্ষ", "সম্মত", "সম্পূর্ণ সম্মত"]
+    "en": [
+      "Strongly disagree",
+      "Disagree",
+      "Neutral",
+      "Agree",
+      "Strongly agree"
+    ],
+    "hi": [
+      "पूरी तरह असहमत",
+      "असहमत",
+      "तटस्थ",
+      "सहमत",
+      "पूरी तरह सहमत"
+    ],
+    "bn": [
+      "সম্পূর্ণ অসম্মত",
+      "অসম্মত",
+      "নিরপেক্ষ",
+      "সম্মত",
+      "সম্পূর্ণ সম্মত"
+    ]
   }
 }
