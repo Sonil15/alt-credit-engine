@@ -374,7 +374,7 @@
         });
         if (!resp.ok) throw new Error((await resp.json()).detail || 'Revoke failed');
         btn.textContent = 'Consent Revoked';
-        privacySuccess('Consent revoked. No further data will be shared with UCO Bank.');
+        privacySuccess('Consent revoked. No further data will be shared.');
       } catch (err) {
         privacyError('Revocation failed: ' + err.message);
         btn.disabled = false; btn.textContent = 'Revoke Consent';

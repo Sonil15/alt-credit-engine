@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Alt-Credit Engine",
-    description="Privacy-preserving alternative credit scoring API for UCO Bank hackathon",
+    description="Privacy-preserving alternative credit scoring API for thin-file borrowers",
     version="1.0.0",
     lifespan=lifespan,
 )

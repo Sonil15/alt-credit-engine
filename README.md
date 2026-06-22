@@ -1,6 +1,6 @@
 # Alt-Credit Engine
 
-Privacy-preserving alternate credit scoring system for thin-file borrowers in India. Built for the **UCO Bank hackathon** — ingests alternative data (telecom, e-commerce, geolocation, cashflow, psychometric survey), encrypts it at rest, extracts ML features, and produces a **300–900 credit score** with SHAP explainability, adverse-action reason codes, five-pillar sub-scores, risk-based lending terms, and portfolio fairness monitoring.
+Privacy-preserving alternate credit scoring system for thin-file borrowers in India. Ingests alternative data (telecom, e-commerce, geolocation, cashflow, psychometric survey), encrypts it at rest, extracts ML features, and produces a **300–900 credit score** with SHAP explainability, adverse-action reason codes, five-pillar sub-scores, risk-based lending terms, and portfolio fairness monitoring.
 
 ## Architecture
 

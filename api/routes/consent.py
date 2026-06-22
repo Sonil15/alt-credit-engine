@@ -40,7 +40,7 @@ _user_consent_map: dict[str, str] = {}        # user_id -> consent_id
 _erasure_requests: dict[str, dict] = {}       # user_id -> erasure record
 
 CONSENT_SCOPES = ["telecom", "ecommerce", "geo", "cashflow", "survey"]
-DATA_FIDUCIARY = "UCO Bank — Alt-Credit Engine (Demo AA)"
+DATA_FIDUCIARY = "Alt-Credit Engine (Demo AA)"
 CONSENT_PURPOSE = "Alternate creditworthiness assessment for thin-file loan origination"
 CONSENT_TTL_HOURS = 24
 

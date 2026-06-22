@@ -118,7 +118,7 @@
     </div>
     <div class="header">
       <h1>RBI Account Aggregator Consent</h1>
-      <p>Grant consent to UCO Bank for alternate credit assessment</p>
+      <p>Grant consent for alternate credit assessment</p>
     </div>
     <div class="content">
       <div class="progress">
@@ -130,7 +130,7 @@
       <!-- Step 1: Scope selection + disclosure -->
       <div class="step active" id="step1">
         <p style="font-size:13px;color:#64748b;margin-bottom:12px;line-height:1.5;">
-          <strong style="color:#94a3b8;">Data Fiduciary:</strong> UCO Bank ·
+          <strong style="color:#94a3b8;">Data Fiduciary:</strong> Alt-Credit Engine ·
           <strong style="color:#94a3b8;">Purpose:</strong> Thin-file credit assessment<br>
           <strong style="color:#94a3b8;">Framework:</strong> RBI Account Aggregator ·
           <strong style="color:#94a3b8;">Expires:</strong> 24 hours ·
@@ -332,7 +332,7 @@
           body: JSON.stringify(body),
         });
         if (!resp.ok) throw new Error((await resp.json()).detail || 'Revoke failed');
-        showSuccess('Consent revoked. No further data will be shared with UCO Bank.');
+        showSuccess('Consent revoked. No further data will be shared.');
         await loadStatus();
       } catch (err) {
         showError('Revocation failed: ' + err.message);
