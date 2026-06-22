@@ -1,14 +1,22 @@
-"""Log-odds to points scorecard with PDO calibration."""
+"""Log-odds to points scorecard with PDO calibration.
+
+The headline score is a deterministic PDO transform of the model's probability of
+default. Explainability points are derived from the model's *own* SHAP
+contributions (which live in log-odds space) using the same PDO factor, so the
+per-feature breakdown reconciles to the score:
+
+    credit_score ≈ base_points + Σ feature_points          (before clamping)
+
+This replaces the previous hand-tuned weight table, which never reconciled with
+the CatBoost-driven score.
+"""
 
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
-import pandas as pd
-
-from core.json_utils import safe_float
 
 # Calibrated for 300-900 range: base score 600 at 50:1 odds, PDO=50
 BASE_SCORE = 600
@@ -17,27 +25,9 @@ PDO = 50  # points to double the odds
 SCORE_MIN = 300
 SCORE_MAX = 900
 
-# Factor -> points per unit (WOE-style linear scaling for demo scorecard)
-FACTOR_WEIGHTS: dict[str, float] = {
-    "avg_days_late": -8.0,
-    "missed_payments_count": -25.0,
-    "necessity_ratio": 40.0,
-    "avg_merchant_rating": 15.0,
-    "monthly_spend_volatility": -0.002,
-    "spatial_variance_score": -0.5,
-    "anchor_count": 5.0,
-    "monthly_income_mean": 0.0008,
-    "monthly_expense_mean": -0.0004,
-    "cashflow_volatility": -0.001,
-    "conscientiousness": 45.0,
-    "locus_of_control": 40.0,
-    "financial_self_efficacy": 35.0,
-    "present_bias": -50.0,
-    "debt_attitude": 40.0,
-    "response_validity": 30.0,
-    "resilience_coefficient": 60.0,
-    "is_stationary": 20.0,
-}
+# Points per unit of log-odds, and the offset that anchors the band.
+PDO_FACTOR = PDO / math.log(2)
+SCORE_OFFSET = BASE_SCORE - PDO_FACTOR * math.log(BASE_ODDS)
 
 
 @dataclass
@@ -45,7 +35,8 @@ class ScorecardResult:
     credit_score: int
     probability_of_default: float
     base_score: int
-    factor_points: dict[str, float]
+    base_points: float
+    factor_points: dict[str, float] = field(default_factory=dict)
 
 
 def _clamp_score(score: float) -> int:
@@ -62,38 +53,24 @@ def log_odds_to_pd(log_odds: float) -> float:
 
 
 def pd_to_credit_score(probability_of_default: float) -> int:
-    """Map PD to credit score using PDO scorecard formula."""
-    factor = PDO / math.log(2)
-    offset = BASE_SCORE - factor * math.log(BASE_ODDS)
+    """Map PD to credit score using the PDO scorecard formula."""
     log_odds = pd_to_log_odds(probability_of_default)
-    score = offset - factor * log_odds
-    return _clamp_score(score)
+    return _clamp_score(SCORE_OFFSET - PDO_FACTOR * log_odds)
 
 
-def compute_factor_points(row: pd.Series, feature_names: list[str] | None = None) -> dict[str, float]:
-    """Compute per-factor point contributions for explainability."""
-    names = feature_names or list(FACTOR_WEIGHTS.keys())
-    points: dict[str, float] = {}
-    for name in names:
-        weight = FACTOR_WEIGHTS.get(name, 0.0)
-        value = safe_float(row.get(name, 0.0))
-        points[name] = safe_float(round(weight * value, 2))
-    return points
+def shap_to_points(shap_value: float) -> float:
+    """Translate one SHAP log-odds contribution into credit-score points.
+
+    Positive SHAP raises default log-odds, which *lowers* the score, hence the
+    sign flip. Summed over all features (plus base_points) this reconstructs the
+    score up to the 300-900 clamp.
+    """
+    return -PDO_FACTOR * float(shap_value)
 
 
-def score_from_pd_and_features(
-    probability_of_default: float,
-    feature_row: pd.Series,
-) -> ScorecardResult:
-    """Build full scorecard result with factor-level point breakdown."""
-    credit_score = pd_to_credit_score(probability_of_default)
-    factor_points = compute_factor_points(feature_row)
-    return ScorecardResult(
-        credit_score=credit_score,
-        probability_of_default=probability_of_default,
-        base_score=BASE_SCORE,
-        factor_points=factor_points,
-    )
+def expected_value_to_base_points(expected_value: float) -> float:
+    """Score the model would assign at its average prediction (SHAP base value)."""
+    return SCORE_OFFSET - PDO_FACTOR * float(expected_value)
 
 
 def population_stats(scores: list[int]) -> dict[str, float]:

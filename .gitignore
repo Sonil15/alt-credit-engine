@@ -13,7 +13,15 @@ build/
 .pytest_cache/
 .mypy_cache/
 postgres_data/
-synthetic_data/mock_data_100_users.json
 catboost_info/
-models_ai/artifacts/
 .DS_Store
+
+# Runtime SQLite database (created + self-seeded on startup)
+*.db
+alt_credit.db
+
+# NOTE: the bundled demo seed data and trained model artifact are intentionally
+# tracked so the engine self-populates on first boot with zero setup:
+#   synthetic_data/mock_data_100_users.json
+#   models_ai/artifacts/catboost_model.cbm
+#   models_ai/artifacts/model_card.json

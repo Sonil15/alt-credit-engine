@@ -1,0 +1,121 @@
+"""Risk-based lending recommendation derived from PD + score.
+
+Turns a credit decision into actionable terms a loan officer can act on:
+an eligible principal, a risk-priced interest rate, a tenure, and the resulting
+EMI. Repayment capacity uses the borrower's observed monthly income (or
+cash-flow proxy for MSMEs); pricing follows standard risk-based pricing (base
+rate + a premium proportional to probability of default).
+"""
+
+from __future__ import annotations
+
+import math
+
+import pandas as pd
+
+from core.json_utils import safe_float
+
+# Annual interest-rate band (percent).
+BASE_RATE = 11.0
+MAX_RATE = 26.0
+RISK_SPREAD = 20.0  # premium fully applied as PD -> 1
+
+# Fixed-obligation-to-income ratio: the max share of monthly income allowed to
+# service the new EMI, tightened as default risk rises.
+MAX_FOIR = 0.45
+MIN_FOIR = 0.10
+
+# MSME cash-flow credits understate true turnover; scale repayment capacity up.
+MSME_CAPACITY_MULTIPLIER = 1.5
+
+
+def _round_to(value: float, step: int) -> float:
+    if value <= 0:
+        return 0.0
+    return float(int(round(value / step)) * step)
+
+
+def interest_rate_for_pd(pd_value: float) -> float:
+    rate = BASE_RATE + RISK_SPREAD * max(0.0, min(1.0, pd_value))
+    return round(max(BASE_RATE, min(MAX_RATE, rate)), 2)
+
+
+def tenure_for_score(credit_score: int) -> int:
+    if credit_score >= 750:
+        return 36
+    if credit_score >= 650:
+        return 24
+    if credit_score >= 550:
+        return 18
+    return 12
+
+
+def _emi(principal: float, annual_rate_pct: float, months: int) -> float:
+    if principal <= 0 or months <= 0:
+        return 0.0
+    r = annual_rate_pct / 100.0 / 12.0
+    if r <= 0:
+        return principal / months
+    factor = (1 + r) ** months
+    return principal * r * factor / (factor - 1)
+
+
+def _principal_from_emi(emi: float, annual_rate_pct: float, months: int) -> float:
+    if emi <= 0 or months <= 0:
+        return 0.0
+    r = annual_rate_pct / 100.0 / 12.0
+    if r <= 0:
+        return emi * months
+    factor = (1 + r) ** months
+    return emi * (factor - 1) / (r * factor)
+
+
+def recommend_terms(
+    probability_of_default: float,
+    credit_score: int,
+    decision: str,
+    row: pd.Series,
+) -> dict:
+    """Recommend loan terms. Returns eligible=False for rejected applicants."""
+    pd_value = max(0.0, min(1.0, safe_float(probability_of_default)))
+    monthly_income = safe_float(row.get("monthly_income_mean", 0.0))
+    is_msme = safe_float(row.get("borrower_type", 0.0)) >= 0.5
+    if is_msme:
+        monthly_income *= MSME_CAPACITY_MULTIPLIER
+
+    if decision == "REJECT" or monthly_income <= 0:
+        return {
+            "eligible": False,
+            "max_loan_amount": 0.0,
+            "interest_rate_pct": None,
+            "tenure_months": None,
+            "monthly_emi": 0.0,
+            "borrower_type": "msme" if is_msme else "individual",
+            "rationale": "Does not meet minimum risk/affordability criteria for an offer.",
+        }
+
+    foir = MAX_FOIR * (1.0 - pd_value)
+    foir = max(MIN_FOIR, min(MAX_FOIR, foir))
+    # Reviewed (not auto-approved) applicants get a more conservative offer.
+    if decision == "REVIEW":
+        foir *= 0.7
+
+    affordable_emi = monthly_income * foir
+    rate = interest_rate_for_pd(pd_value)
+    tenure = tenure_for_score(credit_score)
+    principal = _principal_from_emi(affordable_emi, rate, tenure)
+    principal = _round_to(principal, 1000)
+    emi = round(_emi(principal, rate, tenure), 2)
+
+    return {
+        "eligible": True,
+        "max_loan_amount": principal,
+        "interest_rate_pct": rate,
+        "tenure_months": tenure,
+        "monthly_emi": emi,
+        "borrower_type": "msme" if is_msme else "individual",
+        "rationale": (
+            f"Risk-priced at {rate}% p.a. over {tenure} months; EMI capped at "
+            f"{round(foir * 100)}% of assessed monthly income (₹{round(monthly_income):,})."
+        ),
+    }

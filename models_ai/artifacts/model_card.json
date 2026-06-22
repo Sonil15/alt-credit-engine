@@ -1,0 +1,127 @@
+{
+  "model_version": "1.0.0",
+  "model_type": "CatBoostClassifier",
+  "trained_at": "2026-06-16T02:38:41.479799+00:00",
+  "users_trained": 100,
+  "feature_columns": [
+    "avg_days_late",
+    "missed_payments_count",
+    "necessity_ratio",
+    "avg_merchant_rating",
+    "monthly_spend_volatility",
+    "spatial_variance_score",
+    "anchor_count",
+    "monthly_income_mean",
+    "monthly_expense_mean",
+    "cashflow_volatility",
+    "conscientiousness",
+    "locus_of_control",
+    "financial_self_efficacy",
+    "present_bias",
+    "debt_attitude",
+    "response_validity",
+    "resilience_coefficient",
+    "adf_statistic",
+    "adf_pvalue",
+    "is_stationary"
+  ],
+  "metrics": {
+    "auc": 0.9167,
+    "gini": 0.8333,
+    "ks": 0.8889,
+    "accuracy": 0.9,
+    "default_rate": 0.1,
+    "calibration": [
+      {
+        "bin_start": 0.0,
+        "bin_end": 0.1,
+        "predicted_mean": 0.01922154966815574,
+        "observed_rate": 0.0,
+        "count": 13
+      },
+      {
+        "bin_start": 0.1,
+        "bin_end": 0.2,
+        "predicted_mean": 0.18103695008053297,
+        "observed_rate": 0.0,
+        "count": 3
+      },
+      {
+        "bin_start": 0.2,
+        "bin_end": 0.30000000000000004,
+        "predicted_mean": 0.24927577316957839,
+        "observed_rate": 0.5,
+        "count": 2
+      },
+      {
+        "bin_start": 0.30000000000000004,
+        "bin_end": 0.4,
+        "predicted_mean": 0.3745818029612963,
+        "observed_rate": 0.5,
+        "count": 2
+      }
+    ],
+    "confusion": {
+      "labels": [
+        "APPROVE",
+        "REVIEW",
+        "REJECT"
+      ],
+      "matrix": [
+        [
+          16,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          0
+        ]
+      ],
+      "accuracy": 0.8
+    },
+    "roc_curve": {
+      "fpr": [
+        0.0,
+        0.0556,
+        0.0556,
+        0.1111,
+        0.1111,
+        1.0
+      ],
+      "tpr": [
+        0.0,
+        0.0,
+        0.5,
+        0.5,
+        1.0,
+        1.0
+      ]
+    }
+  },
+  "cv_metrics": {
+    "cv_auc_mean": 0.8278,
+    "cv_auc_std": 0.1535,
+    "cv_gini_mean": 0.6556,
+    "cv_ks_mean": 0.7889
+  },
+  "scorecard": {
+    "range": [
+      300,
+      900
+    ],
+    "base_score": 600,
+    "base_odds": 50,
+    "pdo": 50
+  },
+  "decision_thresholds": {
+    "approve_pd_max": 0.25,
+    "review_pd_max": 0.583
+  }
+}

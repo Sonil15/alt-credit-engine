@@ -7,11 +7,13 @@ from core.config import get_settings
 
 settings = get_settings()
 
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=False,
-    pool_pre_ping=True,
-)
+# SQLite needs a longer busy timeout so brief write contention (e.g. scoring the
+# whole portfolio) waits instead of raising "database is locked".
+_engine_kwargs: dict = {"echo": False, "pool_pre_ping": True}
+if settings.using_sqlite:
+    _engine_kwargs["connect_args"] = {"timeout": 30}
+
+engine = create_async_engine(settings.DATABASE_URL, **_engine_kwargs)
 
 AsyncSessionLocal = async_sessionmaker(
     engine,

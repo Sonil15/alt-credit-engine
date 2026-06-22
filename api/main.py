@@ -5,6 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes import assessment, consent, frontend, ingestion, scoring
+from core.bootstrap import ensure_seeded
+from core.config import get_settings
 from core.database import init_db
 from core.model_cache import get_model_version, init_model_cache
 from models.pydantic_schemas import HealthResponse
@@ -17,6 +19,11 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("Initializing database tables...")
     await init_db()
+    if get_settings().seed_on_startup_enabled:
+        try:
+            await ensure_seeded()
+        except Exception:
+            logger.exception("Startup seeding failed (continuing without seed data)")
     init_model_cache()
     logger.info("Alt-Credit Engine ready (model=%s).", get_model_version())
     yield

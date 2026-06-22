@@ -24,14 +24,32 @@ class Settings:
     CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")
     AUTO_SEED_ON_STARTUP: str = os.getenv("AUTO_SEED_ON_STARTUP", "false")
 
+    # Zero-friction demo: seed mock borrowers into an empty DB on startup so the
+    # dashboard is populated the instant the server boots. Defaults to true.
+    SEED_ON_STARTUP: str = os.getenv("SEED_ON_STARTUP", "true")
+
+    # Storage backend. Defaults to Postgres (the deployed/Render configuration).
+    # Set USE_SQLITE=true for an optional zero-dependency local run (a SQLite
+    # file, no Docker/Postgres needed) — useful for an offline laptop demo.
+    # A provided DATABASE_URL always takes precedence over both.
+    USE_SQLITE: str = os.getenv("USE_SQLITE", "false")
+    SQLITE_PATH: str = os.getenv("SQLITE_PATH", "./alt_credit.db")
+
     # Single connection string (e.g. Render/Railway/Fly provide this). Takes
-    # precedence over the individual POSTGRES_* vars when set.
+    # precedence over USE_SQLITE and the individual POSTGRES_* vars when set.
     DATABASE_URL_ENV: str = os.getenv("DATABASE_URL", "")
+
+    @property
+    def using_sqlite(self) -> bool:
+        url = self.DATABASE_URL
+        return url.startswith("sqlite")
 
     @property
     def DATABASE_URL(self) -> str:
         if self.DATABASE_URL_ENV:
             return self._normalize_async_url(self.DATABASE_URL_ENV)
+        if self.USE_SQLITE.strip().lower() in {"1", "true", "yes"}:
+            return f"sqlite+aiosqlite:///{self.SQLITE_PATH}"
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
@@ -47,7 +65,16 @@ class Settings:
             return url.replace("postgres://", "postgresql+asyncpg://", 1)
         if url.startswith("postgresql://"):
             return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        # Local SQLite, sync-style -> async driver.
+        if url.startswith("sqlite+aiosqlite://"):
+            return url
+        if url.startswith("sqlite://"):
+            return url.replace("sqlite://", "sqlite+aiosqlite://", 1)
         return url
+
+    @property
+    def seed_on_startup_enabled(self) -> bool:
+        return self.SEED_ON_STARTUP.strip().lower() in {"1", "true", "yes"}
 
     @property
     def cors_origins_list(self) -> list[str]:

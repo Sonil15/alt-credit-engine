@@ -16,7 +16,9 @@ def safe_float(value: Any, default: float = 0.0) -> float:
     if isinstance(value, int):
         return float(value)
     if isinstance(value, float):
-        return value if math.isfinite(value) else default
+        # numpy floats subclass float; coerce to a plain float so strict JSON
+        # encoders (json.dumps) accept the result.
+        return float(value) if math.isfinite(value) else default
     if isinstance(value, Real):
         try:
             number = float(value)

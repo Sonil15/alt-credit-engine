@@ -191,8 +191,9 @@ class HealthResponse(BaseModel):
 class ShapDriver(BaseModel):
     feature: str
     shap_value: float
+    points: float = 0.0
 
-    @field_validator("shap_value", mode="before")
+    @field_validator("shap_value", "points", mode="before")
     @classmethod
     def _sanitize_shap_value(cls, value: Any) -> float:
         return safe_float(value)
@@ -208,7 +209,13 @@ class CreditScoreResponse(BaseModel):
     shap_drivers: list[ShapDriver]
     reason_codes: list[str] = []
     reason_codes_text: str = ""
+    base_points: float = 0.0
     factor_points: dict[str, float] = {}
+    pillar_scores: list[dict[str, Any]] = []
+    confidence: dict[str, Any] = {}
+    confidence_pct: float = 100.0
+    thin_file: bool = False
+    lending: dict[str, Any] = {}
     model_version: str = "unknown"
 
     @field_validator("probability_of_default", mode="before")

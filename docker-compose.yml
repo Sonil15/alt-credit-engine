@@ -27,7 +27,12 @@ services:
       - .env
     environment:
       POSTGRES_HOST: postgres
-      AUTO_SEED_ON_STARTUP: ${AUTO_SEED_ON_STARTUP:-true}
+      # This stack runs against the Postgres service, not the SQLite default.
+      USE_SQLITE: "false"
+      # The app self-seeds on startup (lifespan); keep the legacy entrypoint
+      # seed/train path off to avoid duplicate seeding.
+      SEED_ON_STARTUP: ${SEED_ON_STARTUP:-true}
+      AUTO_SEED_ON_STARTUP: ${AUTO_SEED_ON_STARTUP:-false}
       PORT: 8000
     depends_on:
       postgres:

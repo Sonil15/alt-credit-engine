@@ -4,7 +4,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from convergence.scorecard import compute_factor_points
+from convergence.scorecard import shap_to_points
 from core.json_utils import safe_float, safe_round, sanitize_for_json
 from models.pydantic_schemas import CreditScoreResponse
 
@@ -24,15 +24,9 @@ def test_safe_round_replaces_non_finite_values():
     assert safe_round(np.float64("inf"), 2) == 0.0
 
 
-def test_factor_points_are_json_serializable_with_nan_features():
-    row = pd.Series(
-        {
-            "missed_payments_count": float("nan"),
-            "monthly_income_mean": float("inf"),
-            "resilience_coefficient": 0.8,
-        }
-    )
-    points = compute_factor_points(row)
+def test_shap_points_are_finite_and_serializable():
+    raw_shap = [float("nan"), float("inf"), 0.42, -0.31]
+    points = {f"f{i}": safe_round(shap_to_points(safe_float(v)), 2) for i, v in enumerate(raw_shap)}
     assert all(math.isfinite(value) for value in points.values())
     json.dumps(points, allow_nan=False)
 
