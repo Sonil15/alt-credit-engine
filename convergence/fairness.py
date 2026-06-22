@@ -53,7 +53,11 @@ def compute_fairness_report(scores: list[dict[str, Any]], wide: pd.DataFrame) ->
             "avg_pd": round(float(subset["probability_of_default"].mean()) if total else 0.0, 4),
         }
 
-    rates = [stats["approval_rate"] for stats in group_stats.values() if stats["count"] > 0]
+    rates = [
+        stats["approval_rate"]
+        for group, stats in group_stats.items()
+        if stats["count"] > 0 and group != "unknown"
+    ]
     max_rate = max(rates) if rates else 0.0
     min_rate = min(rates) if rates else 0.0
     di_ratio = round(min_rate / max_rate, 4) if max_rate > 0 else 1.0

@@ -12,6 +12,7 @@ import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence.fairness import compute_fairness_report
+from convergence.feature_meta import build_feature_trace
 from convergence.lending import recommend_terms
 from convergence.pillars import compute_confidence, compute_norm_stats, compute_pillar_scores
 from convergence.reason_codes import format_reason_codes, shap_to_reason_codes
@@ -135,6 +136,7 @@ def _build_payload(
     factor_points = {item["feature"]: item["points"] for item in contributions}
 
     shap_drivers = _top_drivers(contributions)
+    feature_trace = build_feature_trace(user_row, factor_points)
     reason_codes = shap_to_reason_codes(shap_drivers)
     if auto_reject and reject_reason:
         reason_codes.insert(0, reject_reason)
@@ -160,6 +162,7 @@ def _build_payload(
             "reason_codes_text": format_reason_codes(reason_codes),
             "base_points": base_points,
             "factor_points": factor_points,
+            "feature_trace": feature_trace,
             "pillar_scores": pillar_scores,
             "confidence": confidence,
             "confidence_pct": confidence["confidence_pct"],

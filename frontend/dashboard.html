@@ -75,6 +75,39 @@
     .user-chip { display: inline-block; padding: 6px 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; margin: 4px; cursor: pointer; font-family: ui-monospace, monospace; }
     .user-chip:hover { background: #eff6ff; border-color: #93c5fd; }
     .thin-flag { display: inline-block; background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; margin-left: 8px; }
+    /* Signal trace (input -> score linkage) */
+    .trace-sub { font-size: 13px; color: #64748b; margin: 2px 0 14px; }
+    .trace-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .trace-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: #94a3b8; padding: 6px 10px; border-bottom: 1px solid #e2e8f0; }
+    .trace-table td { padding: 9px 10px; border-bottom: 1px solid #f1f5f9; }
+    .trace-src { color: #475569; font-size: 12px; }
+    .trace-val { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .trace-pts { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .trace-pts.up { color: #16a34a; } .trace-pts.down { color: #dc2626; }
+    .trace-toggle { margin-top: 14px; background: none; border: none; color: #2563eb; font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 0; }
+    .src-group { margin-top: 16px; }
+    .src-group h3 { font-size: 13px; color: #334155; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    .src-dot { width: 8px; height: 8px; border-radius: 50%; background: #2563eb; display: inline-block; flex: 0 0 auto; }
+    .src-dot.ecm { background: #d97706; }
+    /* Engine badges (which engine derived the feature) */
+    .eng { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; letter-spacing: .4px; vertical-align: middle; }
+    .eng-ecm { background: #fef3c7; color: #92400e; }
+    .eng-stat { background: #e2e8f0; color: #475569; }
+    /* End-to-end pipeline diagram */
+    .pipeline { display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap; }
+    .pl-stage { display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+    .pl-box { border-radius: 10px; padding: 10px 12px; width: 162px; border: 1px solid #e2e8f0; background: #f8fafc; }
+    .pl-t { font-size: 12px; font-weight: 700; color: #0f172a; }
+    .pl-d { font-size: 10px; color: #64748b; margin-top: 3px; line-height: 1.35; }
+    .pl-v { font-size: 16px; font-weight: 800; margin-top: 7px; }
+    .pl-arrow { color: #94a3b8; font-size: 20px; font-weight: 700; display: flex; align-items: center; }
+    .pl-stat { border-color: #cbd5e1; background: #f1f5f9; }
+    .pl-ecm { border-color: #fcd34d; background: #fffbeb; }
+    .pl-ml { border-color: #a5b4fc; background: #e0e7ff; }
+    .pl-score { border-color: #bfdbfe; background: #eff6ff; }
+    .pl-decision { border-color: #bbf7d0; background: #f0fdf4; }
+    .pl-note { font-size: 12px; color: #64748b; margin-top: 14px; line-height: 1.5; }
+    @media (max-width: 760px) { .pl-arrow { transform: rotate(90deg); margin: 0 auto; } .pl-stage, .pl-box { width: 100%; } }
   </style>
 </head>
 <body>
@@ -176,6 +209,65 @@
         <div class="reason-box" id="reason-codes-box" style="display:none;">
           <strong>Adverse Action Reason Codes:</strong> <span id="reason-codes-text"></span>
         </div>
+      </div>
+
+      <!-- End-to-end decision pipeline -->
+      <div class="chart-card" id="pipeline-card" style="display:none;">
+        <h2>How this score is computed — end-to-end pipeline</h2>
+        <div class="pipeline">
+          <div class="pl-stage">
+            <div class="pl-box pl-data">
+              <div class="pl-t">Alternative Data</div>
+              <div class="pl-d">5 consented sources</div>
+              <div class="pl-v" id="pl-sources" style="color:#0f172a;">—</div>
+            </div>
+          </div>
+          <div class="pl-arrow">→</div>
+          <div class="pl-stage">
+            <div class="pl-box pl-stat">
+              <div class="pl-t">Statistical Extraction</div>
+              <div class="pl-d">Telecom · e-comm · geo · psychometric · cash-flow</div>
+            </div>
+            <div class="pl-box pl-ecm">
+              <div class="pl-t">Econometric Engine</div>
+              <div class="pl-d">ECM + ADF stationarity on cash-flow series</div>
+            </div>
+          </div>
+          <div class="pl-arrow">→</div>
+          <div class="pl-stage">
+            <div class="pl-box pl-ml">
+              <div class="pl-t">ML Model · CatBoost</div>
+              <div class="pl-d">Gradient boosting → probability of default</div>
+              <div class="pl-v pd" id="pl-pd" style="color:#dc2626;">—</div>
+            </div>
+          </div>
+          <div class="pl-arrow">→</div>
+          <div class="pl-stage">
+            <div class="pl-box pl-score">
+              <div class="pl-t">Scorecard · PDO</div>
+              <div class="pl-d">log-odds → 300–900 band + SHAP points</div>
+              <div class="pl-v" id="pl-score" style="color:#2563eb;">—</div>
+            </div>
+          </div>
+          <div class="pl-arrow">→</div>
+          <div class="pl-stage">
+            <div class="pl-box pl-decision">
+              <div class="pl-t">Decision</div>
+              <div class="pl-d">Approve / Review / Reject + loan terms</div>
+              <div class="pl-v" id="pl-decision">—</div>
+            </div>
+          </div>
+        </div>
+        <p class="pl-note">The <span class="eng eng-ecm">Econometric</span> engine and <span class="eng eng-stat">Statistical</span> extraction both produce input features; the <strong>CatBoost ML model</strong> consumes all of them and assigns every point shown in the Signal Trace below.</p>
+      </div>
+
+      <!-- Input data -> score linkage -->
+      <div class="chart-card" id="trace-card" style="display:none;">
+        <h2>Input data → score linkage (Signal Trace)</h2>
+        <p class="trace-sub">Every row is a real value drawn from this borrower's alternative data, tagged with the engine that derived it — <span class="eng eng-ecm">ECM</span> econometric or <span class="eng eng-stat">STAT</span> statistical — and the exact points the ML model gave it. This is the audit trail from raw input to decision.</p>
+        <table class="trace-table" id="trace-top"></table>
+        <button class="trace-toggle" id="trace-toggle" onclick="toggleAllSignals()">▸ Show all signals by data source</button>
+        <div id="trace-all" style="display:none;"></div>
       </div>
     </div>
 
@@ -288,6 +380,8 @@
       renderLending(d.lending||{});
       renderPillars(d.pillar_scores||[]);
       renderShap(d.shap_drivers||[]);
+      renderPipeline(d);
+      renderTrace(d.feature_trace||{});
 
       const rcBox = document.getElementById('reason-codes-box');
       const rcText = d.reason_codes_text || (d.reason_codes||[]).join('; ');
@@ -354,6 +448,80 @@
         return `<div class="driver-row"><span class="name">${d.feature.replace(/_/g,' ')}</span>
           <span class="val ${pts>=0?'up':'down'}">${pts>=0?'+':''}${pts.toFixed(1)} pts</span></div>`;
       }).join('');
+    }
+
+    const fmtSignalValue = s => {
+      const v = s.value ?? 0;
+      switch (s.fmt) {
+        case 'rupee': return fmtINR(v);
+        case 'percent': return (v*100).toFixed(0)+'%';
+        case 'rating': return v.toFixed(2);
+        case 'count': return Math.round(v).toLocaleString('en-IN');
+        case 'days': return v.toFixed(1)+' days';
+        case 'score01': return v.toFixed(2);
+        case 'bool': return v >= 0.5 ? 'Yes' : 'No';
+        default: return v.toFixed(2);
+      }
+    };
+    const ptsClass = p => p>=0 ? 'up' : 'down';
+    const ptsText = p => (p>=0?'+':'') + p.toFixed(1) + ' pts';
+    const engineBadge = e => e==='econometric'
+      ? '<span class="eng eng-ecm">ECM</span>'
+      : '<span class="eng eng-stat">STAT</span>';
+    let signalsExpanded = false;
+
+    function renderPipeline(d) {
+      document.getElementById('pipeline-card').style.display = 'block';
+      const conf = d.confidence || {};
+      const withData = conf.pillars_with_data ?? '—';
+      const total = conf.pillars_total ?? 5;
+      document.getElementById('pl-sources').textContent = `${withData}/${total} active`;
+      document.getElementById('pl-pd').textContent = (d.probability_of_default*100).toFixed(1)+'%';
+      document.getElementById('pl-score').textContent = d.credit_score;
+      const dec = document.getElementById('pl-decision');
+      dec.textContent = d.decision;
+      dec.style.color = d.decision==='APPROVE' ? '#166534' : d.decision==='REVIEW' ? '#854d0e' : '#991b1b';
+    }
+
+    function renderTrace(trace) {
+      const top = trace.top_drivers || [];
+      const bySource = trace.by_source || [];
+      const card = document.getElementById('trace-card');
+      if (!top.length) { card.style.display='none'; return; }
+      card.style.display='block';
+
+      document.getElementById('trace-top').innerHTML =
+        `<tr><th>Data source</th><th>Signal</th><th>Borrower's value</th><th style="text-align:right">Impact</th></tr>` +
+        top.map(s => `<tr>
+          <td class="trace-src">${s.source}</td>
+          <td>${s.label} ${engineBadge(s.engine)}</td>
+          <td class="trace-val">${fmtSignalValue(s)}</td>
+          <td class="trace-pts ${ptsClass(s.points)}">${ptsText(s.points)}</td>
+        </tr>`).join('');
+
+      document.getElementById('trace-all').innerHTML = bySource.map(g => `
+        <div class="src-group">
+          <h3><span class="src-dot ${g.engine==='econometric'?'ecm':''}"></span>${g.source} ${engineBadge(g.engine)}</h3>
+          <table class="trace-table">
+            ${g.signals.map(s => `<tr>
+              <td>${s.label}</td>
+              <td class="trace-val">${fmtSignalValue(s)}</td>
+              <td class="trace-pts ${ptsClass(s.points)}">${ptsText(s.points)}</td>
+            </tr>`).join('')}
+          </table>
+        </div>`).join('');
+
+      // Collapse the full lineage each time a new borrower is rendered.
+      signalsExpanded = false;
+      document.getElementById('trace-all').style.display = 'none';
+      document.getElementById('trace-toggle').textContent = '▸ Show all signals by data source';
+    }
+
+    function toggleAllSignals() {
+      signalsExpanded = !signalsExpanded;
+      document.getElementById('trace-all').style.display = signalsExpanded ? 'block' : 'none';
+      document.getElementById('trace-toggle').textContent =
+        (signalsExpanded ? '▾ Hide' : '▸ Show all') + ' signals by data source';
     }
 
     function showError(msg){ const e=document.getElementById('error-box'); e.textContent=msg; e.style.display='block'; document.getElementById('score-panel').style.display='none'; }
