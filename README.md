@@ -24,7 +24,8 @@ AA Consent Gateway → Ingest API → AES-256 Vault → Preprocessing → ml_fea
 | **Model card** | Holdout AUC, Gini, KS, calibration, CV metrics at `/score/model/card` |
 | **Reason codes** | Plain-language adverse action reasons from SHAP drivers |
 | **Fairness report** | Disparate impact ratio across protected groups |
-| **RBI AA consent** | Account Aggregator-style consent with purpose, expiry, revocation |
+| **RBI AA consent & DPDP rights** | Account Aggregator-style consent with purpose, expiry, revocation; borrower can revoke (by consent ID or user ID) or request full data erasure (DPDP Act 2023 §6/§12); raw PII and ML features deleted on erasure, anonymised `score_decisions` retained 5 years per RBI audit rules; bureau-caveat disclosed at consent time |
+| **Borrower privacy dashboard** | Returning borrowers visit `/consent?user_id=<id>` to see live consent status (ACTIVE/REVOKED), data presence (PRESENT/DELETED), and take action — all without re-authenticating |
 | **Five-pillar sub-scores** | Per-data-source scores (telecom, spending, location, cashflow, psychometric), 0–100, population-normalised — drives the radar chart |
 | **Coherent explainability** | SHAP log-odds contributions converted to score points so the waterfall reconciles to the headline score (`base_points + Σ points ≈ score`) |
 | **Risk-based lending** | Recommends max loan, risk-priced rate, tenure, and EMI per applicant |
@@ -32,7 +33,7 @@ AA Consent Gateway → Ingest API → AES-256 Vault → Preprocessing → ml_fea
 | **Audit trail** | Every decision logged to `score_decisions` table |
 | **Self-seeding startup** | Demo cohort auto-loads into the DB on first boot (idempotent) — no manual seed/load/train; optional SQLite mode for offline laptop demos |
 | **Deployment** | Docker + docker-compose + Railway config |
-| **Multilingual psychometrics** | Agent-guided assessment in EN/HI/BN with deterministic trait scoring + voice support |
+| **Multilingual psychometrics** | Agent-guided assessment in EN/HI/BN with deterministic trait scoring; language is locked after first selection (other buttons hidden); Likert questions use tap-to-select buttons (text input hidden); open-ended questions show the text input; animated processing screen shown while scoring runs |
 
 ## Prerequisites
 
@@ -72,9 +73,10 @@ This is only a convenience for local demos — Postgres remains the default and 
 | URL | Description |
 |-----|-------------|
 | http://localhost:8000/ | Welcome page — dashboard or borrower consent flow |
-| http://localhost:8000/consent | RBI AA consent gateway → psychometric assessment |
-| http://localhost:8000/assessment | Multilingual agentic psychometric chat (EN/HI/BN, voice + text) |
-| http://localhost:8000/dashboard | Bank LOS dashboard with portfolio, pillars radar, model card, fairness, lending terms |
+| http://localhost:8000/consent | RBI AA consent gateway (scope selection + disclosure) → psychometric assessment |
+| http://localhost:8000/consent?user_id=`<id>` | Borrower privacy dashboard — check consent & data status, revoke consent, or request data erasure |
+| http://localhost:8000/assessment | Multilingual agentic psychometric chat (EN/HI/BN, text input); privacy rights panel shown after scoring |
+| http://localhost:8000/dashboard | Bank LOS dashboard with portfolio, pillars radar, model card, fairness, lending terms; spinner shown while scoring |
 | http://localhost:8000/docs | FastAPI Swagger UI |
 | http://localhost:8000/consent/compliance | Regulatory compliance summary |
 
@@ -85,10 +87,12 @@ This is only a convenience for local demos — Postgres remains the default and 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/health` | — | Health check + model version |
-| GET | `/consent/authorize` | — | RBI AA consent authorization |
+| GET | `/consent/authorize?user_id=` | — | RBI AA consent authorization; optional `user_id` links the consent artifact to the borrower for status lookups |
 | POST | `/consent/token` | — | AA token exchange |
-| POST | `/consent/revoke` | — | Revoke consent (DPDP) |
-| GET | `/consent/compliance` | — | Regulatory compliance summary |
+| POST | `/consent/revoke` | — | Revoke consent; accepts `consent_id` or `user_id` (or both) |
+| POST | `/consent/erasure` | — | DPDP right to erasure — deletes `secure_vault`, `ml_features`, `feature_series` for the user; retains anonymised `score_decisions` |
+| GET | `/consent/status/{user_id}` | — | Returns consent status (active/revoked/unknown), data presence, and erasure state for the borrower privacy dashboard |
+| GET | `/consent/compliance` | — | Regulatory compliance summary including borrower rights and bureau caveat |
 | POST | `/ingest/{data_type}` | — | Ingest encrypted payload (`telecom`, `ecommerce`, `geo`, `cashflow`, `survey`) |
 | POST | `/ingest/ground_truth` | API Key | Store generative labels (training only) |
 | GET | `/score/{user_id}` | — | Credit score, pillars, confidence, lending terms, SHAP drivers, reason codes |

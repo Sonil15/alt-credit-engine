@@ -174,12 +174,43 @@ class ConsentTokenResponse(BaseModel):
 
 
 class ConsentRevokeRequest(BaseModel):
-    consent_id: str
+    consent_id: str | None = None
+    user_id: str | None = None
 
 
 class ConsentRevokeResponse(BaseModel):
     consent_id: str
+    user_id: str | None = None
     status: str = "revoked"
+    effective_from: str = ""
+    note: str = "Future data sharing stopped. Previously processed assessment data is unaffected."
+
+
+class ErasureRequest(BaseModel):
+    user_id: str
+    reason: str | None = None
+
+
+class ErasureResponse(BaseModel):
+    user_id: str
+    status: str = "data_deleted"
+    vault_records_deleted: int = 0
+    feature_records_deleted: int = 0
+    audit_records_retained: int = 0
+    note: str = (
+        "Raw PII and derived features deleted. Credit decision records retained for "
+        "5 years per RBI audit requirements (DPDP Act 2023 §17 exemption)."
+    )
+
+
+class ConsentStatusResponse(BaseModel):
+    user_id: str
+    consent_id: str | None = None
+    consent_status: str = "unknown"
+    data_present: bool = True
+    erasure_requested: bool = False
+    erasure_status: str | None = None
+    erasure_timestamp: str | None = None
 
 
 class HealthResponse(BaseModel):

@@ -8,34 +8,19 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      padding: 16px;
+      background: #0f172a; color: #e2e8f0; min-height: 100vh;
+      display: flex; justify-content: center; padding: 16px;
     }
     .phone {
-      width: 100%;
-      max-width: 390px;
-      background: #1e293b;
-      border-radius: 24px;
-      overflow: hidden;
-      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+      width: 100%; max-width: 390px; background: #1e293b; border-radius: 24px;
+      overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);
     }
     .status-bar {
-      background: #0f172a;
-      padding: 12px 20px;
-      font-size: 12px;
-      display: flex;
-      justify-content: space-between;
-      color: #94a3b8;
+      background: #0f172a; padding: 12px 20px; font-size: 12px;
+      display: flex; justify-content: space-between; color: #94a3b8;
     }
-    .header {
-      padding: 24px 20px 16px;
-      text-align: center;
-      border-bottom: 1px solid #334155;
-    }
+    .status-bar a { color: #64748b; text-decoration: none; }
+    .header { padding: 24px 20px 16px; text-align: center; border-bottom: 1px solid #334155; }
     .header h1 { font-size: 20px; font-weight: 700; color: #f8fafc; }
     .header p { font-size: 13px; color: #94a3b8; margin-top: 6px; }
     .content { padding: 20px; }
@@ -43,79 +28,92 @@
     .step.active { display: block; }
     .scope-list { list-style: none; margin: 16px 0; }
     .scope-list li {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px;
-      background: #0f172a;
-      border-radius: 12px;
-      margin-bottom: 8px;
-      font-size: 14px;
+      display: flex; align-items: center; gap: 12px; padding: 12px;
+      background: #0f172a; border-radius: 12px; margin-bottom: 8px; font-size: 14px;
     }
     .scope-list input { width: 18px; height: 18px; accent-color: #3b82f6; }
-    label.field {
-      display: block;
-      font-size: 13px;
-      color: #94a3b8;
-      margin-bottom: 6px;
-      margin-top: 14px;
+    .disclosure {
+      background: #0f172a; border: 1px solid #334155; border-radius: 12px;
+      padding: 14px; margin-top: 16px; font-size: 13px; color: #94a3b8; line-height: 1.6;
     }
-    select, textarea {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #334155;
-      background: #0f172a;
-      color: #f1f5f9;
-      font-size: 14px;
-      font-family: inherit;
+    .disclosure strong { color: #e2e8f0; }
+    .disclosure ul { margin: 8px 0 0 16px; }
+    .disclosure ul li { margin-bottom: 4px; }
+    .disclosure .caveat {
+      margin-top: 10px; padding: 10px; background: #1e293b; border-radius: 8px;
+      border-left: 3px solid #f59e0b; font-size: 12px; color: #fbbf24;
     }
-    textarea { min-height: 100px; resize: vertical; }
     .btn {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 12px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 20px;
-      transition: opacity 0.2s;
+      width: 100%; padding: 14px; border: none; border-radius: 12px;
+      font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 16px;
+      transition: opacity 0.15s;
     }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-primary { background: #3b82f6; color: white; }
-    .btn-success { background: #22c55e; color: white; }
+    .btn-primary:hover:not(:disabled) { background: #2563eb; }
+    .btn-danger { background: #991b1b; color: white; }
+    .btn-danger:hover:not(:disabled) { background: #7f1d1d; }
+    .btn-ghost {
+      background: transparent; color: #94a3b8; border: 1px solid #334155;
+      font-size: 13px; padding: 10px; margin-top: 10px;
+    }
+    .btn-ghost:hover { border-color: #64748b; color: #e2e8f0; }
     .progress { display: flex; gap: 6px; justify-content: center; margin-bottom: 20px; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #334155; }
     .dot.active { background: #3b82f6; }
-    .result {
-      text-align: center;
-      padding: 24px 0;
+
+    /* Privacy dashboard */
+    .status-card {
+      background: #0f172a; border-radius: 14px; padding: 16px; margin-bottom: 14px;
     }
-    .result .score {
-      font-size: 48px;
-      font-weight: 800;
-      color: #22c55e;
-      margin: 12px 0;
+    .status-card .label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; }
+    .status-card .value { font-size: 16px; font-weight: 700; margin-top: 4px; }
+    .pill {
+      display: inline-block; padding: 4px 10px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; margin-top: 6px;
     }
-    .badge {
-      display: inline-block;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 600;
+    .pill-active { background: #14532d; color: #86efac; }
+    .pill-revoked { background: #7f1d1d; color: #fca5a5; }
+    .pill-unknown { background: #334155; color: #94a3b8; }
+    .pill-deleted { background: #7f1d1d; color: #fca5a5; }
+    .pill-present { background: #1e3a5f; color: #93c5fd; }
+    .action-row { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+    .retained-note {
+      font-size: 12px; color: #64748b; margin-top: 14px;
+      border-top: 1px solid #334155; padding-top: 12px; line-height: 1.6;
     }
-    .badge-approve { background: #14532d; color: #86efac; }
-    .badge-review { background: #713f12; color: #fde68a; }
-    .badge-reject { background: #7f1d1d; color: #fca5a5; }
-    .error { color: #f87171; font-size: 13px; margin-top: 10px; }
-    .loading { text-align: center; color: #94a3b8; font-size: 14px; padding: 20px; }
+    .retained-note strong { color: #94a3b8; }
+    .success-banner {
+      background: #14532d; border: 1px solid #166534; color: #86efac;
+      border-radius: 12px; padding: 14px; font-size: 14px; margin-bottom: 14px;
+      display: none;
+    }
+    .error-banner {
+      background: #7f1d1d; border: 1px solid #991b1b; color: #fca5a5;
+      border-radius: 12px; padding: 14px; font-size: 14px; margin-bottom: 14px;
+      display: none;
+    }
+    .confirm-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: none; justify-content: center; align-items: center; z-index: 100;
+    }
+    .confirm-overlay.open { display: flex; }
+    .confirm-box {
+      background: #1e293b; border-radius: 20px; padding: 28px; max-width: 340px; width: 90%;
+      border: 1px solid #334155;
+    }
+    .confirm-box h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+    .confirm-box p { font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 20px; }
+    .confirm-box .row { display: flex; gap: 10px; }
+    .confirm-box .row button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .confirm-box .row .cancel-btn { background: #334155; color: #e2e8f0; }
+    .confirm-box .row .confirm-btn { background: #dc2626; color: white; }
   </style>
 </head>
 <body>
   <div class="phone">
     <div class="status-bar">
-      <a href="/" style="color:#64748b;text-decoration:none;">← Home</a>
+      <a href="/">← Home</a>
       <span>Consent Gateway</span>
     </div>
     <div class="header">
@@ -129,11 +127,14 @@
         <div class="dot" id="dot3"></div>
       </div>
 
-      <!-- Step 1: AA Consent -->
+      <!-- Step 1: Scope selection + disclosure -->
       <div class="step active" id="step1">
         <p style="font-size:13px;color:#64748b;margin-bottom:12px;line-height:1.5;">
-          <strong>Data Fiduciary:</strong> UCO Bank · <strong>Purpose:</strong> Thin-file credit assessment<br>
-          <strong>Framework:</strong> RBI Account Aggregator · <strong>Expires:</strong> 24 hours · <a href="/consent/compliance" style="color:#60a5fa;">Compliance</a>
+          <strong style="color:#94a3b8;">Data Fiduciary:</strong> UCO Bank ·
+          <strong style="color:#94a3b8;">Purpose:</strong> Thin-file credit assessment<br>
+          <strong style="color:#94a3b8;">Framework:</strong> RBI Account Aggregator ·
+          <strong style="color:#94a3b8;">Expires:</strong> 24 hours ·
+          <a href="/consent/compliance" style="color:#60a5fa;">Compliance</a>
         </p>
         <p style="font-size:14px;color:#94a3b8;margin-bottom:8px;">Select FI data scopes to share:</p>
         <ul class="scope-list">
@@ -143,47 +144,251 @@
           <li><input type="checkbox" id="scope-cashflow" checked> Bank cash flow</li>
           <li><input type="checkbox" id="scope-survey" checked> Psychometric survey</li>
         </ul>
-        <button class="btn btn-primary" onclick="goToStep(2)">Continue</button>
+
+        <div class="disclosure">
+          <strong>Your data rights (DPDP Act 2023 &amp; RBI AA Framework)</strong>
+          <ul>
+            <li>You may <strong>revoke this consent</strong> at any time — future data sharing stops immediately.</li>
+            <li>You may <strong>request erasure</strong> of your raw data and derived features.</li>
+            <li>We will always confirm what was deleted and what was retained.</li>
+          </ul>
+          <div class="caveat">
+            <strong>Important limitation:</strong> Credit decisions already shared with credit bureaus
+            (CIBIL, Experian) cannot be recalled — those records are governed by bureau rules,
+            not this consent artifact.
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="grantConsent()">Grant Consent &amp; Continue</button>
       </div>
 
-      <!-- Step 2: Psychometric Assessment -->
+      <!-- Step 2: Start psychometric assessment -->
       <div class="step" id="step2">
         <p style="font-size:14px;color:#94a3b8;margin-bottom:16px;line-height:1.5;">
-          Next, complete a short psychometric assessment in your preferred language (English, Hindi, or Bengali).
-          You can answer by typing or speaking. The agent guides you — scoring uses a fixed, auditable rubric.
+          Consent registered. Next, complete a short psychometric assessment in your preferred
+          language (English, Hindi, or Bengali). You can answer by typing or speaking.
+          The agent guides you — scoring uses a fixed, auditable rubric.
         </p>
+        <p style="font-size:12px;color:#64748b;margin-bottom:4px;">Your consent ID:</p>
+        <p style="font-size:12px;font-family:ui-monospace,monospace;color:#60a5fa;word-break:break-all;margin-bottom:16px;" id="consent-id-display"></p>
         <button class="btn btn-primary" onclick="startAssessment()">Start Psychometric Assessment</button>
+        <button class="btn btn-ghost" onclick="goToPrivacy()">Manage my consent instead</button>
       </div>
 
-      <!-- Step 3: Result -->
+      <!-- Step 3: Privacy / Consent Management -->
       <div class="step" id="step3">
-        <div class="result">
-          <p style="color:#94a3b8;font-size:14px;">Your Alternate Credit Score</p>
-          <div class="score" id="score-display">—</div>
-          <div class="badge badge-approve" id="decision-badge">—</div>
-          <p style="color:#94a3b8;font-size:13px;margin-top:16px;" id="pd-display"></p>
-          <p style="color:#64748b;font-size:12px;margin-top:8px;" id="user-id-display"></p>
-        </div>
-        <button class="btn btn-success" onclick="window.location='/dashboard?user_id=' + userId">View Bank Dashboard</button>
-      </div>
+        <div class="success-banner" id="success-banner"></div>
+        <div class="error-banner" id="error-banner"></div>
 
-      <div class="loading" id="loading" style="display:none;">Processing your data...</div>
+        <div class="status-card">
+          <div class="label">Consent Status</div>
+          <div class="value" id="consent-status-text">Checking…</div>
+          <div id="consent-pill"></div>
+        </div>
+
+        <div class="status-card">
+          <div class="label">Your Data</div>
+          <div class="value" id="data-status-text">Checking…</div>
+          <div id="data-pill"></div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn btn-primary" id="revoke-btn" onclick="doRevoke()" disabled>
+            Revoke Consent
+          </button>
+          <button class="btn btn-danger" id="erase-btn" onclick="confirmErase()" disabled>
+            Request Data Deletion
+          </button>
+        </div>
+
+        <div class="retained-note">
+          <strong>What is always retained</strong> (cannot be erased under DPDP §17 regulatory exemption):<br>
+          Anonymised credit decision records — score, decision band, date — are kept for
+          5 years per RBI audit requirements. No name, phone, or account number is stored in these records.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Erase confirmation overlay -->
+  <div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-box">
+      <h3>Delete all your data?</h3>
+      <p>
+        This will permanently delete your encrypted raw data and all derived ML features.
+        Your anonymised credit decision record will be retained for regulatory audit.<br><br>
+        <strong style="color:#fca5a5;">This cannot be undone.</strong>
+      </p>
+      <div class="row">
+        <button class="cancel-btn" onclick="closeConfirm()">Cancel</button>
+        <button class="confirm-btn" onclick="doErase()">Yes, delete my data</button>
+      </div>
     </div>
   </div>
 
   <script>
-    let userId = crypto.randomUUID();
+    const params = new URLSearchParams(window.location.search);
+    let userId = params.get('user_id') || crypto.randomUUID();
+    let consentId = localStorage.getItem('altcredit_consent_id_' + userId) || null;
 
     function goToStep(n) {
       document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
       document.getElementById('step' + n).classList.add('active');
-      for (let i = 1; i <= 3; i++) {
+      for (let i = 1; i <= 3; i++)
         document.getElementById('dot' + i).classList.toggle('active', i <= n);
+    }
+
+    function goToPrivacy() {
+      goToStep(3);
+      loadStatus();
+    }
+
+    async function grantConsent() {
+      try {
+        const resp = await fetch(`/consent/authorize?user_id=${encodeURIComponent(userId)}`);
+        const data = await resp.json();
+        consentId = data.consent_id;
+        localStorage.setItem('altcredit_consent_id_' + userId, consentId);
+        document.getElementById('consent-id-display').textContent = consentId;
+      } catch (_) {
+        // Non-fatal — assessment still works without a registered consent_id
+        document.getElementById('consent-id-display').textContent = '(offline — not registered)';
       }
+      goToStep(2);
     }
 
     function startAssessment() {
       window.location = '/assessment?user_id=' + userId;
+    }
+
+    // ── Status loading ──────────────────────────────────────────────────────
+    async function loadStatus() {
+      try {
+        const resp = await fetch('/consent/status/' + encodeURIComponent(userId));
+        if (!resp.ok) throw new Error('status unavailable');
+        const s = await resp.json();
+        renderStatus(s);
+      } catch (_) {
+        document.getElementById('consent-status-text').textContent = 'Could not load status';
+        document.getElementById('data-status-text').textContent = 'Could not load status';
+      }
+    }
+
+    function renderStatus(s) {
+      // Consent status
+      const csText = document.getElementById('consent-status-text');
+      const csPill = document.getElementById('consent-pill');
+      const revokeBtn = document.getElementById('revoke-btn');
+
+      if (s.consent_status === 'active') {
+        csText.textContent = 'Active — data sharing is enabled';
+        csPill.innerHTML = '<span class="pill pill-active">ACTIVE</span>';
+        revokeBtn.disabled = false;
+      } else if (s.consent_status === 'revoked') {
+        csText.textContent = 'Revoked — no further data will be shared';
+        csPill.innerHTML = '<span class="pill pill-revoked">REVOKED</span>';
+        revokeBtn.disabled = true;
+        revokeBtn.textContent = 'Consent already revoked';
+      } else {
+        csText.textContent = 'Status unknown (consent registered at assessment time)';
+        csPill.innerHTML = '<span class="pill pill-unknown">UNKNOWN</span>';
+        revokeBtn.disabled = false;
+      }
+
+      // Data status
+      const dsText = document.getElementById('data-status-text');
+      const dsPill = document.getElementById('data-pill');
+      const eraseBtn = document.getElementById('erase-btn');
+
+      if (s.erasure_requested) {
+        const ts = s.erasure_timestamp ? ' on ' + new Date(s.erasure_timestamp).toLocaleDateString('en-IN') : '';
+        dsText.textContent = 'Deleted' + ts + ' — only audit record remains';
+        dsPill.innerHTML = '<span class="pill pill-deleted">DELETED</span>';
+        eraseBtn.disabled = true;
+        eraseBtn.textContent = 'Data already deleted';
+      } else if (s.data_present) {
+        dsText.textContent = 'Your data is stored in encrypted form';
+        dsPill.innerHTML = '<span class="pill pill-present">PRESENT</span>';
+        eraseBtn.disabled = false;
+      } else {
+        dsText.textContent = 'No stored data found for this user ID';
+        dsPill.innerHTML = '<span class="pill pill-unknown">NONE</span>';
+        eraseBtn.disabled = true;
+        eraseBtn.textContent = 'No data to delete';
+      }
+    }
+
+    // ── Revoke ──────────────────────────────────────────────────────────────
+    async function doRevoke() {
+      document.getElementById('revoke-btn').disabled = true;
+      document.getElementById('revoke-btn').textContent = 'Revoking…';
+      try {
+        const body = consentId
+          ? { consent_id: consentId, user_id: userId }
+          : { user_id: userId };
+        const resp = await fetch('/consent/revoke', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!resp.ok) throw new Error((await resp.json()).detail || 'Revoke failed');
+        showSuccess('Consent revoked. No further data will be shared with UCO Bank.');
+        await loadStatus();
+      } catch (err) {
+        showError('Revocation failed: ' + err.message);
+        document.getElementById('revoke-btn').disabled = false;
+        document.getElementById('revoke-btn').textContent = 'Revoke Consent';
+      }
+    }
+
+    // ── Erase ───────────────────────────────────────────────────────────────
+    function confirmErase() {
+      document.getElementById('confirm-overlay').classList.add('open');
+    }
+    function closeConfirm() {
+      document.getElementById('confirm-overlay').classList.remove('open');
+    }
+
+    async function doErase() {
+      closeConfirm();
+      document.getElementById('erase-btn').disabled = true;
+      document.getElementById('erase-btn').textContent = 'Deleting…';
+      try {
+        const resp = await fetch('/consent/erasure', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId }),
+        });
+        if (!resp.ok) throw new Error((await resp.json()).detail || 'Erasure failed');
+        const data = await resp.json();
+        showSuccess(
+          `Data deleted. ${data.vault_records_deleted} raw record(s) and ` +
+          `${data.feature_records_deleted} feature record(s) removed. ` +
+          `${data.audit_records_retained} anonymised decision record(s) retained for regulatory audit.`
+        );
+        await loadStatus();
+      } catch (err) {
+        showError('Erasure failed: ' + err.message);
+        document.getElementById('erase-btn').disabled = false;
+        document.getElementById('erase-btn').textContent = 'Request Data Deletion';
+      }
+    }
+
+    function showSuccess(msg) {
+      const el = document.getElementById('success-banner');
+      el.textContent = msg; el.style.display = 'block';
+      document.getElementById('error-banner').style.display = 'none';
+    }
+    function showError(msg) {
+      const el = document.getElementById('error-banner');
+      el.textContent = msg; el.style.display = 'block';
+      document.getElementById('success-banner').style.display = 'none';
+    }
+
+    // On load: if user_id is in URL (returning borrower), jump straight to privacy dashboard
+    if (params.get('user_id')) {
+      goToStep(3);
+      loadStatus();
     }
   </script>
 </body>

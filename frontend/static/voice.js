@@ -73,15 +73,38 @@ class BrowserVoiceProvider {
     if (!this.recognition) {
       return Promise.reject(new Error("Speech recognition not supported in this browser"));
     }
+    // Re-initialise to avoid "already started" errors on repeated taps
+    this.recognition = this._initRecognition();
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const settle = (fn, val) => { if (!settled) { settled = true; fn(val); } };
+
       this.recognition.lang = LANG_MAP[lang] || LANG_MAP.en;
+      this.recognition.continuous = false;
+      this.recognition.interimResults = false;
+
       this.recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        resolve(transcript.trim());
+        settle(resolve, event.results[0][0].transcript.trim());
       };
-      this.recognition.onerror = (event) => reject(new Error(event.error || "recognition failed"));
-      this.recognition.onend = () => {};
-      this.recognition.start();
+      this.recognition.onerror = (event) => {
+        const raw = event.error || "recognition failed";
+        const msg = raw === "network"
+          ? "network error — mic requires HTTPS or localhost, and microphone permission must be allowed"
+          : raw === "not-allowed"
+          ? "microphone permission denied — allow mic access in your browser settings"
+          : raw === "no-speech"
+          ? "no speech detected — please try again"
+          : raw;
+        settle(reject, new Error(msg));
+      };
+      // onend fires after every session; reject if nothing was resolved yet
+      this.recognition.onend = () => settle(reject, new Error("no speech detected — please try again"));
+
+      try {
+        this.recognition.start();
+      } catch (e) {
+        settle(reject, e);
+      }
     });
   }
 }

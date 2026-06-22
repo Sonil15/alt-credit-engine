@@ -118,6 +118,11 @@
       <button class="secondary" onclick="loadAll()">List All</button>
     </div>
     <div id="error-box" class="error-box" style="display:none;"></div>
+    <div id="loading-indicator" style="display:none;padding:32px;text-align:center;">
+      <div style="display:inline-block;width:36px;height:36px;border-radius:50%;border:4px solid #e2e8f0;border-top-color:#2563eb;animation:spin 0.8s linear infinite;"></div>
+      <p style="margin-top:14px;color:#64748b;font-size:14px;">Scoring borrower profile…</p>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
     <div id="score-panel" style="display:none;">
       <!-- Score hero + decision + lending -->
@@ -233,11 +238,14 @@
       const userId = document.getElementById('user-id-input').value.trim();
       if (!userId) return showError('Enter a borrower ID');
       hideError();
+      document.getElementById('score-panel').style.display = 'none';
+      document.getElementById('loading-indicator').style.display = 'block';
       try {
         const resp = await fetch('/score/'+userId);
         if (!resp.ok) { const e = await resp.json(); throw new Error(e.detail||resp.statusText); }
         renderScore(await resp.json());
       } catch(err) { showError(err.message); }
+      finally { document.getElementById('loading-indicator').style.display = 'none'; }
     }
 
     async function loadAll() {
