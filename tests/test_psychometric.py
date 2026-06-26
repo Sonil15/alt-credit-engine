@@ -16,6 +16,7 @@ from psychometric.session import (
     submit_answer,
     force_timeout_session,
     extend_session,
+    begin_timer,
 )
 
 
@@ -71,6 +72,7 @@ def test_open_ended_extraction_fallback():
 @pytest.mark.asyncio
 async def test_session_time_tracking():
     session = create_session(user_id="test-time-user", language="en")
+    begin_timer(session.session_id)
     assert session.start_time is not None
     assert session.start_time <= time.time()
     assert session.has_extended is False
