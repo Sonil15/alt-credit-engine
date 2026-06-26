@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
@@ -16,9 +17,9 @@ from psychometric.bank import SUPPORTED_LANGUAGES, Item, load_item_bank, load_it
 from psychometric.scoring import compute_trait_scores, format_assessment_payload, score_open_ended_answer
 
 GREETINGS = {
-    "en": "Hello! I'll ask you a few short questions about your financial habits. Please answer honestly.",
-    "hi": "नमस्ते! मैं आपसे आपकी वित्तीय आदतों के बारे में कुछ छोटे प्रश्न पूछूँगा/पूछूँगी। कृपया ईमानदारी से उत्तर दें।",
-    "bn": "নমস্কার! আমি আপনার আর্থিক অভ্যাস সম্পর্কে কয়েকটি ছোট প্রশ্ন করব। অনুগ্রহ করে সৎভাবে উত্তর দিন।",
+    "en": "Hello! As a {cohort}, we have tailored this assessment for you. I'll ask you a few short questions about your financial habits. Please answer honestly.",
+    "hi": "नमस्ते! एक {cohort} के रूप में, हमने यह मूल्यांकन आपके लिए तैयार किया है। मैं आपसे आपकी वित्तीय आदतों के बारे में कुछ छोटे प्रश्न पूछूँगा/पूछूँगी। कृपया ईमानदारी से उत्तर दें।",
+    "bn": "নমস্কার! একজন {cohort} হিসেবে, আমরা আপনার জন্য এই মূল্যায়নটি তৈরি করেছি। আমি আপনার আর্থিক অভ্যাস সম্পর্কে কয়েকটি ছোট প্রশ্ন করব। অনুগ্রহ করে সৎভাবে উত্তর দিন।",
 }
 
 LIKERT_HINT = {
@@ -27,10 +28,22 @@ LIKERT_HINT = {
     "bn": "1 (সম্পূর্ণ অসম্মত) থেকে 5 (সম্পূর্ণ সম্মত) পর্যন্ত সংখ্যা দিয়ে উত্তর দিন।",
 }
 
+FORCED_CHOICE_HINT = {
+    "en": "Reply with A, B, or C to select the statement that describes you best.",
+    "hi": "A, B, या C लिखकर वह कथन चुनें जो आपका सबसे अच्छा वर्णन करता है।",
+    "bn": "আপনার ক্ষেত্রে সবচেয়ে প্রযোজ্য কথাটি বেছে নিতে A, B, অথবা C দিয়ে উত্তর দিন।",
+}
+
 COMPLETION_MSG = {
     "en": "Thank you! Your responses have been recorded securely.",
     "hi": "धन्यवाद! आपके उत्तर सुरक्षित रूप से दर्ज कर लिए गए हैं।",
     "bn": "ধন্যবাদ! আপনার উত্তর নিরাপদে সংরক্ষিত হয়েছে।",
+}
+
+TIMEOUT_MSG = {
+    "en": "Assessment time limit exceeded. Your partial responses have been recorded securely.",
+    "hi": "मूल्यांकन की समय सीमा समाप्त हो गई है। आपके आंशिक उत्तर सुरक्षित रूप से दर्ज कर लिए गए हैं।",
+    "bn": "মূল্যায়নের সময়সীমা অতিক্রম করেছে। আপনার আংশিক প্রতিক্রিয়া নিরাপদে রেকর্ড করা হয়েছে।",
 }
 
 
@@ -40,12 +53,15 @@ class AssessmentSession:
     user_id: str
     language: str
     item_ids: list[str]
+    cohort: str = "Salaried"
     current_index: int = 0
     answers: dict[str, str] = field(default_factory=dict)
     transcript: list[dict[str, Any]] = field(default_factory=list)
     completed: bool = False
     traits: dict[str, float] = field(default_factory=dict)
     awaiting_clarification: str | None = None
+    start_time: float | None = None
+    has_extended: bool = False
 
     @property
     def progress(self) -> float:
@@ -115,29 +131,54 @@ def _render_item(item: Item, language: str) -> dict[str, Any]:
             for i, opt in enumerate(item.options)
         ]
         payload["hint"] = LIKERT_HINT.get(language, LIKERT_HINT["en"])
+    elif item.type == "forced_choice":
+        option_texts_for_lang = item.option_texts.get(language, item.option_texts.get("en", {}))
+        payload["options"] = [
+            {"value": opt, "label": option_texts_for_lang.get(opt, opt)}
+            for opt in item.options
+        ]
+        payload["hint"] = FORCED_CHOICE_HINT.get(language, FORCED_CHOICE_HINT["en"])
     return payload
 
 
-def _validate_likert_answer(item: Item, answer: str) -> tuple[bool, str | None]:
-    normalized = answer.strip()
+def _validate_closed_answer(item: Item, answer: str, language: str) -> tuple[bool, str | None]:
+    normalized = answer.strip().upper()
     if normalized in item.options:
         return True, None
-    if normalized.isdigit() and normalized in item.scoring_key:
-        return True, None
-    return False, LIKERT_HINT.get("en")
+    if item.type == "likert":
+        if normalized.isdigit() and normalized in item.scoring_key:
+            return True, None
+        return False, LIKERT_HINT.get(language, LIKERT_HINT["en"])
+    elif item.type == "forced_choice":
+        return False, FORCED_CHOICE_HINT.get(language, FORCED_CHOICE_HINT["en"])
+    return True, None
 
 
-def create_session(user_id: str | None, language: str) -> AssessmentSession:
+def create_session(user_id: str | None, language: str, cohort: str = "Salaried") -> AssessmentSession:
     lang = language if language in SUPPORTED_LANGUAGES else "en"
     items = load_items()
     session = AssessmentSession(
         session_id=str(uuid.uuid4()),
         user_id=user_id or str(uuid.uuid4()),
         language=lang,
+        cohort=cohort,
         item_ids=[item.id for item in items],
+        start_time=None,
     )
+    # Determine translated cohort string
+    translations = {
+        "Salaried": {"en": "Salaried person", "hi": "वेतनभोगी", "bn": "বেতনভুক্ত ব্যক্তি"},
+        "GigWorker": {"en": "Gig Worker", "hi": "गिग वर्कर", "bn": "গিগ কর্মী"},
+        "Student": {"en": "Student", "hi": "छात्र", "bn": "শিক্ষার্থী"},
+        "Vendor": {"en": "Micro Enterprise / Vendor", "hi": "विक्रेता", "bn": "ক্ষুদ্র বিক্রেতা"},
+        "Farmer": {"en": "Farmer", "hi": "किसान", "bn": "কৃষক"},
+        "Homemaker": {"en": "Homemaker", "hi": "गृहिणी", "bn": "গৃহিণী"},
+    }
+    cohort_translated = translations.get(cohort, translations["Salaried"]).get(lang, cohort)
+    greeting_text = GREETINGS[lang].format(cohort=cohort_translated)
+
     session.transcript.append(
-        {"role": "agent", "type": "greeting", "text": GREETINGS[lang], "language": lang}
+        {"role": "agent", "type": "greeting", "text": greeting_text, "language": lang}
     )
     _sessions[session.session_id] = session
     return session
@@ -153,15 +194,39 @@ def start_response(session: AssessmentSession) -> dict[str, Any]:
 
     first_item = load_items()[0]
     item_payload = _render_item(first_item, session.language)
-    session.transcript.append({"role": "agent", "type": "item", **item_payload})
+
     return {
         "session_id": session.session_id,
         "user_id": session.user_id,
         "language": session.language,
-        "message": GREETINGS[session.language],
+        "message": session.transcript[0]["text"],
         "item": item_payload,
         "progress": session.progress,
         "completed": False,
+    }
+
+
+def begin_timer(session_id: str) -> dict[str, Any]:
+    session = get_session(session_id)
+    if session is None:
+        raise ValueError("Session not found")
+    if session.completed:
+        return _completion_response(session)
+
+    session.start_time = time.time()
+    first_item = load_items()[0]
+    item_payload = _render_item(first_item, session.language)
+    session.transcript.append({"role": "agent", "type": "item", **item_payload})
+    return {
+        "session_id": session.session_id,
+        "user_id": session.user_id,
+        "completed": False,
+        "needs_clarification": False,
+        "message": item_payload["prompt"],
+        "item": item_payload,
+        "progress": session.progress,
+        "traits": session.traits,
+        "survey_payload": None,
     }
 
 
@@ -172,20 +237,35 @@ async def submit_answer(session_id: str, item_id: str, answer: str) -> dict[str,
     if session.completed:
         return _completion_response(session)
 
+    # Backend timeout enforcement
+    settings = get_settings()
+    limit = settings.PSYCHOMETRIC_TIME_LIMIT_SECONDS
+    if session.has_extended:
+        limit += settings.PSYCHOMETRIC_EXTENSION_SECONDS
+
+    buffer = 15  # 15s buffer for network latency
+    if session.start_time is not None:
+        elapsed = time.time() - session.start_time
+        if elapsed > (limit + buffer):
+            return await force_timeout_session(session_id)
+
     item = next((i for i in load_items() if i.id == item_id), None)
     if item is None:
         raise ValueError(f"Unknown item {item_id}")
 
     normalized_answer = answer.strip()
+    if item.type == "forced_choice":
+        normalized_answer = normalized_answer.upper()
+
     session.transcript.append(
         {"role": "user", "item_id": item_id, "text": normalized_answer, "language": session.language}
     )
 
-    if item.type == "likert":
-        valid, hint = _validate_likert_answer(item, normalized_answer)
+    if item.type in ("likert", "forced_choice"):
+        valid, hint = _validate_closed_answer(item, normalized_answer, session.language)
         if not valid:
             session.awaiting_clarification = item_id
-            clarify = hint or LIKERT_HINT[session.language]
+            clarify = hint or (LIKERT_HINT[session.language] if item.type == "likert" else FORCED_CHOICE_HINT[session.language])
             session.transcript.append({"role": "agent", "type": "clarify", "text": clarify})
             return {
                 "session_id": session.session_id,
@@ -236,6 +316,48 @@ async def submit_answer(session_id: str, item_id: str, answer: str) -> dict[str,
     }
 
 
+async def force_timeout_session(session_id: str) -> dict[str, Any]:
+    session = get_session(session_id)
+    if session is None:
+        raise ValueError("Session not found")
+    if session.completed:
+        return _completion_response(session)
+
+    # In case of timeout, extract scores from whatever answers are present.
+    # Unanswered constructs will automatically receive 0.5 default in compute_trait_scores.
+    open_scores: dict[str, float] = {}
+    for item in load_items():
+        if item.type == "open_ended" and item.id in session.answers:
+            open_scores[item.id] = await extract_open_ended_score(
+                session.answers[item.id],
+                session.language,
+            )
+
+    traits = compute_trait_scores(session.answers, open_scores)
+    session.traits = traits
+    session.completed = True
+    session.transcript.append(
+        {
+            "role": "agent",
+            "type": "completion",
+            "text": TIMEOUT_MSG.get(session.language, TIMEOUT_MSG["en"]),
+        }
+    )
+    return _completion_response(session)
+
+
+def extend_session(session_id: str) -> dict[str, Any]:
+    session = get_session(session_id)
+    if session is None:
+        raise ValueError("Session not found")
+    if not session.has_extended:
+        session.has_extended = True
+    return {
+        "session_id": session.session_id,
+        "has_extended": session.has_extended,
+    }
+
+
 async def _finalize_session(session: AssessmentSession) -> dict[str, Any]:
     open_scores: dict[str, float] = {}
     for item in load_items():
@@ -258,22 +380,31 @@ async def _finalize_session(session: AssessmentSession) -> dict[str, Any]:
     return _completion_response(session)
 
 
-def _completion_response(session: AssessmentSession) -> dict[str, Any]:
+def _completion_response(session: AssessmentSession, message: str | None = None) -> dict[str, Any]:
     payload = None
     if session.completed and session.traits:
         payload = format_assessment_payload(
             session.user_id,
             session.language,
+            session.cohort,
             session.answers,
             session.transcript,
             session.traits,
         )
+
+    if message is None:
+        message = COMPLETION_MSG.get(session.language, COMPLETION_MSG["en"])
+        if session.transcript:
+            last = session.transcript[-1]
+            if last.get("role") == "agent" and last.get("type") == "completion" and "text" in last:
+                message = last["text"]
+
     return {
         "session_id": session.session_id,
         "user_id": session.user_id,
         "completed": session.completed,
         "needs_clarification": False,
-        "message": COMPLETION_MSG.get(session.language, COMPLETION_MSG["en"]),
+        "message": message,
         "progress": 1.0,
         "traits": session.traits,
         "survey_payload": payload,
@@ -286,6 +417,7 @@ def build_survey_payload_for_ingest(session: AssessmentSession) -> dict[str, Any
     return format_assessment_payload(
         session.user_id,
         session.language,
+        session.cohort,
         session.answers,
         session.transcript,
         session.traits,

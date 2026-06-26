@@ -1,254 +1,346 @@
 {
-  "version": "1.0",
+  "version": "2.0",
   "constructs": [
     "conscientiousness",
     "locus_of_control",
     "financial_self_efficacy",
     "present_bias",
-    "debt_attitude"
+    "debt_attitude",
+    "risk_tolerance",
+    "delayed_gratification",
+    "honesty",
+    "cognitive_reflection",
+    "resourcefulness"
   ],
   "items": [
     {
-      "id": "con_1",
-      "construct": "conscientiousness",
-      "type": "likert",
-      "consistency_pair": "con_2",
-      "options": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5"
-      ],
+      "id": "fc_1",
+      "type": "forced_choice",
+      "presented_constructs": ["conscientiousness", "locus_of_control", "financial_self_efficacy"],
+      "options": ["A", "B", "C"],
+      "option_texts": {
+        "en": {
+          "A": "I pay my bills on time even when money is tight.",
+          "B": "My financial situation depends mostly on my own actions.",
+          "C": "I feel confident managing my monthly budget."
+        },
+        "hi": {
+          "A": "पैसे कम होने पर भी मैं अपने बिल समय पर भरता/भरती हूँ।",
+          "B": "मेरी आर्थिक स्थिति ज़्यादातर मेरे अपने कार्यों पर निर्भर करती है।",
+          "C": "मुझे अपने मासिक बजट को संभालने में विश्वास है।"
+        },
+        "bn": {
+          "A": "টাকা কম থাকলেও আমি সময়মতো বিল পরিশোধ করি।",
+          "B": "আমার আর্থিক অবস্থা বেশিরভাগই আমার নিজের কাজের উপর নির্ভর করে।",
+          "C": "আমি আমার মাসিক বাজেট পরিচালনায় আত্মবিশ্বাসী।"
+        }
+      },
       "scoring_key": {
-        "1": 0.0,
-        "2": 0.25,
-        "3": 0.5,
-        "4": 0.75,
-        "5": 1.0
+        "A": {"conscientiousness": 1.0, "locus_of_control": 0.0, "financial_self_efficacy": 0.0},
+        "B": {"conscientiousness": 0.0, "locus_of_control": 1.0, "financial_self_efficacy": 0.0},
+        "C": {"conscientiousness": 0.0, "locus_of_control": 0.0, "financial_self_efficacy": 1.0}
       },
       "text": {
-        "en": "I pay my bills on time even when money is tight.",
-        "hi": "पैसे कम होने पर भी मैं अपने बिल समय पर भरता/भरती हूँ।",
-        "bn": "টাকা কম থাকলেও আমি সময়মতো বিল পরিশোধ করি।"
+        "en": "Which statement describes you best?",
+        "hi": "कौन सा कथन आपका सबसे अच्छा वर्णन करता है?",
+        "bn": "কোন কথাটি আপনাকে সবচেয়ে ভালোভাবে বর্ণনা করে?"
       }
     },
     {
-      "id": "con_2",
-      "construct": "conscientiousness",
-      "type": "likert",
-      "consistency_pair": "con_1",
-      "options": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5"
-      ],
+      "id": "fc_2",
+      "type": "forced_choice",
+      "presented_constructs": ["locus_of_control", "financial_self_efficacy", "present_bias"],
+      "options": ["A", "B", "C"],
+      "option_texts": {
+        "en": {
+          "A": "I believe hard work is more important than luck for success.",
+          "B": "I know how to save money even with a small income.",
+          "C": "I prefer saving for the future over spending today."
+        },
+        "hi": {
+          "A": "मेरा मानना है कि सफलता के लिए भाग्य से ज्यादा कड़ी मेहनत महत्वपूर्ण है।",
+          "B": "कम आमदनी होने पर भी मुझे पैसे बचाने का तरीका पता है।",
+          "C": "मैं आज खर्च करने के बजाय भविष्य के लिए बचत करना पसंद करता/करती हूँ।"
+        },
+        "bn": {
+          "A": "আমি বিশ্বাস করি সাফল্যের জন্য ভাগ্যের চেয়ে কঠোর পরিশ্রম বেশি গুরুত্বপূর্ণ।",
+          "B": "কম আয় থাকলেও আমি কীভাবে টাকা সঞ্চয় করতে হয় তা জানি।",
+          "C": "আমি আজ খরচ করার চেয়ে ভবিষ্যতের জন্য সঞ্চয় করতে পছন্দ করি।"
+        }
+      },
       "scoring_key": {
-        "1": 0.0,
-        "2": 0.25,
-        "3": 0.5,
-        "4": 0.75,
-        "5": 1.0
+        "A": {"locus_of_control": 1.0, "financial_self_efficacy": 0.0, "present_bias": 0.0},
+        "B": {"locus_of_control": 0.0, "financial_self_efficacy": 1.0, "present_bias": 0.0},
+        "C": {"locus_of_control": 0.0, "financial_self_efficacy": 0.0, "present_bias": 1.0}
       },
       "text": {
-        "en": "I keep track of my expenses and plan ahead.",
-        "hi": "मैं अपने खर्चों का हिसाब रखता/रखती हूँ और पहले से योजना बनाता/बनाती हूँ।",
-        "bn": "আমি আমার খরচের হিসাব রাখি এবং আগে থেকে পরিকল্পনা করি।"
+        "en": "Which statement describes you best?",
+        "hi": "कौन सा कथन आपका सबसे अच्छा वर्णन करता है?",
+        "bn": "কোন কথাটি আপনাকে সবচেয়ে ভালোভাবে বর্ণনা করে?"
       }
     },
     {
-      "id": "loc_1",
-      "construct": "locus_of_control",
-      "type": "likert",
-      "options": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5"
-      ],
+      "id": "fc_3",
+      "type": "forced_choice",
+      "presented_constructs": ["financial_self_efficacy", "present_bias", "debt_attitude"],
+      "options": ["A", "B", "C"],
+      "option_texts": {
+        "en": {
+          "A": "I am confident in making good financial decisions.",
+          "B": "I easily delay purchases to avoid financial stress later.",
+          "C": "I believe repaying loans on time is a personal responsibility."
+        },
+        "hi": {
+          "A": "मैं अच्छे वित्तीय निर्णय लेने में विश्वास रखता/रखती हूँ।",
+          "B": "मैं बाद में वित्तीय तनाव से बचने के लिए आसानी से खरीदारी टाल देता/देती हूँ।",
+          "C": "मेरा मानना है कि समय पर ऋण चुकाना व्यक्तिगत ज़िम्मेदारी है।"
+        },
+        "bn": {
+          "A": "আমি ভালো আর্থিক সিদ্ধান্ত নিতে আত্মবিশ্বাসী।",
+          "B": "পরে আর্থিক চাপ এড়াতে আমি সহজেই কেনাকাটা পিছিয়ে দিই।",
+          "C": "আমি বিশ্বাস করি সময়মতো ঋণ পরিশোধ করা ব্যক্তিগত দায়িত্ব।"
+        }
+      },
       "scoring_key": {
-        "1": 0.0,
-        "2": 0.25,
-        "3": 0.5,
-        "4": 0.75,
-        "5": 1.0
+        "A": {"financial_self_efficacy": 1.0, "present_bias": 0.0, "debt_attitude": 0.0},
+        "B": {"financial_self_efficacy": 0.0, "present_bias": 1.0, "debt_attitude": 0.0},
+        "C": {"financial_self_efficacy": 0.0, "present_bias": 0.0, "debt_attitude": 1.0}
       },
       "text": {
-        "en": "My financial situation depends mostly on my own actions.",
-        "hi": "मेरी आर्थिक स्थिति ज़्यादातर मेरे अपने कार्यों पर निर्भर करती है।",
-        "bn": "আমার আর্থিক অবস্থা বেশিরভাগই আমার নিজের কাজের উপর নির্ভর করে।"
+        "en": "Which statement describes you best?",
+        "hi": "कौन सा कथन आपका सबसे अच्छा वर्णन करता है?",
+        "bn": "কোন কথাটি আপনাকে সবচেয়ে ভালোভাবে বর্ণনা করে?"
       }
     },
     {
-      "id": "loc_2",
-      "construct": "locus_of_control",
-      "type": "likert",
-      "options": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5"
-      ],
+      "id": "fc_4",
+      "type": "forced_choice",
+      "presented_constructs": ["present_bias", "debt_attitude", "conscientiousness"],
+      "options": ["A", "B", "C"],
+      "option_texts": {
+        "en": {
+          "A": "I prioritize long-term financial security over short-term pleasure.",
+          "B": "I prioritize clearing my debts before any personal leisure spending.",
+          "C": "I keep track of my expenses and plan ahead."
+        },
+        "hi": {
+          "A": "मैं अल्पकालिक सुख के बजाय दीर्घकालिक वित्तीय सुरक्षा को प्राथमिकता देता/देती हूँ।",
+          "B": "मैं किसी भी व्यक्तिगत मनोरंजन खर्च से पहले अपने ऋणों को चुकाने को प्राथमिकता देता/देती हूँ।",
+          "C": "मैं अपने खर्चों का हिसाब रखता/रखती हूँ और पहले से योजना बनाता/बनाती हूँ।"
+        },
+        "bn": {
+          "A": "আমি স্বল্পমেয়াদী আনন্দের চেয়ে দীর্ঘমেয়াদী আর্থিক নিরাপত্তাকে অগ্রাধিকার দিই।",
+          "B": "আমি যেকোনো ব্যক্তিগত অবসরের খরচের আগে আমার ঋণ পরিশোধ করাকে অগ্রাধিকার দিই।",
+          "C": "আমি আমার খরচের হিসাব রাখি এবং আগে থেকে পরিকল্পনা করি।"
+        }
+      },
       "scoring_key": {
-        "1": 1.0,
-        "2": 0.75,
-        "3": 0.5,
-        "4": 0.25,
-        "5": 0.0
+        "A": {"present_bias": 1.0, "debt_attitude": 0.0, "conscientiousness": 0.0},
+        "B": {"present_bias": 0.0, "debt_attitude": 1.0, "conscientiousness": 0.0},
+        "C": {"present_bias": 0.0, "debt_attitude": 0.0, "conscientiousness": 1.0}
       },
       "text": {
-        "en": "Luck plays a bigger role in my finances than my efforts.",
-        "hi": "मेरे वित्त में मेरी मेहनत से ज़्यादा भाग्य की भूमिका होती है।",
-        "bn": "আমার আর্থিক জীবনে পরিশ্রমের চেয়ে ভাগ্যের ভূমিকা বেশি।"
+        "en": "Which statement describes you best?",
+        "hi": "कौन सा कथन आपका सबसे अच्छा वर्णन करता है?",
+        "bn": "কোন কথাটি আপনাকে সবচেয়ে ভালোভাবে বর্ণনা করে?"
       }
     },
     {
-      "id": "fse_1",
-      "construct": "financial_self_efficacy",
-      "type": "likert",
-      "options": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5"
-      ],
+      "id": "fc_5",
+      "type": "forced_choice",
+      "presented_constructs": ["debt_attitude", "conscientiousness", "locus_of_control"],
+      "options": ["A", "B", "C"],
+      "option_texts": {
+        "en": {
+          "A": "I feel it is critical to maintain a clean repayment record.",
+          "B": "I double-check my work to ensure there are no mistakes.",
+          "C": "I can overcome most financial challenges through effort."
+        },
+        "hi": {
+          "A": "मुझे लगता है कि पुनर्भुगतान का साफ रिकॉर्ड बनाए रखना महत्वपूर्ण है।",
+          "B": "मैं कोई गलती न हो, यह सुनिश्चित करने के लिए अपने काम की दोबारा जाँच करता/करती हूँ।",
+          "C": "मैं प्रयास करके अधिकांश वित्तीय चुनौतियों से पार पा सकता/सकती हूँ।"
+        },
+        "bn": {
+          "A": "আমি মনে করি পরিশোধের একটি পরিষ্কার রেকর্ড বজায় রাখা অত্যন্ত জরুরি।",
+          "B": "কোনো ভুল নেই তা নিশ্চিত করতে আমি আমার কাজ দুবার পরীক্ষা করি।",
+          "C": "আমি প্রচেষ্টার মাধ্যমে বেশিরভাগ আর্থিক চ্যালেঞ্জ কাটিয়ে উঠতে পারি।"
+        }
+      },
       "scoring_key": {
-        "1": 0.0,
-        "2": 0.25,
-        "3": 0.5,
-        "4": 0.75,
-        "5": 1.0
+        "A": {"debt_attitude": 1.0, "conscientiousness": 0.0, "locus_of_control": 0.0},
+        "B": {"debt_attitude": 0.0, "conscientiousness": 1.0, "locus_of_control": 0.0},
+        "C": {"debt_attitude": 0.0, "conscientiousness": 0.0, "locus_of_control": 1.0}
       },
       "text": {
-        "en": "I feel confident managing my monthly budget.",
-        "hi": "मुझे अपने मासिक बजट को संभालने में विश्वास है।",
-        "bn": "আমি আমার মাসিক বাজেট পরিচালনায় আত্মবিশ্বাসী।"
+        "en": "Which statement describes you best?",
+        "hi": "कौन सा कथन आपका सबसे अच्छा वर्णन करता है?",
+        "bn": "কোন কথাটি আপনাকে সবচেয়ে ভালোভাবে বর্ণনা করে?"
       }
     },
     {
-      "id": "fse_2",
-      "construct": "financial_self_efficacy",
-      "type": "likert",
-      "options": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5"
-      ],
+      "id": "fc_6",
+      "type": "forced_choice",
+      "presented_constructs": ["risk_tolerance", "delayed_gratification", "honesty"],
+      "options": ["A", "B", "C"],
+      "option_texts": {
+        "en": {
+          "A": "I am willing to take calculated risks to grow my income.",
+          "B": "I am patient and can wait for long-term rewards.",
+          "C": "I believe in absolute transparency about my financial status."
+        },
+        "hi": {
+          "A": "मैं अपनी आय बढ़ाने के लिए सोच-समझकर जोखिम उठाने को तैयार हूँ।",
+          "B": "मैं धैर्यवान हूँ और दीर्घकालिक पुरस्कारों का इंतज़ार कर सकता हूँ।",
+          "C": "मैं अपनी वित्तीय स्थिति के बारे में पूर्ण पारदर्शिता में विश्वास करता हूँ।"
+        },
+        "bn": {
+          "A": "আমি আমার আয় বাড়ানোর জন্য হিসাব করা ঝুঁকি নিতে প্রস্তুত।",
+          "B": "আমি ধৈর্যশীল এবং দীর্ঘমেয়াদী পুরষ্কারের জন্য অপেক্ষা করতে পারি।",
+          "C": "আমি আমার আর্থিক পরিস্থিতি সম্পর্কে সম্পূর্ণ স্বচ্ছতায় বিশ্বাস করি।"
+        }
+      },
       "scoring_key": {
-        "1": 0.0,
-        "2": 0.25,
-        "3": 0.5,
-        "4": 0.75,
-        "5": 1.0
+        "A": {"risk_tolerance": 1.0, "delayed_gratification": 0.0, "honesty": 0.0},
+        "B": {"risk_tolerance": 0.0, "delayed_gratification": 1.0, "honesty": 0.0},
+        "C": {"risk_tolerance": 0.0, "delayed_gratification": 0.0, "honesty": 1.0}
       },
       "text": {
-        "en": "I know how to save money even with a small income.",
-        "hi": "कम आमदनी होने पर भी मुझे पैसे बचाने का तरीका पता है।",
-        "bn": "কম আয় থাকলেও আমি কীভাবে টাকা সঞ্চয় করতে হয় তা জানি।"
+        "en": "Which statement describes you best?",
+        "hi": "कौन सा कथन आपका सबसे अच्छा वर्णन करता है?",
+        "bn": "কোন কথাটি আপনাকে সবচেয়ে ভালোভাবে বর্ণনা করে?"
       }
     },
     {
-      "id": "pb_1",
-      "construct": "present_bias",
-      "type": "likert",
-      "options": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5"
-      ],
+      "id": "fc_7",
+      "type": "forced_choice",
+      "presented_constructs": ["delayed_gratification", "cognitive_reflection", "resourcefulness"],
+      "options": ["A", "B", "C"],
+      "option_texts": {
+        "en": {
+          "A": "I prefer saving for a rainy day rather than buying treats now.",
+          "B": "I think carefully and double-check logical options before deciding.",
+          "C": "I am good at finding creative ways to solve financial problems."
+        },
+        "hi": {
+          "A": "मैं अभी दावतें खरीदने के बजाय बुरे दिनों के लिए बचत करना पसंद करता/करती हूँ।",
+          "B": "मैं निर्णय लेने से पहले सावधानी से सोचता/सोचती हूँ और तार्किक विकल्पों की दोबारा जाँच करता/करती हूँ।",
+          "C": "मैं वित्तीय समस्याओं को हल करने के लिए रचनात्मक तरीके खोजने में अच्छा हूँ।"
+        },
+        "bn": {
+          "A": "আমি এখন ভুরিভোজ করার চেয়ে অসময়ের জন্য সঞ্চয় করতে পছন্দ করি।",
+          "B": "আমি সিদ্ধান্ত নেওয়ার আগে সাবধানে চিন্তা করি এবং যুক্তিযুক্ত বিকল্পগুলি দুবার পরীক্ষা করি।",
+          "C": "আমি আর্থিক সমস্যা সমাধানের জন্য সৃজনশীল উপায় খুঁজে বের করতে পারদর্শী।"
+        }
+      },
       "scoring_key": {
-        "1": 1.0,
-        "2": 0.75,
-        "3": 0.5,
-        "4": 0.25,
-        "5": 0.0
+        "A": {"delayed_gratification": 1.0, "cognitive_reflection": 0.0, "resourcefulness": 0.0},
+        "B": {"delayed_gratification": 0.0, "cognitive_reflection": 1.0, "resourcefulness": 0.0},
+        "C": {"delayed_gratification": 0.0, "cognitive_reflection": 0.0, "resourcefulness": 1.0}
       },
       "text": {
-        "en": "I often spend on things I want before paying necessary bills.",
-        "hi": "मैं अक्सर ज़रूरी बिल भरने से पहले अपनी इच्छाओं पर खर्च कर लेता/लेती हूँ।",
-        "bn": "আমি প্রায়ই প্রয়োজনীয় বিল দেওয়ার আগে ইচ্ছামতো খরচ করে ফেলি।"
+        "en": "Which statement describes you best?",
+        "hi": "कौन सा कथन आपका सबसे अच्छा वर्णन करता है?",
+        "bn": "কোন কথাটি আপনাকে সবচেয়ে ভালোভাবে বর্ণনা করে?"
       }
     },
     {
-      "id": "pb_2",
-      "construct": "present_bias",
-      "type": "likert",
-      "consistency_pair": "pb_1",
-      "options": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5"
-      ],
+      "id": "fc_8",
+      "type": "forced_choice",
+      "presented_constructs": ["honesty", "cognitive_reflection", "risk_tolerance"],
+      "options": ["A", "B", "C"],
+      "option_texts": {
+        "en": {
+          "A": "I would never misrepresent my income on any official forms.",
+          "B": "I enjoy solving puzzles and complex problems systematically.",
+          "C": "I am comfortable starting a new business venture despite high failure rates."
+        },
+        "hi": {
+          "A": "मैं किसी भी आधिकारिक फॉर्म पर अपनी आय को कभी गलत तरीके से प्रस्तुत नहीं करूँगा/करूँगी।",
+          "B": "मुझे पहेलियाँ और जटिल समस्याओं को व्यवस्थित रूप से हल करने में मज़ा आता है।",
+          "C": "विफलता की उच्च दर के बावजूद मैं एक नया व्यावसायिक उद्यम शुरू करने में सहज हूँ।"
+        },
+        "bn": {
+          "A": "আমি কোনো অফিসিয়াল ফরমে আমার আয় কখনো ভুলভাবে উপস্থাপন করব না।",
+          "B": "আমি ধাঁধা এবং জটিল সমস্যার সুশৃঙ্খলভাবে সমাধান করতে পছন্দ করি।",
+          "C": "ব্যর্থতার হার বেশি হওয়া সত্ত্বেও আমি নতুন কোনো ব্যবসা শুরু করতে স্বাচ্ছন্দ্য বোধ করি।"
+        }
+      },
       "scoring_key": {
-        "1": 1.0,
-        "2": 0.75,
-        "3": 0.5,
-        "4": 0.25,
-        "5": 0.0
+        "A": {"honesty": 1.0, "cognitive_reflection": 0.0, "risk_tolerance": 0.0},
+        "B": {"honesty": 0.0, "cognitive_reflection": 1.0, "risk_tolerance": 0.0},
+        "C": {"honesty": 0.0, "cognitive_reflection": 0.0, "risk_tolerance": 1.0}
       },
       "text": {
-        "en": "I find it hard to delay a purchase even if I cannot afford it now.",
-        "hi": "अभी खर्च नहीं कर सकता/सकती होने पर भी मुझे खरीदारी टालना मुश्किल लगता है।",
-        "bn": "এখন সামর্থ্য না থাকলেও কেনাকাটা পিছিয়ে দেওয়া আমার কাছে কঠিন।"
+        "en": "Which statement describes you best?",
+        "hi": "कौन सा कथन आपका सबसे अच्छा वर्णन करता है?",
+        "bn": "কোন কথাটি আপনাকে সবচেয়ে ভালোভাবে বর্ণনা করে?"
       }
     },
     {
-      "id": "debt_1",
-      "construct": "debt_attitude",
-      "type": "likert",
-      "options": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5"
-      ],
+      "id": "fc_9",
+      "type": "forced_choice",
+      "presented_constructs": ["cognitive_reflection", "resourcefulness", "delayed_gratification"],
+      "options": ["A", "B", "C"],
+      "option_texts": {
+        "en": {
+          "A": "I question initial assumptions and look for hidden patterns.",
+          "B": "I can make things work using whatever limited resources are available.",
+          "C": "I delay immediate consumption to invest in my education or tools."
+        },
+        "hi": {
+          "A": "मैं प्रारंभिक मान्यताओं पर सवाल उठाता/उठाती हूँ और छिपे हुए पैटर्न की तलाश करता/करती हूँ।",
+          "B": "जो भी सीमित संसाधन उपलब्ध हैं, उनका उपयोग करके मैं काम पूरा कर सकता/सकती हूँ।",
+          "C": "मैं अपनी शिक्षा या उपकरणों में निवेश करने के लिए तत्काल उपभोग को टालता/टालती हूँ।"
+        },
+        "bn": {
+          "A": "আমি প্রাথমিক অনুমান নিয়ে প্রশ্ন তুলি এবং লুকানো প্যাটার্ন খোঁজার চেষ্টা করি।",
+          "B": "যে কোনো সীমিত সম্পদ উপলব্ধ থাকুক না কেন, তা ব্যবহার করে আমি কাজ চালাতে পারি।",
+          "C": "আমি আমার শিক্ষা বা যন্ত্রপাতিতে বিনিয়োগের জন্য তাৎক্ষণিক ভোগ পিছিয়ে দিই।"
+        }
+      },
       "scoring_key": {
-        "1": 0.0,
-        "2": 0.25,
-        "3": 0.5,
-        "4": 0.75,
-        "5": 1.0
+        "A": {"cognitive_reflection": 1.0, "resourcefulness": 0.0, "delayed_gratification": 0.0},
+        "B": {"cognitive_reflection": 0.0, "resourcefulness": 1.0, "delayed_gratification": 0.0},
+        "C": {"cognitive_reflection": 0.0, "resourcefulness": 0.0, "delayed_gratification": 1.0}
       },
       "text": {
-        "en": "I believe repaying loans on time is a personal responsibility.",
-        "hi": "मेरा मानना है कि समय पर ऋण चुकाना व्यक्तिगत ज़िम्मेदारी है।",
-        "bn": "আমি বিশ্বাস করি সময়মতো ঋণ পরিশোধ করা ব্যক্তিগত দায়িত্ব।"
+        "en": "Which statement describes you best?",
+        "hi": "कौन सा कथन आपका सबसे अच्छा वर्णन करता है?",
+        "bn": "কোন কথাটি আপনাকে সবচেয়ে ভালোভাবে বর্ণনা করে?"
       }
     },
     {
-      "id": "debt_2",
-      "construct": "debt_attitude",
-      "type": "likert",
-      "options": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5"
-      ],
+      "id": "fc_10",
+      "type": "forced_choice",
+      "presented_constructs": ["resourcefulness", "risk_tolerance", "honesty"],
+      "options": ["A", "B", "C"],
+      "option_texts": {
+        "en": {
+          "A": "I quickly adapt to changing situations and find alternative income sources.",
+          "B": "I am not afraid of taking risks if the opportunity is promising.",
+          "C": "I value truthfulness and keeping my promises above all else."
+        },
+        "hi": {
+          "A": "मैं बदलती परिस्थितियों के अनुसार जल्दी ढल जाता/जाती हूँ और वैकल्पिक आय स्रोत खोज लेता/लेती हूँ।",
+          "B": "यदि अवसर आशाजनक है तो मैं जोखिम उठाने से नहीं डरता/डरती।",
+          "C": "मैं सत्यनिष्ठा और अपने वादों को निभाने को सबसे ऊपर मानता/मानती हूँ।"
+        },
+        "bn": {
+          "A": "আমি দ্রুত পরিবর্তনশীল পরিস্থিতির সাথে খাপ খাইয়ে নিতে পারি এবং বিকল্প আয়ের উৎস খুঁজে নিই।",
+          "B": "সুযোগটি আশাপ্রদ হলে আমি ঝুঁকি নিতে ভয় পাই না।",
+          "C": "আমি অন্য সব কিছুর ঊর্ধ্বে সত্যবাদিতা এবং প্রতিশ্রুতি রক্ষা করাকে মূল্য দিই।"
+        }
+      },
       "scoring_key": {
-        "1": 1.0,
-        "2": 0.75,
-        "3": 0.5,
-        "4": 0.25,
-        "5": 0.0
+        "A": {"resourcefulness": 1.0, "risk_tolerance": 0.0, "honesty": 0.0},
+        "B": {"resourcefulness": 0.0, "risk_tolerance": 1.0, "honesty": 0.0},
+        "C": {"resourcefulness": 0.0, "risk_tolerance": 0.0, "honesty": 1.0}
       },
       "text": {
-        "en": "Missing a loan payment is not a big deal if you pay eventually.",
-        "hi": "अगर बाद में भर दें तो ऋण की किस्त छूट जाना कोई बड़ी बात नहीं है।",
-        "bn": "পরে দিলে EMI মিস করা বড় ব্যাপার নয়।"
+        "en": "Which statement describes you best?",
+        "hi": "कौन सा कथन आपका सबसे अच्छा वर्णन करता है?",
+        "bn": "কোন কথাটি আপনাকে সবচেয়ে ভালোভাবে বর্ণনা করে?"
       }
     },
     {

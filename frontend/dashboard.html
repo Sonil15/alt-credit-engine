@@ -169,8 +169,12 @@
               <div class="gauge-range">Alternate Credit Score · 300–900</div>
             </div>
             <div>
-              <span class="badge" id="decision-badge">—</span>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+                <span class="badge" id="decision-badge">—</span>
+                <span class="badge" id="cohort-badge" style="background:#334155; color:#cbd5e1; padding: 7px 16px; border-radius: 24px; font-size: 14px; font-weight: 700;">—</span>
+              </div>
               <span class="thin-flag" id="thin-flag" style="display:none;">THIN FILE</span>
+              <span class="thin-flag" id="simulated-badge" style="display:none; background:#fee2e2; color:#991b1b; border: 1px solid #fca5a5; text-transform: uppercase;">SIMULATED</span>
               <div class="meta-row" style="margin-top:16px;">
                 <div class="meta-item"><div class="k">Prob. of Default</div><div class="v pd" id="pd-value" style="color:#dc2626;">—</div></div>
                 <div class="meta-item"><div class="k">Data Confidence</div><div class="v" id="conf-value">—</div>
@@ -368,8 +372,18 @@
       document.getElementById('pd-value').textContent = (d.probability_of_default*100).toFixed(1)+'%';
       document.getElementById('display-user-id').textContent = d.user_id+' · '+(d.model_version||'');
       const badge = document.getElementById('decision-badge'); badge.textContent=d.decision; badge.className='badge badge-'+d.decision;
+      const cohortBadge = document.getElementById('cohort-badge');
+      if (cohortBadge && d.confidence && d.confidence.cohort) {
+        cohortBadge.textContent = d.confidence.cohort.replace(/([A-Z])/g, ' $1').trim();
+      } else if (cohortBadge) {
+        cohortBadge.textContent = 'Salaried';
+      }
       document.getElementById('reject-reason').textContent = d.reject_reason||'';
       const thin = document.getElementById('thin-flag'); thin.style.display = d.thin_file ? 'inline-block':'none';
+      const sim = document.getElementById('simulated-badge');
+      if (sim) {
+        sim.style.display = d.is_simulated ? 'inline-block' : 'none';
+      }
 
       const conf = d.confidence_pct ?? 100;
       document.getElementById('conf-value').textContent = conf.toFixed(0)+'%';

@@ -21,6 +21,7 @@ FEATURE_REASON_MAP: dict[str, str] = {
     "adf_statistic": "Non-stationary income/expense pattern",
     "adf_pvalue": "Unstable long-run cash flow equilibrium",
     "is_stationary": "Unstable long-run cash flow equilibrium",
+    "trend_slope": "Declining income trend",
     "historical_spatial_variance": "Inconsistent delivery locations",
     "distinct_pin_codes": "Multiple delivery addresses",
 }

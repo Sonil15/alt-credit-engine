@@ -12,5 +12,5 @@ async def test_assessment_session_flow():
     assert start["item"] is not None
 
     item_id = start["item"]["item_id"]
-    result = await submit_answer(session.session_id, item_id, "4")
+    result = await submit_answer(session.session_id, item_id, "A")
     assert result["completed"] is False or result["completed"] is True

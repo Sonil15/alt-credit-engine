@@ -74,7 +74,43 @@
       background: #334155; color: white; font-size: 18px;
     }
     .icon-btn.primary { background: #2563eb; }
-.progress { font-size: 11px; color: #64748b; padding: 0 16px 8px; }
+    .info-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px 12px;
+      border-bottom: 1px solid #334155;
+      background: #1e293b;
+    }
+    .progress { font-size: 11px; color: #64748b; padding: 0; }
+    .timer {
+      font-size: 13px;
+      font-weight: 700;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      transition: all 0.3s ease;
+    }
+    .timer.warning {
+      color: #f59e0b;
+      background: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+    .timer.danger {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+      animation: timerPulse 1s infinite alternate;
+    }
+    @keyframes timerPulse {
+      from { opacity: 0.7; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1.02); }
+    }
     .result-panel { padding: 24px; text-align: center; }
     .score { font-size: 42px; font-weight: 800; color: #22c55e; margin: 12px 0; }
     .badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
@@ -109,7 +145,12 @@
         <button class="lang-btn" data-lang="bn">বাংলা</button>
       </div>
     </div>
-    <div class="progress" id="progress">Starting...</div>
+    <div class="info-bar">
+      <div class="progress" id="progress"></div>
+      <div class="timer hidden" id="timer-display">
+        ⏱️ <span id="timer-text">07:00</span>
+      </div>
+    </div>
     <div class="chat" id="chat"></div>
     <div id="processing-panel" class="processing-panel hidden">
       <div class="processing-spinner"></div>
@@ -161,8 +202,24 @@
         </div>
       </div>
     </div>
+    <!-- Extension confirmation overlay -->
+    <div id="extension-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:101;justify-content:center;align-items:center;">
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:20px;padding:28px;max-width:340px;width:90%;text-align:center;">
+        <p style="font-size:18px;font-weight:700;margin-bottom:12px;" id="ext-title">Time is up!</p>
+        <p style="font-size:14px;color:#94a3b8;line-height:1.6;margin-bottom:24px;" id="ext-body">
+          Do you need a little more time to finish the assessment? We can give you an extra 2 minutes.
+        </p>
+        <div style="display:flex;gap:12px;">
+          <button onclick="submitTimeout()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#334155;color:#e2e8f0;font-size:14px;font-weight:600;cursor:pointer;">Submit Now</button>
+          <button onclick="acceptExtension()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#2563eb;color:white;font-size:14px;font-weight:600;cursor:pointer;">Get 2 Mins</button>
+        </div>
+      </div>
+    </div>
     <div class="start-bar" id="start-bar">
       <button class="start-btn" id="start-btn">Start Assessment</button>
+    </div>
+    <div class="start-bar hidden" id="begin-bar">
+      <button class="start-btn" id="begin-btn">Start Timer</button>
     </div>
     <div class="input-bar hidden" id="input-bar">
       <input type="text" id="answer-input" placeholder="Type your answer...">
@@ -174,7 +231,8 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     let userId = params.get('user_id') || crypto.randomUUID();
-    let language = params.get('lang') || 'en';
+    let language = params.get('lang') || localStorage.getItem('altcredit_lang') || 'en';
+    let cohort = params.get('cohort') || 'Salaried';
     let sessionId = null;
     let started = false;
     let currentItem = null;
@@ -182,7 +240,40 @@
     const chat = document.getElementById('chat');
     const input = document.getElementById('answer-input');
 
+    let timeLeft = 0;
+    let timerInterval = null;
+    let hasExtended = false;
+    let extensionSeconds = 120;
+    let modalTimeout = null;
+
+    const EXTENSION_TEXTS = {
+      en: {
+        title: 'Need more time?',
+        body: 'Do you need a little more time to finish the assessment? We can give you an extra 2 minutes.',
+        submitBtn: 'Submit Now',
+        extendBtn: 'Get 2 Mins'
+      },
+      hi: {
+        title: 'क्या आपको और समय चाहिए?',
+        body: 'क्या आपको मूल्यांकन पूरा करने के लिए थोड़ा और समय चाहिए? हम आपको 2 मिनट अतिरिक्त दे सकते हैं।',
+        submitBtn: 'अभी जमा करें',
+        extendBtn: '2 मिनट लें'
+      },
+      bn: {
+        title: 'আরও সময় লাগবে?',
+        body: 'মূল্যায়ন শেষ করার জন্য আপনার কি আরেকটু সময় লাগবে? আমরা আপনাকে অতিরিক্ত ২ মিনিট দিতে পারি।',
+        submitBtn: 'এখনই জমা দিন',
+        extendBtn: '২ মিনিট নিন'
+      }
+    };
+
     const START_LABEL = { en: 'Start Assessment', hi: 'मूल्यांकन शुरू करें', bn: 'মূল্যায়ন শুরু করুন' };
+    const START_TIMER_LABEL = { en: 'Start Timer', hi: 'टाइमर शुरू करें', bn: 'টাইমার শুরু করুন' };
+    const TIMER_INSTRUCTION = {
+      en: 'The timer will begin now when you click "Start Timer".',
+      hi: 'जब आप "टाइमर शुरू करें" पर क्लिक करेंगे तो टाइमर शुरू हो जाएगा।',
+      bn: 'আপনি "টাইমার শুরু করুন" এ ক্লিক করলে টাইমার শুরু হবে।'
+    };
     const PROCESSING_TITLE = {
       en: 'Analysing your responses…',
       hi: 'आपके उत्तरों का विश्लेषण हो रहा है…',
@@ -225,9 +316,9 @@
       }, steps.length * 700);
     }
     const INTRO = {
-      en: 'Choose your language above, then tap the button below to begin.',
-      hi: 'ऊपर अपनी भाषा चुनें, फिर शुरू करने के लिए नीचे दिए बटन पर टैप करें।',
-      bn: 'উপরে আপনার ভাষা বেছে নিন, তারপর শুরু করতে নিচের বোতামে ট্যাপ করুন।',
+      en: 'Choose your language above, then tap the button below to begin. The assessment has an optimal time limit of 7 minutes.',
+      hi: 'ऊपर अपनी भाषा चुनें, फिर शुरू करने के लिए नीचे दिए बटन पर टैप करें। इस मूल्यांकन की समय सीमा 7 मिनट है।',
+      bn: 'উপরে আপনার ভাষা বেছে নিন, তারপর শুরু করতে নিচের বোতামে ট্যাপ করুন। মূল্যায়নের জন্য ৭ মিনিট সময় নির্ধারিত আছে।',
     };
 
     function refreshLangUI() {
@@ -242,6 +333,7 @@
       btn.onclick = () => {
         if (started) return;
         language = btn.dataset.lang;
+        localStorage.setItem('altcredit_lang', language);
         refreshLangUI();
         // Hide all other language buttons once a choice is made
         document.querySelectorAll('.lang-btn').forEach(b => {
@@ -286,15 +378,41 @@
       const resp = await fetch('/assessment/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, language }),
+        body: JSON.stringify({ user_id: userId, language, cohort }),
       });
       const data = await resp.json();
       sessionId = data.session_id;
       userId = data.user_id;
-      addBubble(data.message, 'agent');
-      if (voice.synth) await voice.speak(data.message, language);
-      handleItem(data.item);
-      document.getElementById('progress').textContent = `Progress: ${Math.round(data.progress * 100)}%`;
+      window.timeLimitSeconds = data.time_limit_seconds || 420;
+      window.extensionSeconds = data.extension_seconds || 120;
+      window.firstItem = data.item;
+      
+      let msg = data.message;
+      const instruction = TIMER_INSTRUCTION[language] || TIMER_INSTRUCTION.en;
+      msg += "\n\n" + instruction;
+      
+      addBubble(msg, 'agent');
+      if (voice.synth) await voice.speak(msg, language);
+      
+      document.getElementById('begin-btn').textContent = START_TIMER_LABEL[language] || START_TIMER_LABEL.en;
+      document.getElementById('begin-bar').classList.remove('hidden');
+    }
+
+    async function beginQuestions() {
+      document.getElementById('begin-bar').classList.add('hidden');
+      
+      initTimer(window.timeLimitSeconds, window.extensionSeconds);
+      if (window.firstItem) {
+        handleItem(window.firstItem);
+      }
+      
+      fetch('/assessment/begin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId }),
+      }).then(resp => resp.json()).then(data => {
+        document.getElementById('progress').textContent = `Progress: ${Math.round(data.progress * 100)}%`;
+      }).catch(err => console.error(err));
     }
 
     function handleItem(item) {
@@ -327,6 +445,9 @@
       }
 
       if (data.completed) {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = null;
+        document.getElementById('timer-display').classList.add('hidden');
         addBubble(data.message, 'agent');
         document.getElementById('input-bar').classList.add('hidden');
         await finishAndScore();
@@ -342,7 +463,7 @@
       await new Promise(r => setTimeout(r, 3500));
       localStorage.setItem('altcredit_last_session', sessionId);
       localStorage.setItem('altcredit_last_user_id', userId);
-      window.location.href = '/borrower?session=' + encodeURIComponent(sessionId);
+      window.location.replace('/borrower?session=' + encodeURIComponent(sessionId));
     }
 
     document.getElementById('send-btn').onclick = () => submitAnswer(input.value);
@@ -411,6 +532,119 @@
       }
     }
 
+    function initTimer(timeLimit, extSeconds) {
+      timeLeft = timeLimit;
+      extensionSeconds = extSeconds;
+      hasExtended = false;
+      document.getElementById('timer-display').classList.remove('hidden');
+      updateTimerDisplay();
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(tickTimer, 1000);
+    }
+
+    function tickTimer() {
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        if (!hasExtended) {
+          showExtensionModal();
+        } else {
+          submitTimeout();
+        }
+        return;
+      }
+      timeLeft--;
+      updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(timeLeft / 60);
+      const secs = timeLeft % 60;
+      const text = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      
+      const display = document.getElementById('timer-display');
+      const textSpan = document.getElementById('timer-text');
+      textSpan.textContent = text;
+      
+      if (timeLeft <= 20) {
+        display.className = 'timer danger';
+      } else if (timeLeft <= 60) {
+        display.className = 'timer warning';
+      } else {
+        display.className = 'timer';
+      }
+    }
+
+    function showExtensionModal() {
+      const texts = EXTENSION_TEXTS[language] || EXTENSION_TEXTS.en;
+      document.getElementById('ext-title').textContent = texts.title;
+      document.getElementById('ext-body').textContent = texts.body;
+      
+      const buttons = document.querySelectorAll('#extension-overlay button');
+      if (buttons.length === 2) {
+        buttons[0].textContent = texts.submitBtn;
+        buttons[1].textContent = texts.extendBtn;
+      }
+      
+      document.getElementById('extension-overlay').style.display = 'flex';
+      
+      if (modalTimeout) clearTimeout(modalTimeout);
+      modalTimeout = setTimeout(() => {
+        if (document.getElementById('extension-overlay').style.display === 'flex') {
+          submitTimeout();
+        }
+      }, 30000);
+    }
+
+    async function acceptExtension() {
+      if (modalTimeout) {
+        clearTimeout(modalTimeout);
+        modalTimeout = null;
+      }
+      document.getElementById('extension-overlay').style.display = 'none';
+      hasExtended = true;
+      timeLeft = extensionSeconds;
+      updateTimerDisplay();
+      
+      try {
+        await fetch('/assessment/extend', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId })
+        });
+      } catch (err) {
+        console.error("Failed to extend session:", err);
+      }
+      
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(tickTimer, 1000);
+    }
+
+    async function submitTimeout() {
+      if (modalTimeout) {
+        clearTimeout(modalTimeout);
+        modalTimeout = null;
+      }
+      document.getElementById('extension-overlay').style.display = 'none';
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+      document.getElementById('timer-display').classList.add('hidden');
+      
+      try {
+        const resp = await fetch('/assessment/timeout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId })
+        });
+        const data = await resp.json();
+        addBubble(data.message, 'agent');
+      } catch (err) {
+        console.error("Failed to submit timeout:", err);
+      }
+      document.getElementById('input-bar').classList.add('hidden');
+      await finishAndScore();
+    }
+
     // No auto-start: let the borrower pick a language first, then tap Start.
     document.getElementById('progress').textContent = '';
     const introBubble = document.createElement('div');
@@ -418,6 +652,7 @@
     introBubble.id = 'intro-bubble';
     chat.appendChild(introBubble);
     document.getElementById('start-btn').onclick = beginAssessment;
+    document.getElementById('begin-btn').onclick = beginQuestions;
     refreshLangUI();
   </script>
 </body>

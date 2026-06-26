@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from convergence.fairness import compute_fairness_report
 from convergence.feature_meta import build_feature_trace
 from convergence.lending import recommend_terms
-from convergence.pillars import compute_confidence, compute_norm_stats, compute_pillar_scores
+from convergence.pillars import BorrowerCohort, COHORT_CODE_MAP, compute_confidence, compute_norm_stats, compute_pillar_scores
 from convergence.reason_codes import format_reason_codes, shap_to_reason_codes
 from convergence.scorecard import (
     expected_value_to_base_points,
@@ -45,9 +45,20 @@ def check_red_flags(row: pd.Series) -> tuple[bool, str | None]:
     if spatial > SPATIAL_VARIANCE_THRESHOLD and income <= 0:
         return True, "Auto-reject: high geographic instability with zero baseline income"
 
-    missed = safe_float(row.get("missed_payments_count", 0.0))
-    if missed >= MISSED_PAYMENTS_THRESHOLD:
-        return True, "Auto-reject: excessive missed telecom payments"
+    if "cohort_code" in row:
+        code = safe_float(row.get("cohort_code", 0.0))
+        is_salaried = (code == 0.0)
+    else:
+        cohort = row.get("cohort", "Salaried")
+        if isinstance(cohort, float) or pd.isna(cohort) or cohort is None:
+            is_salaried = True
+        else:
+            is_salaried = (str(cohort) == "Salaried")
+
+    if is_salaried:
+        missed = safe_float(row.get("missed_payments_count", 0.0))
+        if missed >= MISSED_PAYMENTS_THRESHOLD:
+            return True, "Auto-reject: excessive missed telecom payments"
 
     return False, None
 
@@ -125,8 +136,25 @@ def _build_payload(
     if auto_reject:
         probability_of_default = 1.0
 
-    pillar_scores = compute_pillar_scores(user_row, norm_stats)
-    confidence = compute_confidence(pillar_scores)
+    # Resolve cohort early
+    if "cohort_code" in user_row:
+        code = safe_float(user_row.get("cohort_code", 0.0))
+        cohort_enum = COHORT_CODE_MAP.get(code, BorrowerCohort.SALARIED)
+    else:
+        cohort_str = user_row.get("cohort", "Salaried")
+        if isinstance(cohort_str, float) or pd.isna(cohort_str) or cohort_str is None:
+            cohort_enum = BorrowerCohort.SALARIED
+        else:
+            try:
+                cohort_enum = BorrowerCohort(str(cohort_str))
+            except ValueError:
+                cohort_enum = BorrowerCohort.SALARIED
+
+    cohort = cohort_enum.value if hasattr(cohort_enum, "value") else str(cohort_enum)
+
+    pillar_scores = compute_pillar_scores(user_row, norm_stats, cohort=cohort_enum)
+    confidence = compute_confidence(pillar_scores, cohort=cohort_enum)
+    confidence["cohort"] = str(cohort)
 
     credit_score = pd_to_credit_score(probability_of_default)
     decision = _decision_from_score(credit_score, auto_reject, confidence["confidence_pct"])
@@ -148,6 +176,7 @@ def _build_payload(
         )
 
     lending = recommend_terms(probability_of_default, credit_score, decision, user_row)
+    is_simulated = bool(safe_float(user_row.get("is_simulated", 0.0)) == 1.0)
 
     return _finalize_score_payload(
         {
@@ -169,6 +198,7 @@ def _build_payload(
             "thin_file": confidence["thin_file"],
             "lending": lending,
             "model_version": get_model_version(),
+            "is_simulated": is_simulated,
         }
     )
 

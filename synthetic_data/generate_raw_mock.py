@@ -270,7 +270,7 @@ def _noisy_trait(theta: float, rng: random.Random, noise: float = 0.12) -> float
     return round(max(0.0, min(1.0, value)), 4)
 
 
-def generate_survey(user_id: str, theta: float) -> dict:
+def generate_survey(user_id: str, theta: float, extra_features: dict | None = None) -> dict:
     """Generate psychometric trait payload as noisy functions of latent creditworthiness."""
     rng = _user_rng(f"{user_id}:psychometric")
     traits = {
@@ -279,8 +279,15 @@ def generate_survey(user_id: str, theta: float) -> dict:
         "financial_self_efficacy": _noisy_trait(theta, rng),
         "present_bias": _noisy_trait(1.0 - theta, rng),
         "debt_attitude": _noisy_trait(theta, rng),
+        "risk_tolerance": _noisy_trait(1.0 - theta, rng),
+        "delayed_gratification": _noisy_trait(theta, rng),
+        "honesty": _noisy_trait(theta, rng),
+        "cognitive_reflection": _noisy_trait(theta, rng),
+        "resourcefulness": _noisy_trait(theta, rng),
         "response_validity": round(max(0.6, min(1.0, 0.85 + rng.gauss(0, 0.08))), 4),
     }
+    if extra_features:
+        traits.update(extra_features)
     best = min(STRESS_BY_THETA, key=lambda item: abs(item[0] - theta))
     _, text, _, _ = best
     return {
@@ -300,18 +307,48 @@ def generate_user_profile(rng: random.Random | None = None) -> dict:
     protected_group = local_rng.choice(PROTECTED_GROUPS)
     borrower_type = "msme" if local_rng.random() < 0.25 else "individual"
 
+    cohort = local_rng.choice(["Salaried", "GigWorker", "Student", "Vendor", "Farmer", "Homemaker"])
+    cohort_codes = {
+        "Salaried": 0.0,
+        "GigWorker": 1.0,
+        "Student": 2.0,
+        "Vendor": 3.0,
+        "Farmer": 4.0,
+        "Homemaker": 5.0,
+    }
+    cohort_code = cohort_codes[cohort]
+
+    extra_features = {
+        "cohort_code": cohort_code,
+    }
+
+    if cohort == "Student":
+        extra_features["upi_spend_consistency"] = round(local_rng.uniform(0.5, 1.0) if theta > 0.4 else local_rng.uniform(0.2, 0.65), 2)
+        extra_features["small_dues_payment_promptness"] = round(local_rng.uniform(0.6, 1.0) if theta > 0.4 else local_rng.uniform(0.3, 0.75), 2)
+        extra_features["e_wallet_topup_frequency"] = round(local_rng.uniform(0.5, 1.0) if theta > 0.5 else local_rng.uniform(0.0, 0.6), 2)
+    elif cohort == "Vendor":
+        extra_features["daily_transaction_count"] = round(local_rng.uniform(15, 60) if theta > 0.3 else local_rng.uniform(5, 25), 2)
+        extra_features["average_ticket_size"] = round(local_rng.uniform(50, 500) if theta > 0.4 else local_rng.uniform(20, 150), 2)
+    elif cohort == "Farmer":
+        extra_features["harvest_income_spike"] = round(local_rng.uniform(3.0, 10.0) if theta > 0.4 else local_rng.uniform(1.0, 4.0), 2)
+        extra_features["input_purchase_consistency"] = round(local_rng.uniform(0.7, 1.0) if theta > 0.4 else local_rng.uniform(0.3, 0.75), 2)
+    elif cohort == "Homemaker":
+        extra_features["utility_payment_consistency"] = round(local_rng.uniform(0.8, 1.0) if theta > 0.4 else local_rng.uniform(0.4, 0.85), 2)
+        extra_features["grocery_spend_stability"] = round(local_rng.uniform(0.7, 1.0) if theta > 0.4 else local_rng.uniform(0.3, 0.75), 2)
+
     profile = {
         "user_id": user_id,
         "telecom": {"user_id": user_id, "invoices": generate_telecom_invoices(user_id, theta)},
         "ecommerce": {"user_id": user_id, "orders": generate_ecommerce_orders(user_id, theta)},
         "geo": {"user_id": user_id, "locations": generate_geo_locations(user_id, theta)},
         "cashflow": {"user_id": user_id, "transactions": generate_cashflow_transactions(user_id, theta)},
-        "survey": {"user_id": user_id, **generate_survey(user_id, theta)},
+        "survey": {"user_id": user_id, **generate_survey(user_id, theta, extra_features)},
         "_ground_truth": {
             "latent_creditworthiness": round(theta, 4),
             "default_label": default_label,
             "protected_group": protected_group,
             "borrower_type": borrower_type,
+            "cohort": cohort,
         },
     }
     if borrower_type == "msme":

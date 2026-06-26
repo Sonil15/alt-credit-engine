@@ -13,6 +13,11 @@ CONSTRUCTS = [
     "financial_self_efficacy",
     "present_bias",
     "debt_attitude",
+    "risk_tolerance",
+    "delayed_gratification",
+    "honesty",
+    "cognitive_reflection",
+    "resourcefulness",
 ]
 
 # Keyword heuristics for open-ended extraction (multilingual hints)
@@ -33,6 +38,13 @@ def score_likert_answer(item: Item, answer: str) -> float | None:
     if normalized not in item.scoring_key:
         return None
     return float(item.scoring_key[normalized])
+
+
+def score_forced_choice_answer(item: Item, answer: str) -> dict[str, float] | None:
+    normalized = answer.strip()
+    if normalized not in item.scoring_key:
+        return None
+    return item.scoring_key[normalized]
 
 
 def score_open_ended_answer(text: str) -> float:
@@ -96,6 +108,12 @@ def compute_trait_scores(
             score = score_likert_answer(item, answers[item.id])
             if score is not None:
                 construct_values[item.construct].append(score)
+        elif item.type == "forced_choice":
+            scores = score_forced_choice_answer(item, answers[item.id])
+            if scores is not None:
+                for construct in item.presented_constructs:
+                    val = scores.get(construct, 0.0)
+                    construct_values[construct].append(val)
         elif item.type == "open_ended":
             score = open_scores.get(item.id)
             if score is None:
@@ -113,12 +131,28 @@ def compute_trait_scores(
 
 def traits_to_ml_features(traits: dict[str, float]) -> dict[str, float]:
     """Return feature dict suitable for ml_features storage."""
-    return {key: float(traits.get(key, 0.5)) for key in CONSTRUCTS + ["response_validity"]}
+    features = {key: float(traits.get(key, 0.5)) for key in CONSTRUCTS + ["response_validity"]}
+    for key in [
+        "cohort_code",
+        "upi_spend_consistency",
+        "small_dues_payment_promptness",
+        "e_wallet_topup_frequency",
+        "daily_transaction_count",
+        "average_ticket_size",
+        "harvest_income_spike",
+        "input_purchase_consistency",
+        "utility_payment_consistency",
+        "grocery_spend_stability",
+    ]:
+        if key in traits:
+            features[key] = float(traits[key])
+    return features
 
 
 def format_assessment_payload(
     user_id: str,
     language: str,
+    cohort: str,
     answers: dict[str, str],
     transcript: list[dict[str, Any]],
     traits: dict[str, float],
@@ -127,6 +161,7 @@ def format_assessment_payload(
     return {
         "user_id": user_id,
         "language": language,
+        "cohort": cohort,
         "assessment_version": load_item_bank().get("version", "1.0"),
         "answers": answers,
         "transcript": transcript,

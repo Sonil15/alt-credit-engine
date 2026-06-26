@@ -24,6 +24,7 @@ FEATURE_COLUMNS = [
     "adf_statistic",
     "adf_pvalue",
     "is_stationary",
+    "trend_slope",
 ]
 
 LABEL_COLUMN = "default_label"

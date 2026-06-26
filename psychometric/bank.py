@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -17,9 +17,11 @@ class Item:
     construct: str
     type: str
     options: list[str]
-    scoring_key: dict[str, float]
+    scoring_key: dict[str, float] | dict[str, dict[str, float]]
     text: dict[str, str]
     consistency_pair: str | None = None
+    presented_constructs: list[str] = field(default_factory=list)
+    option_texts: dict[str, dict[str, str]] = field(default_factory=dict)
 
     def prompt(self, language: str) -> str:
         lang = language if language in SUPPORTED_LANGUAGES else "en"
@@ -41,15 +43,25 @@ def load_items(path: Path | None = None) -> list[Item]:
     bank = load_item_bank(path)
     items: list[Item] = []
     for raw in bank["items"]:
+        raw_scoring = raw.get("scoring_key", {})
+        scoring_key: dict[str, float] | dict[str, dict[str, float]] = {}
+        for k, v in raw_scoring.items():
+            if isinstance(v, dict):
+                scoring_key[str(k)] = {str(ck): float(cv) for ck, cv in v.items()}
+            else:
+                scoring_key[str(k)] = float(v)
+
         items.append(
             Item(
                 id=raw["id"],
-                construct=raw["construct"],
+                construct=raw.get("construct", ""),
                 type=raw["type"],
                 options=list(raw.get("options", [])),
-                scoring_key={str(k): float(v) for k, v in raw.get("scoring_key", {}).items()},
+                scoring_key=scoring_key,
                 text=dict(raw["text"]),
                 consistency_pair=raw.get("consistency_pair"),
+                presented_constructs=list(raw.get("presented_constructs", [])),
+                option_texts=dict(raw.get("option_texts", {})),
             )
         )
     return items
@@ -75,6 +87,20 @@ def validate_item_bank(path: Path | None = None) -> list[str]:
                 errors.append(f"Likert item {item.id} has no options")
             if set(item.scoring_key.keys()) != set(item.options):
                 errors.append(f"Item {item.id} scoring_key does not match options")
+        elif item.type == "forced_choice":
+            if not item.options:
+                errors.append(f"Forced-choice item {item.id} has no options")
+            if not item.presented_constructs:
+                errors.append(f"Forced-choice item {item.id} has no presented_constructs")
+            if set(item.scoring_key.keys()) != set(item.options):
+                errors.append(f"Item {item.id} scoring_key does not match options")
+            for lang in SUPPORTED_LANGUAGES:
+                if lang not in item.option_texts:
+                    errors.append(f"Item {item.id} missing option_texts for '{lang}'")
+                else:
+                    for opt in item.options:
+                        if opt not in item.option_texts[lang] or not item.option_texts[lang][opt].strip():
+                            errors.append(f"Item {item.id} missing option text for option '{opt}' in '{lang}'")
         if item.consistency_pair and item.consistency_pair not in ids:
             errors.append(f"Item {item.id} references unknown consistency_pair {item.consistency_pair}")
 

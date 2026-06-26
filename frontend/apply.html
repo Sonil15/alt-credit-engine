@@ -54,80 +54,127 @@
 
     .footer { text-align: center; font-size: 13px; color: #94a3b8; margin-top: 36px; }
     .footer a { color: #2563eb; text-decoration: none; margin: 0 10px; }
+
+    .lang-selector {
+      display: inline-flex;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 3px;
+      border-radius: 10px;
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .lang-btn:hover {
+      color: #ffffff;
+    }
+
+    .lang-btn.active {
+      color: #ffffff;
+      background: #2563eb;
+    }
   </style>
+  <script src="/static/translations.js"></script>
 </head>
 <body>
   <div class="topbar">
     <div class="topbar-left">
-      <h1>Alt-Credit</h1>
-      <div class="sub">Borrower Portal</div>
+      <h1 data-i18n="apply-topbar-title">Alt-Credit</h1>
+      <div class="sub" data-i18n="apply-topbar-sub">Borrower Portal</div>
     </div>
-    <div class="topbar-right">
-      <a href="/consent">Privacy Rights</a>
+    <div class="topbar-right" style="display: flex; align-items: center; gap: 16px;">
+      <div id="language-selector-root"></div>
+      <a href="/consent" data-i18n="apply-topbar-privacy">Privacy Rights</a>
     </div>
   </div>
 
   <div class="hero">
-    <div class="hero-badge">Thin-File Credit</div>
-    <h2>Apply for Alternate Credit Scoring</h2>
-    <p>No credit history? No problem. We assess your financial behaviour through consent-based alternative data and a short psychometric assessment.</p>
-    <a class="hero-cta" href="/consent">Start New Application →</a>
+    <div class="hero-badge" data-i18n="apply-hero-badge">Thin-File Credit</div>
+    <h2 data-i18n="apply-hero-title">Apply for Alternate Credit Scoring</h2>
+    <div style="background: rgba(15,23,42,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 16px; border-radius: 16px; display: inline-block; text-align: left;">
+      <p style="font-size: 13px; color: #94a3b8; margin-bottom: 8px; font-weight: 600;" data-i18n="apply-cohort-label">Select your category:</p>
+      <select id="cohort-select" style="width: 100%; background: #1e293b; border: 1px solid #334155; color: white; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 16px; outline: none;">
+        <option value="Salaried" data-i18n="cohort-salaried">Salaried</option>
+        <option value="GigWorker" data-i18n="cohort-gigworker">Gig Worker</option>
+        <option value="Student" data-i18n="cohort-student">Student</option>
+        <option value="Vendor" data-i18n="cohort-vendor">Micro Enterprise / Vendor</option>
+        <option value="Farmer" data-i18n="cohort-farmer">Farmer / Agriculture</option>
+        <option value="Homemaker" data-i18n="cohort-homemaker">Homemaker</option>
+      </select>
+      <button class="hero-cta" onclick="startApplication()" data-i18n="apply-hero-cta" style="width: 100%; border: none; cursor: pointer; display: block; text-align: center;">Start New Application →</button>
+    </div>
   </div>
 
   <div class="container">
 
     <div class="section-title">
-      Previous Applications
+      <span data-i18n="apply-prev-title">Previous Applications</span>
       <span class="count" id="app-count">0</span>
     </div>
 
     <div id="empty-state" class="empty-state">
       <div class="icon">📋</div>
-      No applications yet. Start one above to see your results here.
+      <span data-i18n="apply-empty-text">No applications yet. Start one above to see your results here.</span>
     </div>
 
     <div id="app-list" class="app-list" style="display:none"></div>
 
     <div class="steps-card">
-      <h3>How it works</h3>
+      <h3 data-i18n="steps-title">How it works</h3>
       <div class="step-row">
         <div class="step-num">1</div>
         <div>
-          <strong>Grant consent</strong>
-          <span>Choose which data sources to share — telecom, e-commerce, location, cash flow. You stay in control.</span>
+          <strong data-i18n="apply-step1-title">Grant consent</strong>
+          <span data-i18n="apply-step1-desc">Choose which data sources to share — telecom, e-commerce, location, cash flow. You stay in control.</span>
         </div>
       </div>
       <div class="step-row">
         <div class="step-num">2</div>
         <div>
-          <strong>Complete the assessment</strong>
-          <span>A short multilingual chat (English, Hindi, Bengali) that measures financial behaviour through psychometric questions.</span>
+          <strong data-i18n="apply-step2-title">Complete the assessment</strong>
+          <span data-i18n="apply-step2-desc">A short multilingual chat (English, Hindi, Bengali) that measures financial behaviour through psychometric questions.</span>
         </div>
       </div>
       <div class="step-row">
         <div class="step-num">3</div>
         <div>
-          <strong>Get your score</strong>
-          <span>Receive a 300–900 alternate credit score, your loan eligibility decision, and the key factors behind it.</span>
+          <strong data-i18n="apply-step3-title">Get your score</strong>
+          <span data-i18n="apply-step3-desc">Receive a 300–900 alternate credit score, your loan eligibility decision, and the key factors behind it.</span>
         </div>
       </div>
       <div class="step-row">
         <div class="step-num">4</div>
         <div>
-          <strong>Bank reviews your application</strong>
-          <span>A loan officer reviews your result and contacts you with the final lending decision.</span>
+          <strong data-i18n="apply-step4-title">Bank reviews your application</strong>
+          <span data-i18n="apply-step4-desc">A loan officer reviews your result and contacts you with the final lending decision.</span>
         </div>
       </div>
     </div>
 
     <div class="footer">
-      <a href="/consent/compliance">Privacy &amp; Compliance</a>
-      <a href="/health">System Status</a>
+      <a href="/consent/compliance" data-i18n="apply-footer-privacy">Privacy &amp; Compliance</a>
+      <a href="/health" data-i18n="apply-footer-status">System Status</a>
     </div>
   </div>
 
   <script>
     const STORAGE_KEY = 'altcredit_applications';
+
+    function startApplication() {
+      const cohort = document.getElementById('cohort-select').value;
+      window.location.href = '/consent?cohort=' + encodeURIComponent(cohort);
+    }
 
     function loadApplications() {
       try {
@@ -172,6 +219,10 @@
     }
 
     render();
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setupLanguageSelector('language-selector-root');
+    });
   </script>
 </body>
 </html>

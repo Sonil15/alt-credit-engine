@@ -10,6 +10,7 @@ meaningful as the data distribution shifts.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 
 import numpy as np
 import pandas as pd
@@ -28,11 +29,69 @@ class Pillar:
     features: tuple[PillarFeature, ...]
 
 
+class BorrowerCohort(str, Enum):
+    SALARIED = "Salaried"
+    GIG_WORKER = "GigWorker"
+    STUDENT = "Student"
+    VENDOR = "Vendor"
+    FARMER = "Farmer"
+    HOMEMAKER = "Homemaker"
+
+
+COHORT_CODE_MAP = {
+    0.0: BorrowerCohort.SALARIED,
+    1.0: BorrowerCohort.GIG_WORKER,
+    2.0: BorrowerCohort.STUDENT,
+    3.0: BorrowerCohort.VENDOR,
+    4.0: BorrowerCohort.FARMER,
+    5.0: BorrowerCohort.HOMEMAKER,
+}
+
+
+COHORT_EXPECTED_PILLARS: dict[BorrowerCohort, list[str]] = {
+    BorrowerCohort.SALARIED: [
+        "telecom_reliability",
+        "spending_behaviour",
+        "location_stability",
+        "cashflow_resilience",
+        "psychometric_character",
+    ],
+    BorrowerCohort.GIG_WORKER: [
+        "telecom_reliability",
+        "spending_behaviour",
+        "location_stability",
+        "cashflow_resilience",
+        "psychometric_character",
+    ],
+    BorrowerCohort.STUDENT: [
+        "location_stability",
+        "psychometric_character",
+        "campus_transaction_behavior",
+    ],
+    BorrowerCohort.VENDOR: [
+        "location_stability",
+        "psychometric_character",
+        "vendor_transaction_velocity",
+    ],
+    BorrowerCohort.FARMER: [
+        "location_stability",
+        "psychometric_character",
+        "agricultural_seasonality",
+    ],
+    BorrowerCohort.HOMEMAKER: [
+        "telecom_reliability",
+        "location_stability",
+        "psychometric_character",
+        "household_reliability",
+    ],
+}
+
+
 PILLARS: tuple[Pillar, ...] = (
     Pillar(
         key="telecom_reliability",
         label="Telecom Reliability",
-        source="Phone & utility bill payments",
+        source="Mobile & broadband payments",
         features=(
             ("avg_days_late", "low", 0.4),
             ("missed_payments_count", "low", 0.6),
@@ -62,10 +121,11 @@ PILLARS: tuple[Pillar, ...] = (
         label="Cashflow Resilience",
         source="Bank cash-flow (econometric ECM)",
         features=(
-            ("monthly_income_mean", "high", 0.3),
-            ("cashflow_volatility", "low", 0.3),
-            ("resilience_coefficient", "high", 0.3),
-            ("is_stationary", "high", 0.1),
+            ("monthly_income_mean", "high", 0.25),
+            ("cashflow_volatility", "low", 0.25),
+            ("resilience_coefficient", "high", 0.25),
+            ("trend_slope", "high", 0.20),
+            ("is_stationary", "high", 0.05),
         ),
     ),
     Pillar(
@@ -73,11 +133,53 @@ PILLARS: tuple[Pillar, ...] = (
         label="Psychometric Character",
         source="Behavioural assessment",
         features=(
-            ("conscientiousness", "high", 0.25),
-            ("locus_of_control", "high", 0.2),
-            ("financial_self_efficacy", "high", 0.2),
-            ("present_bias", "low", 0.15),
-            ("debt_attitude", "high", 0.2),
+            ("conscientiousness", "high", 0.1),
+            ("locus_of_control", "high", 0.1),
+            ("financial_self_efficacy", "high", 0.1),
+            ("present_bias", "low", 0.1),
+            ("debt_attitude", "high", 0.1),
+            ("risk_tolerance", "low", 0.1),
+            ("delayed_gratification", "high", 0.1),
+            ("honesty", "high", 0.1),
+            ("cognitive_reflection", "high", 0.1),
+            ("resourcefulness", "high", 0.1),
+        ),
+    ),
+    Pillar(
+        key="campus_transaction_behavior",
+        label="Campus & UPI Transaction Behavior",
+        source="UPI expenses & small dues history",
+        features=(
+            ("upi_spend_consistency", "high", 0.4),
+            ("small_dues_payment_promptness", "high", 0.4),
+            ("e_wallet_topup_frequency", "high", 0.2),
+        ),
+    ),
+    Pillar(
+        key="vendor_transaction_velocity",
+        label="Vendor Transaction Velocity",
+        source="Micro-enterprise UPI/payment volumes",
+        features=(
+            ("daily_transaction_count", "high", 0.5),
+            ("average_ticket_size", "high", 0.5),
+        ),
+    ),
+    Pillar(
+        key="agricultural_seasonality",
+        label="Agricultural Seasonality",
+        source="Farming cycles & input purchases",
+        features=(
+            ("harvest_income_spike", "high", 0.6),
+            ("input_purchase_consistency", "high", 0.4),
+        ),
+    ),
+    Pillar(
+        key="household_reliability",
+        label="Household Reliability",
+        source="Electricity/Water/Gas & Groceries",
+        features=(
+            ("utility_payment_consistency", "high", 0.6),
+            ("grocery_spend_stability", "high", 0.4),
         ),
     ),
 )
@@ -134,22 +236,72 @@ def grade(score: float) -> str:
 def compute_pillar_scores(
     row: pd.Series,
     norm_stats: dict[str, tuple[float, float]],
+    cohort: BorrowerCohort | str | None = None,
 ) -> list[dict]:
     """Return a list of pillar dicts (score 0-100, grade, data presence)."""
+    if cohort is None:
+        if "cohort_code" in row:
+            code = safe_float(row.get("cohort_code", 0.0))
+            cohort = COHORT_CODE_MAP.get(code, BorrowerCohort.SALARIED)
+        else:
+            cohort_str = row.get("cohort", "Salaried")
+            if isinstance(cohort_str, float) or pd.isna(cohort_str) or cohort_str is None:
+                cohort = BorrowerCohort.SALARIED
+            else:
+                try:
+                    cohort = BorrowerCohort(str(cohort_str))
+                except ValueError:
+                    cohort = BorrowerCohort.SALARIED
+    elif isinstance(cohort, str):
+        try:
+            cohort = BorrowerCohort(cohort)
+        except ValueError:
+            cohort = BorrowerCohort.SALARIED
+
+    expected_keys = COHORT_EXPECTED_PILLARS.get(cohort, COHORT_EXPECTED_PILLARS[BorrowerCohort.SALARIED])
+    filtered_pillars = [
+        p for p in PILLARS
+        if p.key in expected_keys or _pillar_has_data(row, p.features)
+    ]
+
     results: list[dict] = []
-    for pillar in PILLARS:
+    for pillar in filtered_pillars:
         weighted = 0.0
         total_weight = 0.0
         contributing: list[dict] = []
         for feat, direction, weight in pillar.features:
+            # Dynamic weights adjustment for Gig Worker
+            if cohort == BorrowerCohort.GIG_WORKER:
+                if feat == "cashflow_volatility":
+                    weight = 0.05
+                elif feat == "monthly_income_mean":
+                    weight = 0.35
+                elif feat == "resilience_coefficient":
+                    weight = 0.35
+                elif feat == "missed_payments_count":
+                    weight = 0.2
+                elif feat == "avg_days_late":
+                    weight = 0.8
+
+            feat_val = row.get(feat)
+            if pd.isna(feat_val):
+                contributing.append(
+                    {
+                        "feature": feat,
+                        "value": None,
+                        "goodness": None,
+                    }
+                )
+                continue
+
             lo, hi = norm_stats.get(feat, (0.0, 0.0))
-            goodness = feature_goodness(row.get(feat, 0.0), lo, hi, direction)
+            goodness = feature_goodness(feat_val, lo, hi, direction)
             weighted += goodness * weight
             total_weight += weight
             contributing.append(
                 {
                     "feature": feat,
-                    "value": safe_float(row.get(feat, 0.0)),
+                    "value": safe_float(feat_val),
                     "goodness": round(goodness, 3),
                 }
             )
@@ -168,15 +320,46 @@ def compute_pillar_scores(
     return results
 
 
-def compute_confidence(pillar_scores: list[dict]) -> dict:
-    """Data-sufficiency / confidence from how many pillars are backed by real data."""
-    total = len(pillar_scores) or 1
-    with_data = sum(1 for p in pillar_scores if p["has_data"])
-    pct = round(100.0 * with_data / total, 1)
+def compute_confidence(
+    pillar_scores: list[dict],
+    cohort: BorrowerCohort | str | None = None,
+) -> dict:
+    """Data-sufficiency / confidence from how many features are backed by real data."""
+    total_pillars = len(pillar_scores) or 1
+    pillars_with_data = sum(1 for p in pillar_scores if p["has_data"])
+    
+    total_features = 0
+    features_with_data = 0
+    for p in pillar_scores:
+        total_features += len(p["features"])
+        if p["has_data"] and p["key"] != "psychometric_character":
+            features_with_data += len(p["features"])
+        else:
+            for f in p["features"]:
+                if f["value"] is not None and abs(safe_float(f["value"])) > 1e-9:
+                    features_with_data += 1
+
+    if cohort is not None:
+        if isinstance(cohort, str):
+            try:
+                cohort = BorrowerCohort(cohort)
+            except ValueError:
+                cohort = BorrowerCohort.SALARIED
+        expected_keys = COHORT_EXPECTED_PILLARS.get(cohort, COHORT_EXPECTED_PILLARS[BorrowerCohort.SALARIED])
+        expected_pillars = [p for p in PILLARS if p.key in expected_keys]
+        denominator = sum(len(p.features) for p in expected_pillars)
+    else:
+        denominator = total_features
+
+    pct = round(100.0 * features_with_data / max(denominator, 1), 1)
+    pct = min(100.0, pct)
+
     return {
         "confidence_pct": pct,
-        "pillars_with_data": with_data,
-        "pillars_total": total,
-        "thin_file": with_data < total,
+        "features_with_data": features_with_data,
+        "features_total": denominator,
+        "pillars_with_data": pillars_with_data,
+        "pillars_total": total_pillars,
+        "thin_file": pillars_with_data < total_pillars,
         "missing_sources": [p["label"] for p in pillar_scores if not p["has_data"]],
     }

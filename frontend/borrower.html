@@ -41,66 +41,101 @@
     .loading { text-align: center; padding: 60px 24px; color: #94a3b8; font-size: 16px; }
     .spinner { width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    .lang-selector {
+      display: inline-flex;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 3px;
+      border-radius: 10px;
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .lang-btn:hover {
+      color: #ffffff;
+    }
+
+    .lang-btn.active {
+      color: #ffffff;
+      background: #2563eb;
+    }
   </style>
+  <script src="/static/translations.js"></script>
 </head>
 <body>
   <div class="topbar">
     <div>
-      <h1>Alt-Credit</h1>
-      <div class="sub">Your Credit Assessment</div>
+      <h1 data-i18n="borrower-topbar-title">Alt-Credit</h1>
+      <div class="sub" data-i18n="borrower-topbar-sub">Your Credit Assessment</div>
     </div>
-    <div>
-      <a href="/">Home</a>
-      <a id="privacy-link" href="/consent">Privacy Rights</a>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div id="language-selector-root"></div>
+      <a href="/" data-i18n="borrower-topbar-home">Home</a>
+      <a id="privacy-link" href="/consent" data-i18n="borrower-topbar-privacy">Privacy Rights</a>
     </div>
   </div>
 
   <div class="container">
     <div id="loading" class="loading">
       <div class="spinner"></div>
-      Retrieving your assessment…
+      <span data-i18n="borrower-loading">Retrieving your assessment…</span>
     </div>
 
     <div id="error-section" style="display:none">
       <div class="error-box" id="error-msg"></div>
       <div style="margin-top:16px">
-        <a href="/assessment" class="btn btn-primary">Retake Assessment</a>
+        <a href="/assessment" class="btn btn-primary" data-i18n="borrower-btn-retake">Retake Assessment</a>
       </div>
     </div>
 
     <div id="result-section" style="display:none">
       <div class="card">
-        <h2>Your Credit Score</h2>
+        <div id="simulated-warning" style="display:none; background:#7f1d1d; color:#fca5a5; padding:10px; border-radius:10px; text-align:center; font-weight:bold; font-size:13px; margin-bottom:20px; border: 1px solid #991b1b;" data-i18n="borrower-warning-simulated">
+          ⚠️ SIMULATED DATA / TEST PROTOCOL &bull; NOT AN ACTIVE BORROWER FILE
+        </div>
+        <h2 data-i18n="borrower-score-title">Your Credit Score</h2>
 
         <div class="score-hero">
           <div class="score-num" id="score-num">—</div>
-          <div class="score-label">out of 900</div>
+          <div class="score-label" data-i18n="borrower-out-of">out of 900</div>
           <div><span class="badge" id="decision-badge">—</span></div>
         </div>
 
         <div class="meta-grid">
           <div class="meta-box">
-            <div class="k">Probability of Default</div>
+            <div class="k" data-i18n="borrower-pd-label">Probability of Default</div>
             <div class="v" id="pd-val">—</div>
           </div>
           <div class="meta-box">
-            <div class="k">Confidence</div>
+            <div class="k" data-i18n="borrower-conf-label">Confidence</div>
             <div class="v" id="conf-val">—</div>
           </div>
         </div>
 
         <div id="reason-box" class="reason-box" style="display:none">
-          <strong>Key Factors:</strong> <span id="reason-text"></span>
+          <strong data-i18n="borrower-factors-label">Key Factors:</strong> <span id="reason-text"></span>
         </div>
 
         <div id="drivers-section" style="display:none">
-          <div class="drivers-title">Top Score Drivers</div>
+          <div class="drivers-title" data-i18n="borrower-drivers-title">Top Score Drivers</div>
           <div id="drivers-list"></div>
         </div>
 
         <div class="actions">
-          <a href="/consent" id="privacy-action" class="btn btn-secondary">Privacy Rights</a>
-          <a href="/apply" class="btn btn-secondary">Home</a>
+          <a href="/consent" id="privacy-action" class="btn btn-secondary" data-i18n="borrower-btn-privacy">Privacy Rights</a>
+          <a href="/apply" class="btn btn-secondary" data-i18n="borrower-btn-home">Home</a>
         </div>
       </div>
     </div>
@@ -111,7 +146,9 @@
     const sessionId = params.get('session');
 
     if (!sessionId) {
-      showError('No session found. Please complete the assessment first.');
+      const lang = getCurrentLanguage();
+      const t = (key) => (ALTCREDIT_DICTIONARY[lang] && ALTCREDIT_DICTIONARY[lang][key]) || ALTCREDIT_DICTIONARY['en'][key] || key;
+      showError(t('borrower-error-session'));
     } else {
       loadScore();
     }
@@ -136,6 +173,12 @@
       document.getElementById('loading').style.display = 'none';
       document.getElementById('result-section').style.display = 'block';
 
+      if (d.is_simulated) {
+        document.getElementById('simulated-warning').style.display = 'block';
+      } else {
+        document.getElementById('simulated-warning').style.display = 'none';
+      }
+
       document.getElementById('score-num').textContent = d.credit_score;
       const badge = document.getElementById('decision-badge');
       badge.textContent = d.decision;
@@ -150,6 +193,7 @@
 
       if (d.shap_drivers && d.shap_drivers.length) {
         const list = document.getElementById('drivers-list');
+        list.innerHTML = ''; // clear previous
         d.shap_drivers.slice(0, 5).forEach(dr => {
           const v = dr.shap_value ?? 0;
           const row = document.createElement('div');
@@ -187,6 +231,10 @@
       document.getElementById('error-msg').textContent = msg;
       document.getElementById('error-section').style.display = 'block';
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setupLanguageSelector('language-selector-root');
+    });
   </script>
 </body>
 </html>

@@ -27,6 +27,7 @@ def _population() -> pd.DataFrame:
                 "cashflow_volatility": 1000.0,
                 "resilience_coefficient": 0.9,
                 "is_stationary": 1.0,
+                "trend_slope": 0.05,
                 "conscientiousness": 0.9,
                 "locus_of_control": 0.9,
                 "financial_self_efficacy": 0.9,
@@ -46,6 +47,7 @@ def _population() -> pd.DataFrame:
                 "cashflow_volatility": 40000.0,
                 "resilience_coefficient": 0.1,
                 "is_stationary": 0.0,
+                "trend_slope": -0.05,
                 "conscientiousness": 0.2,
                 "locus_of_control": 0.2,
                 "financial_self_efficacy": 0.2,
@@ -69,7 +71,7 @@ def test_safe_borrower_outscores_risky_on_every_pillar():
     stats = compute_norm_stats(pop)
     safe = compute_pillar_scores(pop.iloc[0], stats)
     risky = compute_pillar_scores(pop.iloc[1], stats)
-    assert len(safe) == len(PILLARS) == 5
+    assert len(safe) == 5
     for s, r in zip(safe, risky, strict=True):
         assert s["score"] >= r["score"]
         assert isinstance(s["score"], float)  # JSON-safe, not numpy
@@ -117,3 +119,144 @@ def test_review_offer_is_more_conservative_than_approve():
     approve = recommend_terms(0.2, 760, "APPROVE", row)
     review = recommend_terms(0.2, 700, "REVIEW", row)
     assert review["max_loan_amount"] < approve["max_loan_amount"]
+
+
+def test_cohort_aware_scoring():
+    pop = _population()
+    stats = compute_norm_stats(pop)
+
+    # 1. Student Cohort
+    row_student = pd.Series({
+        "cohort_code": 2.0,
+        "upi_spend_consistency": 0.9,
+        "small_dues_payment_promptness": 8.5
+    })
+    student_pillars = compute_pillar_scores(row_student, stats)
+    assert len(student_pillars) == 3
+    assert any(p["key"] == "campus_transaction_behavior" for p in student_pillars)
+    conf_student = compute_confidence(student_pillars, cohort="Student")
+    assert conf_student["thin_file"] is True  # still missing location/survey data in this Series
+    
+    # 2. Homemaker Cohort
+    row_homemaker = pd.Series({"cohort_code": 5.0, "utility_payment_consistency": 0.95})
+    homemaker_pillars = compute_pillar_scores(row_homemaker, stats)
+    assert len(homemaker_pillars) == 4
+    assert any(p["key"] == "household_reliability" for p in homemaker_pillars)
+
+    # 3. Farmer Cohort
+    row_farmer = pd.Series({"cohort_code": 4.0, "harvest_income_spike": 5.0})
+    farmer_pillars = compute_pillar_scores(row_farmer, stats)
+    assert len(farmer_pillars) == 3
+    assert any(p["key"] == "agricultural_seasonality" for p in farmer_pillars)
+
+
+def test_optional_pillars_and_confidence_offset():
+    pop = _population()
+    stats = compute_norm_stats(pop)
+
+    # Farmer cohort: only expected data (agricultural_seasonality, location_stability, psychometric_character)
+    # Expected pillars for Farmer have 14 features total:
+    # location_stability (2), psychometric_character (10), agricultural_seasonality (2) -> 14 features
+    # Let's provide a subset: only 12 features out of 14 (say, missing location_stability which has 2 features)
+    row_farmer_no_opt = pd.Series({
+        "cohort_code": 4.0,  # Farmer
+        "harvest_income_spike": 5.0,
+        "input_purchase_consistency": 2.0,
+        "conscientiousness": 0.9,
+        "locus_of_control": 0.9,
+        "financial_self_efficacy": 0.9,
+        "present_bias": 0.1,
+        "debt_attitude": 0.9,
+        "risk_tolerance": 0.1,
+        "delayed_gratification": 0.9,
+        "honesty": 0.9,
+        "cognitive_reflection": 0.9,
+        "resourcefulness": 0.9,
+        # missing location_stability features (spatial_variance_score, anchor_count)
+    })
+    farmer_pillars_no_opt = compute_pillar_scores(row_farmer_no_opt, stats)
+    # Should not include spending_behaviour since it's not expected and not provided
+    assert not any(p["key"] == "spending_behaviour" for p in farmer_pillars_no_opt)
+    
+    conf_no_opt = compute_confidence(farmer_pillars_no_opt, cohort="Farmer")
+    # Features with data = 12 (agricultural_seasonality: 2, psychometric_character: 10)
+    # Expected features = 14 (including 2 from location_stability)
+    # confidence pct should be round(100 * 12 / 14) = 85.7%
+    assert conf_no_opt["confidence_pct"] == 85.7
+    assert conf_no_opt["features_total"] == 14
+
+    # Farmer cohort with optional data: same expected features, but now also provides e-commerce (spending_behaviour)
+    # spending_behaviour has 3 features: necessity_ratio, avg_merchant_rating, monthly_spend_volatility
+    row_farmer_with_opt = pd.Series({
+        "cohort_code": 4.0,  # Farmer
+        "harvest_income_spike": 5.0,
+        "input_purchase_consistency": 2.0,
+        "conscientiousness": 0.9,
+        "locus_of_control": 0.9,
+        "financial_self_efficacy": 0.9,
+        "present_bias": 0.1,
+        "debt_attitude": 0.9,
+        "risk_tolerance": 0.1,
+        "delayed_gratification": 0.9,
+        "honesty": 0.9,
+        "cognitive_reflection": 0.9,
+        "resourcefulness": 0.9,
+        # missing location_stability features
+        # provided optional features: spending_behaviour (3 features)
+        "necessity_ratio": 0.8,
+        "avg_merchant_rating": 4.5,
+        "monthly_spend_volatility": 1500.0,
+    })
+    farmer_pillars_with_opt = compute_pillar_scores(row_farmer_with_opt, stats)
+    # Should dynamically include spending_behaviour because data is present
+    assert any(p["key"] == "spending_behaviour" for p in farmer_pillars_with_opt)
+
+    conf_with_opt = compute_confidence(farmer_pillars_with_opt, cohort="Farmer")
+    # Features with data = 12 (expected) + 3 (optional) = 15
+    # Expected features (denominator) = 14
+    # confidence pct = min(100.0, round(100 * 15 / 14, 1)) = 100.0% (offsetting the missing location data!)
+    assert conf_with_opt["confidence_pct"] == 100.0
+    assert conf_with_opt["features_total"] == 14
+
+
+def test_hybrid_confidence_logic():
+    pop = _population()
+    stats = compute_norm_stats(pop)
+
+    # Student Cohort: expected pillars are location_stability (2), psychometric_character (10), campus_transaction_behavior (3) -> total 15 features.
+    # Provide only 1 feature of campus_transaction_behavior (upi_spend_consistency = 0.9)
+    # Location stability has no data, psychometric has no data.
+    # Since campus_transaction_behavior has data, the hybrid logic should count all 3 of its features as having data.
+    row = pd.Series({
+        "cohort_code": 2.0,  # Student
+        "upi_spend_consistency": 0.9,
+    })
+    pillars = compute_pillar_scores(row, stats)
+    conf = compute_confidence(pillars, cohort="Student")
+
+    # campus_transaction_behavior is non-psychometric, so it gets full credit of 3 features.
+    # psychometric: 0 features.
+    # location_stability: 0 features.
+    # features_with_data should be 3, not 1.
+    assert conf["features_with_data"] == 3
+    # confidence_pct = 100 * 3 / 15 = 20.0
+    assert conf["confidence_pct"] == 20.0
+
+    # Let's also check that psychometric_character is still feature-by-feature.
+    # Provide only conscientiousness (1 feature of psychometric) and no other data.
+    # Expected: psychometric_character has data, but only conscientiousness is counted.
+    row_psych = pd.Series({
+        "cohort_code": 2.0,  # Student
+        "conscientiousness": 0.8,
+    })
+    pillars_psych = compute_pillar_scores(row_psych, stats)
+    conf_psych = compute_confidence(pillars_psych, cohort="Student")
+
+    # psychometric: 1 feature (conscientiousness).
+    # location_stability: 0 features.
+    # campus_transaction_behavior: 0 features.
+    # features_with_data should be 1.
+    assert conf_psych["features_with_data"] == 1
+    # confidence_pct = 100 * 1 / 15 = 6.7
+    assert conf_psych["confidence_pct"] == 6.7
+

@@ -69,23 +69,41 @@ def _run_ecm(series: pd.Series) -> float:
 
 
 def compute_resilience_from_series(values: list[float]) -> dict[str, float]:
-    """Run ADF + ECM on a real stored time series."""
-    if not values:
+    """Run ADF + ECM on a real stored time series after linear detrending."""
+    if len(values) < MIN_OBSERVATIONS:
         return {
             "resilience_coefficient": 0.5,
             "adf_statistic": 0.0,
             "adf_pvalue": 1.0,
             "is_stationary": 0.0,
+            "trend_slope": 0.0,
         }
 
     series = pd.Series(values, dtype=float)
-    adf_metrics = _run_adf(series)
-    resilience = _run_ecm(series)
+    
+    # OLS linear detrending: y_trend = alpha + beta * t
+    t = np.arange(len(series))
+    x_trend = np.column_stack([np.ones(len(series)), t])
+    try:
+        coeffs, _, _, _ = np.linalg.lstsq(x_trend, series.values, rcond=None)
+        alpha, beta = float(coeffs[0]), float(coeffs[1])
+    except Exception:
+        alpha, beta = 0.0, 0.0
+
+    mean_y = float(series.mean())
+    trend_slope = beta / mean_y if abs(mean_y) > 1e-9 else 0.0
+
+    detrended_values = series.values - (alpha + beta * t)
+    detrended_series = pd.Series(detrended_values, index=series.index)
+
+    adf_metrics = _run_adf(detrended_series)
+    resilience = _run_ecm(detrended_series)
     return {
         "resilience_coefficient": resilience,
         "adf_statistic": adf_metrics["adf_statistic"],
         "adf_pvalue": adf_metrics["adf_pvalue"],
         "is_stationary": adf_metrics["is_stationary"],
+        "trend_slope": trend_slope,
     }
 
 

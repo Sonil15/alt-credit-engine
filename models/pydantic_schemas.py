@@ -71,6 +71,7 @@ class CashFlowPayload(BaseModel):
 class SurveyPayload(BaseModel):
     user_id: UUID
     language: str = "en"
+    cohort: str = "Salaried"
     assessment_version: str = "1.0"
     conscientiousness: float = Field(ge=0.0, le=1.0, default=0.5)
     locus_of_control: float = Field(ge=0.0, le=1.0, default=0.5)
@@ -102,6 +103,7 @@ class AssessmentItem(BaseModel):
 class AssessmentStartRequest(BaseModel):
     user_id: str | None = None
     language: str = "en"
+    cohort: str = "Salaried"
 
 
 class AssessmentStartResponse(BaseModel):
@@ -112,6 +114,16 @@ class AssessmentStartResponse(BaseModel):
     item: AssessmentItem | None = None
     progress: float = 0.0
     completed: bool = False
+    time_limit_seconds: int = 420
+    extension_seconds: int = 120
+
+
+class AssessmentTimeoutRequest(BaseModel):
+    session_id: str
+
+
+class AssessmentBeginRequest(BaseModel):
+    session_id: str
 
 
 class AssessmentAnswerRequest(BaseModel):
@@ -249,6 +261,7 @@ class CreditScoreResponse(BaseModel):
     thin_file: bool = False
     lending: dict[str, Any] = {}
     model_version: str = "unknown"
+    is_simulated: bool = False
 
     @field_validator("probability_of_default", mode="before")
     @classmethod

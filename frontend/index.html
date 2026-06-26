@@ -1,17 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Alt-Credit Engine</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: linear-gradient(160deg, #0f172a 0%, #1e3a5f 45%, #f1f5f9 45%);
       color: #1e293b;
       min-height: 100vh;
     }
+
     .hero {
       max-width: 960px;
       margin: 0 auto;
@@ -19,12 +26,13 @@
       color: #f8fafc;
       text-align: center;
     }
+
     .hero-badge {
       display: inline-block;
       padding: 6px 14px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       font-size: 12px;
       font-weight: 600;
       letter-spacing: 0.4px;
@@ -32,12 +40,14 @@
       color: #bfdbfe;
       margin-bottom: 20px;
     }
+
     .hero h1 {
       font-size: clamp(28px, 5vw, 40px);
       font-weight: 800;
       line-height: 1.15;
       margin-bottom: 14px;
     }
+
     .hero p {
       font-size: 16px;
       line-height: 1.6;
@@ -45,17 +55,20 @@
       max-width: 640px;
       margin: 0 auto;
     }
+
     .container {
       max-width: 960px;
       margin: 0 auto;
       padding: 0 24px 48px;
     }
+
     .cards {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 20px;
       margin-bottom: 32px;
     }
+
     .card {
       background: white;
       border-radius: 20px;
@@ -65,6 +78,7 @@
       flex-direction: column;
       gap: 14px;
     }
+
     .card-icon {
       width: 48px;
       height: 48px;
@@ -74,30 +88,41 @@
       justify-content: center;
       font-size: 22px;
     }
-    .card-icon.bank { background: #dbeafe; }
-    .card-icon.borrower { background: #dcfce7; }
+
+    .card-icon.bank {
+      background: #dbeafe;
+    }
+
+    .card-icon.borrower {
+      background: #dcfce7;
+    }
+
     .card h2 {
       font-size: 20px;
       font-weight: 700;
       color: #0f172a;
     }
+
     .card p {
       font-size: 14px;
       line-height: 1.55;
       color: #64748b;
       flex: 1;
     }
+
     .card ul {
       list-style: none;
       font-size: 13px;
       color: #475569;
       line-height: 1.7;
     }
+
     .card ul li::before {
       content: "→ ";
       color: #2563eb;
       font-weight: 700;
     }
+
     .btn {
       display: inline-flex;
       align-items: center;
@@ -112,17 +137,23 @@
       cursor: pointer;
       transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
-    .btn:hover { transform: translateY(-1px); }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
     .btn-primary {
       background: #2563eb;
       color: white;
       box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
     }
+
     .btn-secondary {
       background: #0f172a;
       color: white;
       box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
     }
+
     .steps {
       background: white;
       border-radius: 20px;
@@ -130,12 +161,14 @@
       box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
       margin-bottom: 24px;
     }
+
     .steps h3 {
       font-size: 16px;
       font-weight: 700;
       color: #334155;
       margin-bottom: 18px;
     }
+
     .step-row {
       display: grid;
       grid-template-columns: 36px 1fr;
@@ -143,7 +176,11 @@
       padding: 12px 0;
       border-bottom: 1px solid #f1f5f9;
     }
-    .step-row:last-child { border-bottom: none; }
+
+    .step-row:last-child {
+      border-bottom: none;
+    }
+
     .step-num {
       width: 36px;
       height: 36px;
@@ -156,35 +193,97 @@
       align-items: center;
       justify-content: center;
     }
+
     .step-row strong {
       display: block;
       font-size: 14px;
       color: #0f172a;
       margin-bottom: 4px;
     }
+
     .step-row span {
       font-size: 13px;
       color: #64748b;
       line-height: 1.5;
     }
+
     .footer-links {
       text-align: center;
       font-size: 13px;
       color: #64748b;
     }
+
     .footer-links a {
       color: #2563eb;
       text-decoration: none;
       margin: 0 10px;
     }
-    .footer-links a:hover { text-decoration: underline; }
+
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+
+    .topbar-container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 24px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .topbar-logo {
+      font-size: 18px;
+      font-weight: 800;
+      color: #f8fafc;
+      letter-spacing: -0.5px;
+    }
+
+    .lang-selector {
+      display: flex;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 4px;
+      border-radius: 12px;
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .lang-btn:hover {
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .lang-btn.active {
+      color: #ffffff;
+      background: #2563eb;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+    }
   </style>
+  <script src="/static/translations.js"></script>
 </head>
+
 <body>
+  <header class="topbar-container">
+    <div class="topbar-logo">Alt-Credit Engine</div>
+    <div id="language-selector-root"></div>
+  </header>
+
   <section class="hero">
-    <div class="hero-badge">Alternate Credit Scoring · Prototype</div>
-    <h1>Alt-Credit Engine</h1>
-    <p>
+    <div class="hero-badge" data-i18n="hero-badge">Alternate Credit Scoring · Prototype</div>
+    <h1 data-i18n="hero-title">Alt-Credit Engine</h1>
+    <p data-i18n="hero-subtitle">
       AI-driven alternate credit scoring for thin-file borrowers — using consent-based
       telecom, e-commerce, geo, cash flow, and psychometric data with full privacy compliance.
     </p>
@@ -194,72 +293,95 @@
     <div class="cards">
       <article class="card">
         <div class="card-icon bank">🏦</div>
-        <h2>Bank Dashboard</h2>
-        <p>
+        <h2 data-i18n="card-dashboard-title">Bank Dashboard</h2>
+        <p data-i18n="card-dashboard-desc">
           For loan officers and judges. Explore portfolio metrics, model validation,
           fairness checks, and individual credit scores with SHAP reason codes.
         </p>
         <ul>
-          <li>Portfolio overview &amp; score distribution</li>
-          <li>Lookup any user by ID</li>
-          <li>Model card &amp; approval decisions</li>
+          <li data-i18n="card-dashboard-li1">Portfolio overview &amp; score distribution</li>
+          <li data-i18n="card-dashboard-li2">Lookup any user by ID</li>
+          <li data-i18n="card-dashboard-li3">Model card &amp; approval decisions</li>
         </ul>
-        <a class="btn btn-primary" href="/dashboard">Open Dashboard</a>
+        <a class="btn btn-primary" href="/dashboard" data-i18n="card-dashboard-btn">Open Dashboard</a>
       </article>
 
       <article class="card">
         <div class="card-icon borrower">📱</div>
-        <h2>Apply as Borrower</h2>
-        <p>
+        <h2 data-i18n="card-apply-title">Apply as Borrower</h2>
+        <p data-i18n="card-apply-desc">
           Simulate the borrower journey. Grant RBI Account Aggregator consent,
           then complete the multilingual psychometric assessment.
         </p>
         <ul>
-          <li>Consent gateway (AA scopes)</li>
-          <li>Psychometric chat in EN / HI / BN</li>
-          <li>View your alternate credit score</li>
+          <li data-i18n="card-apply-li1">Consent gateway (AA scopes)</li>
+          <li data-i18n="card-apply-li2">Psychometric chat in EN / HI / BN</li>
+          <li data-i18n="card-apply-li3">View your alternate credit score</li>
         </ul>
-        <a class="btn btn-secondary" href="/apply">Apply Now</a>
+        <a class="btn btn-secondary" href="/apply" data-i18n="card-apply-btn">Apply Now</a>
+      </article>
+
+      <article class="card">
+        <div class="card-icon" style="background:#e0e7ff; color:#3730a3;">🛠️</div>
+        <h2 data-i18n="card-sandbox-title">Model Sandbox &amp; Simulator</h2>
+        <p data-i18n="card-sandbox-desc">
+          For model validation and stress testing. Adjust latent creditworthiness or tweak individual features to
+          simulate how the model handles all 5 data sources, viewing inputs and outputs side-by-side.
+        </p>
+        <ul>
+          <li data-i18n="card-sandbox-li1">Stress test with low/high risk presets</li>
+          <li data-i18n="card-sandbox-li2">Inspect raw simulated JSON payloads</li>
+          <li data-i18n="card-sandbox-li3">Override features and view updated scores</li>
+        </ul>
+        <a class="btn btn-secondary" href="/sandbox" data-i18n="card-sandbox-btn"
+          style="background:#3730a3; color:white; box-shadow:0 4px 14px rgba(55,48,163,0.35);">Open Sandbox</a>
       </article>
     </div>
 
     <div class="steps">
-      <h3>How it works</h3>
+      <h3 data-i18n="steps-title">How it works</h3>
       <div class="step-row">
         <div class="step-num">1</div>
         <div>
-          <strong>Borrower grants consent</strong>
-          <span>Select data scopes (telecom, e-commerce, geo, cash flow, survey) via the mobile consent gateway.</span>
+          <strong data-i18n="step1-title">Borrower grants consent</strong>
+          <span data-i18n="step1-desc">Select data scopes (telecom, e-commerce, geo, cash flow, survey) via the mobile consent gateway.</span>
         </div>
       </div>
       <div class="step-row">
         <div class="step-num">2</div>
         <div>
-          <strong>Psychometric assessment</strong>
-          <span>Complete a short agent-guided conversation. Traits are scored with a fixed, auditable rubric.</span>
+          <strong data-i18n="step2-title">Psychometric assessment</strong>
+          <span data-i18n="step2-desc">Complete a short agent-guided conversation. Traits are scored with a fixed, auditable rubric.</span>
         </div>
       </div>
       <div class="step-row">
         <div class="step-num">3</div>
         <div>
-          <strong>Score convergence</strong>
-          <span>Econometric + AI engines fuse behavioral signals into a 300–900 alternate credit score.</span>
+          <strong data-i18n="step3-title">Score convergence</strong>
+          <span data-i18n="step3-desc">Econometric + AI engines fuse behavioral signals into a 300–900 alternate credit score.</span>
         </div>
       </div>
       <div class="step-row">
         <div class="step-num">4</div>
         <div>
-          <strong>Bank review</strong>
-          <span>Loan officers review scores, PD, and top feature drivers on the LOS dashboard.</span>
+          <strong data-i18n="step4-title">Bank review</strong>
+          <span data-i18n="step4-desc">Loan officers review scores, PD, and top feature drivers on the LOS dashboard.</span>
         </div>
       </div>
     </div>
 
     <div class="footer-links">
-      <a href="/docs">API Docs</a>
-      <a href="/consent/compliance">Compliance Summary</a>
-      <a href="/health">Health Check</a>
+      <a href="/docs" data-i18n="footer-docs">API Docs</a>
+      <a href="/consent/compliance" data-i18n="footer-compliance">Compliance Summary</a>
+      <a href="/health" data-i18n="footer-health">Health Check</a>
     </div>
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      setupLanguageSelector('language-selector-root');
+    });
+  </script>
 </body>
+
 </html>

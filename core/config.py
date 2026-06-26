@@ -28,6 +28,14 @@ class Settings:
     # dashboard is populated the instant the server boots. Defaults to true.
     SEED_ON_STARTUP: str = os.getenv("SEED_ON_STARTUP", "true")
 
+    # Simulated 5-pillar mode on psychometric survey completion (for testing/demo only).
+    # MUST default to false for safety so real production files aren't contaminated.
+    SIMULATE_ALL_PILLARS: str = os.getenv("SIMULATE_ALL_PILLARS", "false")
+
+    # Time limits for the psychometric assessment (in seconds)
+    PSYCHOMETRIC_TIME_LIMIT_SECONDS: int = int(os.getenv("PSYCHOMETRIC_TIME_LIMIT_SECONDS", "420"))
+    PSYCHOMETRIC_EXTENSION_SECONDS: int = int(os.getenv("PSYCHOMETRIC_EXTENSION_SECONDS", "120"))
+
     # Storage backend. Defaults to Postgres (the deployed/Render configuration).
     # Set USE_SQLITE=true for an optional zero-dependency local run (a SQLite
     # file, no Docker/Postgres needed) — useful for an offline laptop demo.
@@ -75,6 +83,10 @@ class Settings:
     @property
     def seed_on_startup_enabled(self) -> bool:
         return self.SEED_ON_STARTUP.strip().lower() in {"1", "true", "yes"}
+
+    @property
+    def simulate_all_pillars_enabled(self) -> bool:
+        return self.SIMULATE_ALL_PILLARS.strip().lower() in {"1", "true", "yes"}
 
     @property
     def cors_origins_list(self) -> list[str]:

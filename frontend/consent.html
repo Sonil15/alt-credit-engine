@@ -108,17 +108,51 @@
     .confirm-box .row button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
     .confirm-box .row .cancel-btn { background: #334155; color: #e2e8f0; }
     .confirm-box .row .confirm-btn { background: #dc2626; color: white; }
+
+    .lang-selector {
+      display: inline-flex;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 3px;
+      border-radius: 10px;
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .lang-btn:hover {
+      color: #ffffff;
+    }
+
+    .lang-btn.active {
+      color: #ffffff;
+      background: #2563eb;
+    }
   </style>
+  <script src="/static/translations.js"></script>
 </head>
 <body>
   <div class="phone">
-    <div class="status-bar">
-      <a href="/">← Home</a>
-      <span>Consent Gateway</span>
+    <div class="status-bar" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <a href="/" data-i18n="consent-topbar-home">← Home</a>
+        <span style="margin-left: 10px;" data-i18n="consent-topbar-title">Consent Gateway</span>
+      </div>
+      <div id="language-selector-root"></div>
     </div>
     <div class="header">
-      <h1>RBI Account Aggregator Consent</h1>
-      <p>Grant consent for alternate credit assessment</p>
+      <h1 data-i18n="consent-header-title">RBI Account Aggregator Consent</h1>
+      <p data-i18n="consent-header-desc">Grant consent for alternate credit assessment</p>
     </div>
     <div class="content">
       <div class="progress">
@@ -130,49 +164,54 @@
       <!-- Step 1: Scope selection + disclosure -->
       <div class="step active" id="step1">
         <p style="font-size:13px;color:#64748b;margin-bottom:12px;line-height:1.5;">
-          <strong style="color:#94a3b8;">Data Fiduciary:</strong> Alt-Credit Engine ·
-          <strong style="color:#94a3b8;">Purpose:</strong> Thin-file credit assessment<br>
-          <strong style="color:#94a3b8;">Framework:</strong> RBI Account Aggregator ·
-          <strong style="color:#94a3b8;">Expires:</strong> 24 hours ·
-          <a href="/consent/compliance" style="color:#60a5fa;">Compliance</a>
+          <strong style="color:#94a3b8;" data-i18n="consent-fiduciary">Data Fiduciary:</strong> Alt-Credit Engine ·
+          <strong style="color:#94a3b8;" data-i18n="consent-purpose">Purpose:</strong> <span id="purpose-val">Thin-file credit assessment</span><br>
+          <strong style="color:#94a3b8;" data-i18n="consent-framework">Framework:</strong> <span data-i18n="consent-framework-val">RBI Account Aggregator</span> ·
+          <strong style="color:#94a3b8;" data-i18n="consent-expires">Expires:</strong> <span data-i18n="consent-expires-val">24 hours</span> ·
+          <a href="/consent/compliance" style="color:#60a5fa;" data-i18n="consent-compliance-link">Compliance</a>
         </p>
-        <p style="font-size:14px;color:#94a3b8;margin-bottom:8px;">Select FI data scopes to share:</p>
+        <p style="font-size:14px;color:#94a3b8;margin-bottom:8px;" data-i18n="consent-select-scopes">Select FI data scopes to share:</p>
         <ul class="scope-list">
-          <li><input type="checkbox" id="scope-telecom" checked> Telecom bills</li>
-          <li><input type="checkbox" id="scope-ecommerce" checked> E-commerce history</li>
-          <li><input type="checkbox" id="scope-geo" checked> Location stability</li>
-          <li><input type="checkbox" id="scope-cashflow" checked> Bank cash flow</li>
-          <li><input type="checkbox" id="scope-survey" checked> Psychometric survey</li>
+          <li id="li-telecom"><input type="checkbox" id="scope-telecom" checked> <span data-i18n="scope-telecom">Telecom bills</span> <span id="opt-telecom" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-telecom" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
+          <li id="li-ecommerce"><input type="checkbox" id="scope-ecommerce" checked> <span data-i18n="scope-ecommerce">E-commerce history</span> <span id="opt-ecommerce" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-ecommerce" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
+          <li id="li-geo"><input type="checkbox" id="scope-geo" checked> <span data-i18n="scope-geo">Location stability</span> <span id="opt-geo" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-geo" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
+          <li id="li-cashflow"><input type="checkbox" id="scope-cashflow" checked> <span data-i18n="scope-cashflow">Bank cash flow</span> <span id="opt-cashflow" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-cashflow" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
+          
+          <li id="li-campus" style="display:none;"><input type="checkbox" id="scope-campus" checked> <span data-i18n="scope-campus">Campus & UPI transactions</span> <span id="nec-campus" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
+          <li id="li-vendor" style="display:none;"><input type="checkbox" id="scope-vendor" checked> <span data-i18n="scope-vendor">Micro-enterprise UPI volumes</span> <span id="nec-vendor" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
+          <li id="li-farmer" style="display:none;"><input type="checkbox" id="scope-farmer" checked> <span data-i18n="scope-farmer">Farming cycles & purchases</span> <span id="nec-farmer" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
+          <li id="li-household" style="display:none;"><input type="checkbox" id="scope-household" checked> <span data-i18n="scope-household">Household utility payments</span> <span id="nec-household" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
+          
+          <li id="li-survey"><input type="checkbox" id="scope-survey" checked disabled> <span data-i18n="scope-survey">Psychometric survey</span></li>
         </ul>
 
         <div class="disclosure">
-          <strong>Your data rights (DPDP Act 2023 &amp; RBI AA Framework)</strong>
+          <strong data-i18n="consent-rights-title">Your data rights (DPDP Act 2023 &amp; RBI AA Framework)</strong>
           <ul>
-            <li>You may <strong>revoke this consent</strong> at any time — future data sharing stops immediately.</li>
-            <li>You may <strong>request erasure</strong> of your raw data and derived features.</li>
-            <li>We will always confirm what was deleted and what was retained.</li>
+            <li data-i18n="consent-rights-li1">You may <strong>revoke this consent</strong> at any time — future data sharing stops immediately.</li>
+            <li data-i18n="consent-rights-li2">You may <strong>request erasure</strong> of your raw data and derived features.</li>
+            <li data-i18n="consent-rights-li3">We will always confirm what was deleted and what was retained.</li>
           </ul>
           <div class="caveat">
-            <strong>Important limitation:</strong> Credit decisions already shared with credit bureaus
-            (CIBIL, Experian) cannot be recalled — those records are governed by bureau rules,
-            not this consent artifact.
+            <strong data-i18n="consent-caveat-title">Important limitation:</strong>
+            <span data-i18n="consent-caveat-text">Credit decisions already shared with credit bureaus (CIBIL, Experian) cannot be recalled — those records are governed by bureau rules, not this consent artifact.</span>
           </div>
         </div>
 
-        <button class="btn btn-primary" onclick="grantConsent()">Grant Consent &amp; Continue</button>
+        <button class="btn btn-primary" onclick="grantConsent()" data-i18n="consent-btn-grant">Grant Consent &amp; Continue</button>
       </div>
 
       <!-- Step 2: Start psychometric assessment -->
       <div class="step" id="step2">
-        <p style="font-size:14px;color:#94a3b8;margin-bottom:16px;line-height:1.5;">
+        <p style="font-size:14px;color:#94a3b8;margin-bottom:16px;line-height:1.5;" data-i18n="consent-step2-text">
           Consent registered. Next, complete a short psychometric assessment in your preferred
           language (English, Hindi, or Bengali). You can answer by typing or speaking.
           The agent guides you — scoring uses a fixed, auditable rubric.
         </p>
-        <p style="font-size:12px;color:#64748b;margin-bottom:4px;">Your consent ID:</p>
+        <p style="font-size:12px;color:#64748b;margin-bottom:4px;" data-i18n="consent-id-label">Your consent ID:</p>
         <p style="font-size:12px;font-family:ui-monospace,monospace;color:#60a5fa;word-break:break-all;margin-bottom:16px;" id="consent-id-display"></p>
-        <button class="btn btn-primary" onclick="startAssessment()">Start Psychometric Assessment</button>
-        <button class="btn btn-ghost" onclick="goToPrivacy()">Manage my consent instead</button>
+        <button class="btn btn-primary" onclick="startAssessment()" data-i18n="consent-btn-start">Start Psychometric Assessment</button>
+        <button class="btn btn-ghost" onclick="goToPrivacy()" data-i18n="consent-btn-manage">Manage my consent instead</button>
       </div>
 
       <!-- Step 3: Privacy / Consent Management -->
@@ -181,30 +220,30 @@
         <div class="error-banner" id="error-banner"></div>
 
         <div class="status-card">
-          <div class="label">Consent Status</div>
-          <div class="value" id="consent-status-text">Checking…</div>
+          <div class="label" data-i18n="consent-status-title">Consent Status</div>
+          <div class="value" id="consent-status-text" data-i18n="consent-status-checking">Checking…</div>
           <div id="consent-pill"></div>
         </div>
 
         <div class="status-card">
-          <div class="label">Your Data</div>
-          <div class="value" id="data-status-text">Checking…</div>
+          <div class="label" data-i18n="consent-data-title">Your Data</div>
+          <div class="value" id="data-status-text" data-i18n="consent-status-checking">Checking…</div>
           <div id="data-pill"></div>
         </div>
 
         <div class="action-row">
-          <button class="btn btn-primary" id="revoke-btn" onclick="doRevoke()" disabled>
+          <button class="btn btn-primary" id="revoke-btn" onclick="doRevoke()" disabled data-i18n="consent-btn-revoke">
             Revoke Consent
           </button>
-          <button class="btn btn-danger" id="erase-btn" onclick="confirmErase()" disabled>
+          <button class="btn btn-danger" id="erase-btn" onclick="confirmErase()" disabled data-i18n="consent-btn-erase">
             Request Data Deletion
           </button>
         </div>
 
         <div class="retained-note">
-          <strong>What is always retained</strong> (cannot be erased under DPDP §17 regulatory exemption):<br>
-          Anonymised credit decision records — score, decision band, date — are kept for
-          5 years per RBI audit requirements. No name, phone, or account number is stored in these records.
+          <strong data-i18n="consent-retained-title">What is always retained</strong> <span data-i18n="consent-retained-text">(cannot be erased under DPDP §17 regulatory exemption):</span><br>
+          <span data-i18n="consent-retained-body">Anonymised credit decision records — score, decision band, date — are kept for
+          5 years per RBI audit requirements. No name, phone, or account number is stored in these records.</span>
         </div>
       </div>
     </div>
@@ -213,15 +252,15 @@
   <!-- Erase confirmation overlay -->
   <div class="confirm-overlay" id="confirm-overlay">
     <div class="confirm-box">
-      <h3>Delete all your data?</h3>
+      <h3 data-i18n="consent-erase-confirm-title">Delete all your data?</h3>
       <p>
-        This will permanently delete your encrypted raw data and all derived ML features.
-        Your anonymised credit decision record will be retained for regulatory audit.<br><br>
-        <strong style="color:#fca5a5;">This cannot be undone.</strong>
+        <span data-i18n="consent-erase-confirm-body">This will permanently delete your encrypted raw data and all derived ML features.
+        Your anonymised credit decision record will be retained for regulatory audit.</span><br><br>
+        <strong style="color:#fca5a5;" data-i18n="consent-erase-confirm-warning">This cannot be undone.</strong>
       </p>
       <div class="row">
-        <button class="cancel-btn" onclick="closeConfirm()">Cancel</button>
-        <button class="confirm-btn" onclick="doErase()">Yes, delete my data</button>
+        <button class="cancel-btn" onclick="closeConfirm()" data-i18n="consent-btn-cancel">Cancel</button>
+        <button class="confirm-btn" onclick="doErase()" data-i18n="consent-btn-confirm-delete">Yes, delete my data</button>
       </div>
     </div>
   </div>
@@ -258,7 +297,12 @@
     }
 
     function startAssessment() {
-      window.location = '/assessment?user_id=' + userId;
+      let url = '/assessment?user_id=' + userId;
+      const cohort = params.get('cohort');
+      if (cohort) {
+        url += '&cohort=' + encodeURIComponent(cohort);
+      }
+      window.location = url;
     }
 
     // ── Status loading ──────────────────────────────────────────────────────
@@ -269,30 +313,40 @@
         const s = await resp.json();
         renderStatus(s);
       } catch (_) {
-        document.getElementById('consent-status-text').textContent = 'Could not load status';
-        document.getElementById('data-status-text').textContent = 'Could not load status';
+        const lang = getCurrentLanguage();
+        const t = (key) => (ALTCREDIT_DICTIONARY[lang] && ALTCREDIT_DICTIONARY[lang][key]) || ALTCREDIT_DICTIONARY['en'][key] || key;
+        document.getElementById('consent-status-text').textContent = t('consent-status-checking');
+        document.getElementById('data-status-text').textContent = t('consent-status-checking');
       }
     }
 
+    let latestStatus = null;
+
     function renderStatus(s) {
+      latestStatus = s;
+      const lang = getCurrentLanguage();
+      const t = (key) => (ALTCREDIT_DICTIONARY[lang] && ALTCREDIT_DICTIONARY[lang][key]) || ALTCREDIT_DICTIONARY['en'][key] || key;
+
       // Consent status
       const csText = document.getElementById('consent-status-text');
       const csPill = document.getElementById('consent-pill');
       const revokeBtn = document.getElementById('revoke-btn');
 
       if (s.consent_status === 'active') {
-        csText.textContent = 'Active — data sharing is enabled';
+        csText.textContent = t('consent-status-active');
         csPill.innerHTML = '<span class="pill pill-active">ACTIVE</span>';
         revokeBtn.disabled = false;
+        revokeBtn.textContent = t('consent-btn-revoke');
       } else if (s.consent_status === 'revoked') {
-        csText.textContent = 'Revoked — no further data will be shared';
+        csText.textContent = t('consent-status-revoked');
         csPill.innerHTML = '<span class="pill pill-revoked">REVOKED</span>';
         revokeBtn.disabled = true;
-        revokeBtn.textContent = 'Consent already revoked';
+        revokeBtn.textContent = t('consent-btn-revoked');
       } else {
-        csText.textContent = 'Status unknown (consent registered at assessment time)';
+        csText.textContent = t('consent-status-unknown');
         csPill.innerHTML = '<span class="pill pill-unknown">UNKNOWN</span>';
         revokeBtn.disabled = false;
+        revokeBtn.textContent = t('consent-btn-revoke');
       }
 
       // Data status
@@ -301,27 +355,31 @@
       const eraseBtn = document.getElementById('erase-btn');
 
       if (s.erasure_requested) {
-        const ts = s.erasure_timestamp ? ' on ' + new Date(s.erasure_timestamp).toLocaleDateString('en-IN') : '';
-        dsText.textContent = 'Deleted' + ts + ' — only audit record remains';
+        const ts = s.erasure_timestamp ? ' (' + new Date(s.erasure_timestamp).toLocaleDateString('en-IN') + ')' : '';
+        dsText.textContent = t('consent-data-deleted') + ts;
         dsPill.innerHTML = '<span class="pill pill-deleted">DELETED</span>';
         eraseBtn.disabled = true;
-        eraseBtn.textContent = 'Data already deleted';
+        eraseBtn.textContent = t('consent-btn-deleted');
       } else if (s.data_present) {
-        dsText.textContent = 'Your data is stored in encrypted form';
+        dsText.textContent = t('consent-data-present');
         dsPill.innerHTML = '<span class="pill pill-present">PRESENT</span>';
         eraseBtn.disabled = false;
+        eraseBtn.textContent = t('consent-btn-erase');
       } else {
-        dsText.textContent = 'No stored data found for this user ID';
+        dsText.textContent = t('consent-data-none');
         dsPill.innerHTML = '<span class="pill pill-unknown">NONE</span>';
         eraseBtn.disabled = true;
-        eraseBtn.textContent = 'No data to delete';
+        eraseBtn.textContent = t('consent-btn-erase');
       }
     }
 
     // ── Revoke ──────────────────────────────────────────────────────────────
     async function doRevoke() {
+      const lang = getCurrentLanguage();
+      const t = (key) => (ALTCREDIT_DICTIONARY[lang] && ALTCREDIT_DICTIONARY[lang][key]) || ALTCREDIT_DICTIONARY['en'][key] || key;
+
       document.getElementById('revoke-btn').disabled = true;
-      document.getElementById('revoke-btn').textContent = 'Revoking…';
+      document.getElementById('revoke-btn').textContent = t('consent-btn-revoking');
       try {
         const body = consentId
           ? { consent_id: consentId, user_id: userId }
@@ -332,12 +390,12 @@
           body: JSON.stringify(body),
         });
         if (!resp.ok) throw new Error((await resp.json()).detail || 'Revoke failed');
-        showSuccess('Consent revoked. No further data will be shared.');
+        showSuccess(t('consent-btn-revoked'));
         await loadStatus();
       } catch (err) {
         showError('Revocation failed: ' + err.message);
         document.getElementById('revoke-btn').disabled = false;
-        document.getElementById('revoke-btn').textContent = 'Revoke Consent';
+        document.getElementById('revoke-btn').textContent = t('consent-btn-revoke');
       }
     }
 
@@ -350,9 +408,12 @@
     }
 
     async function doErase() {
+      const lang = getCurrentLanguage();
+      const t = (key) => (ALTCREDIT_DICTIONARY[lang] && ALTCREDIT_DICTIONARY[lang][key]) || ALTCREDIT_DICTIONARY['en'][key] || key;
+
       closeConfirm();
       document.getElementById('erase-btn').disabled = true;
-      document.getElementById('erase-btn').textContent = 'Deleting…';
+      document.getElementById('erase-btn').textContent = t('consent-btn-deleting');
       try {
         const resp = await fetch('/consent/erasure', {
           method: 'POST',
@@ -361,16 +422,21 @@
         });
         if (!resp.ok) throw new Error((await resp.json()).detail || 'Erasure failed');
         const data = await resp.json();
-        showSuccess(
-          `Data deleted. ${data.vault_records_deleted} raw record(s) and ` +
-          `${data.feature_records_deleted} feature record(s) removed. ` +
-          `${data.audit_records_retained} anonymised decision record(s) retained for regulatory audit.`
-        );
+        
+        let deletedMsg = '';
+        if (lang === 'hi') {
+          deletedMsg = `डेटा हटा दिया गया। ${data.vault_records_deleted} रॉ रिकॉर्ड और ${data.feature_records_deleted} फ़ीचर रिकॉर्ड हटाए गए। ${data.audit_records_retained} अनामीकृत निर्णय रिकॉर्ड नियामक ऑडिट के लिए सुरक्षित रखे गए हैं।`;
+        } else if (lang === 'bn') {
+          deletedMsg = `উপাত্ত মুছে ফেলা হয়েছে। ${data.vault_records_deleted}টি র রেকর্ড এবং ${data.feature_records_deleted}টি ফিচার রেকর্ড সরানো হয়েছে। ${data.audit_records_retained}টি বেনামী সিদ্ধান্তের রেকর্ড নিয়ন্ত্রক অডিটের জন্য রাখা হয়েছে।`;
+        } else {
+          deletedMsg = `Data deleted. ${data.vault_records_deleted} raw record(s) and ${data.feature_records_deleted} feature record(s) removed. ${data.audit_records_retained} anonymised decision record(s) retained for regulatory audit.`;
+        }
+        showSuccess(deletedMsg);
         await loadStatus();
       } catch (err) {
         showError('Erasure failed: ' + err.message);
         document.getElementById('erase-btn').disabled = false;
-        document.getElementById('erase-btn').textContent = 'Request Data Deletion';
+        document.getElementById('erase-btn').textContent = t('consent-btn-erase');
       }
     }
 
@@ -390,6 +456,128 @@
       goToStep(3);
       loadStatus();
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setupLanguageSelector('language-selector-root');
+      let isInitialized = false;
+
+      function applyCohortUI() {
+        const cohort = params.get('cohort') || 'Salaried';
+        const lang = getCurrentLanguage();
+        const t = (key) => (ALTCREDIT_DICTIONARY[lang] && ALTCREDIT_DICTIONARY[lang][key]) || ALTCREDIT_DICTIONARY['en'][key] || key;
+        
+        // Update Purpose
+        const cohortLocal = t('cohort-' + cohort.toLowerCase()) || cohort;
+        let purposeText = cohortLocal + ' Credit Assessment';
+        if (lang === 'hi') {
+          purposeText = cohortLocal + ' क्रेडिट मूल्यांकन';
+        } else if (lang === 'bn') {
+          purposeText = cohortLocal + ' ক্রেডিট মূল্যায়ন';
+        }
+        document.getElementById('purpose-val').textContent = purposeText;
+
+        // Cohort expected mapping
+        const expectedPillars = {
+          'Salaried': ['telecom', 'ecommerce', 'geo', 'cashflow', 'survey'],
+          'GigWorker': ['telecom', 'ecommerce', 'geo', 'cashflow', 'survey'],
+          'Student': ['geo', 'survey', 'campus'],
+          'Vendor': ['geo', 'survey', 'vendor'],
+          'Farmer': ['geo', 'survey', 'farmer'],
+          'Homemaker': ['telecom', 'geo', 'survey', 'household']
+        };
+
+        const cohortExpected = expectedPillars[cohort] || expectedPillars['Salaried'];
+
+        // Define cohort-specific scopes and standard scopes
+        const cohortSpecifics = ['campus', 'vendor', 'farmer', 'household'];
+        const standardScopes = ['telecom', 'ecommerce', 'geo', 'cashflow'];
+        const allScopes = [...standardScopes, ...cohortSpecifics];
+
+        allScopes.forEach(id => {
+          const li = document.getElementById('li-' + id);
+          const cb = document.getElementById('scope-' + id);
+          const optLabel = document.getElementById('opt-' + id);
+          const necLabel = document.getElementById('nec-' + id);
+
+          const isExpected = cohortExpected.includes(id);
+          const isSpecific = cohortSpecifics.includes(id);
+
+          // 1. Show/hide list item
+          if (li) {
+            if (isSpecific) {
+              li.style.display = isExpected ? 'block' : 'none';
+            } else {
+              li.style.display = 'block';
+            }
+          }
+
+          // 2. Set default check status (run once)
+          if (cb && !isInitialized) {
+            cb.checked = isExpected;
+            cb.disabled = false;
+          }
+
+          // 3. Translate and display appropriate labels
+          if (optLabel) {
+            if (!isExpected) {
+              optLabel.style.display = 'inline';
+              if (lang === 'hi') optLabel.textContent = '(वैकल्पिक)';
+              else if (lang === 'bn') optLabel.textContent = '(ঐচ্ছিক)';
+              else optLabel.textContent = '(Optional)';
+            } else {
+              optLabel.style.display = 'none';
+            }
+          }
+
+          if (necLabel) {
+            if (isExpected) {
+              necLabel.style.display = 'inline';
+              if (lang === 'hi') necLabel.textContent = '(स्कोर के लिए आवश्यक)';
+              else if (lang === 'bn') necLabel.textContent = '(স্কোরের জন্য প্রয়োজনীয়)';
+              else necLabel.textContent = '(Necessary for Score)';
+            } else {
+              necLabel.style.display = 'none';
+            }
+          }
+        });
+
+        // Ensure psychometric is checked and disabled
+        const surveyCb = document.getElementById('scope-survey');
+        if (surveyCb) {
+          surveyCb.checked = true;
+          surveyCb.disabled = true;
+        }
+
+        // Reorder list items: necessary ones first, then optional ones
+        const ul = document.querySelector('.scope-list');
+        if (ul) {
+          const lis = Array.from(ul.children);
+          lis.sort((a, b) => {
+            const idA = a.id.replace('li-', '');
+            const idB = b.id.replace('li-', '');
+            
+            const isExpectedA = cohortExpected.includes(idA);
+            const isExpectedB = cohortExpected.includes(idB);
+            
+            if (isExpectedA && !isExpectedB) return -1;
+            if (!isExpectedA && isExpectedB) return 1;
+            return 0;
+          });
+          lis.forEach(li => ul.appendChild(li));
+        }
+
+        isInitialized = true;
+      }
+
+      applyCohortUI();
+
+      window.addEventListener('altcreditLanguageChanged', () => {
+        applyCohortUI();
+        if (latestStatus) {
+          renderStatus(latestStatus);
+        }
+      });
+    });
   </script>
 </body>
 </html>
