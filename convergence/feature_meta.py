@@ -1,7 +1,8 @@
 """Human-readable metadata for ML features used in the dashboard signal trace.
 
-The score engine reports SHAP contributions by raw feature name (e.g.
-``monthly_income_mean``). To show a reviewer the *input → output* linkage, we pair
+The score engine reports the EBM champion's per-feature contributions by raw
+feature name (e.g. ``monthly_income_mean``). To show a reviewer the *input →
+output* linkage, we pair
 each contribution with the borrower's actual value, the plain-language data source
 it came from, and a hint for how to format that value in the UI.
 
@@ -14,9 +15,9 @@ from __future__ import annotations
 from core.json_utils import safe_float
 from models_ai.constants import FEATURE_COLUMNS
 
-# Derivation engine for each signal. The score (points) is *always* assigned by
-# the CatBoost ML model via SHAP; ``engine`` records which analytical engine
-# produced the input feature the model consumed:
+# Derivation engine for each signal. The score (points) is assigned by the EBM
+# champion's own additive terms (not a post-hoc SHAP approximation); ``engine``
+# records which analytical engine produced the input feature the model consumed:
 #   extraction   -> statistical feature extraction from a cleaned data source
 #   econometric  -> the ECM + ADF time-series engine (models_econometric)
 ENGINE_EXTRACTION = "extraction"

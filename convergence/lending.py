@@ -41,11 +41,11 @@ def interest_rate_for_pd(pd_value: float) -> float:
 
 
 def tenure_for_score(credit_score: int) -> int:
-    if credit_score >= 750:
+    if credit_score >= 640:
         return 36
-    if credit_score >= 650:
+    if credit_score >= 580:
         return 24
-    if credit_score >= 550:
+    if credit_score >= 480:
         return 18
     return 12
 

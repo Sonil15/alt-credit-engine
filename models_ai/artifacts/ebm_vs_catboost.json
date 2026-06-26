@@ -1,0 +1,42 @@
+{
+  "n_users": 100,
+  "default_rate": 0.09,
+  "n_folds": 5,
+  "catboost": {
+    "auc": 0.8278,
+    "gini": 0.6557,
+    "ks": 0.6264,
+    "cv_auc_mean": 0.8278,
+    "cv_auc_std": 0.1536
+  },
+  "ebm": {
+    "auc": 0.8303,
+    "gini": 0.6606,
+    "ks": 0.6374,
+    "cv_auc_mean": 0.8333,
+    "cv_auc_std": 0.1571
+  },
+  "agreement": {
+    "three_band_rate": 0.92,
+    "approve_vs_reject_rate": 0.95,
+    "pd_pearson": 0.8868,
+    "pd_spearman": 0.8715,
+    "crosstab": {
+      "APPROVE": {
+        "APPROVE": 82,
+        "REVIEW": 1,
+        "REJECT": 1
+      },
+      "REVIEW": {
+        "APPROVE": 2,
+        "REVIEW": 5,
+        "REJECT": 1
+      },
+      "REJECT": {
+        "APPROVE": 1,
+        "REVIEW": 2,
+        "REJECT": 5
+      }
+    }
+  }
+}

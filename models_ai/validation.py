@@ -20,6 +20,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
 from core.seeds import CATBOOST_RANDOM_SEED
+from convergence.panel import APPROVE_SCORE, REVIEW_SCORE, pd_cutoff_for_score
 from models_ai.constants import FEATURE_COLUMNS, LABEL_COLUMN, fill_missing_features
 
 logger = logging.getLogger(__name__)
@@ -27,8 +28,8 @@ logger = logging.getLogger(__name__)
 MODEL_CARD_PATH = Path(__file__).parent / "artifacts" / "model_card.json"
 MODEL_VERSION = "1.0.0"
 
-APPROVE_PD_THRESHOLD = 0.25  # ~750 score
-REVIEW_PD_THRESHOLD = 0.583  # ~550 score
+APPROVE_PD_THRESHOLD = pd_cutoff_for_score(APPROVE_SCORE)
+REVIEW_PD_THRESHOLD = pd_cutoff_for_score(REVIEW_SCORE)
 
 
 def _gini(auc: float) -> float:

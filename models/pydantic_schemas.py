@@ -260,6 +260,9 @@ class CreditScoreResponse(BaseModel):
     confidence_pct: float = 100.0
     thin_file: bool = False
     lending: dict[str, Any] = {}
+    panel: dict[str, Any] = {}
+    conformal: dict[str, Any] = {}
+    explanation_method: str = "ebm-additive-terms"
     model_version: str = "unknown"
     is_simulated: bool = False
 
@@ -307,6 +310,7 @@ class PortfolioSummaryResponse(BaseModel):
     expected_default_rate: float
     avg_score: float
     score_distribution: dict[str, int]
+    decision_thresholds: dict[str, int] = {}
     fairness: dict[str, Any] = {}
 
 

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Alt-Credit — Model Sandbox &amp; Simulator</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/static/panel_viz.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -314,6 +315,12 @@
         </section>
       </div>
 
+      <!-- Champion / challenger model panel -->
+      <section class="card" id="model-panel-card" style="display:none;">
+        <h3>Model Panel — champion decides, challengers audit</h3>
+        <div id="model-panel-body"></div>
+      </section>
+
       <!-- Raw Payloads (Input Inspection) -->
       <section class="card">
         <h3>Generated Raw Inputs (Bypassing Vault)</h3>
@@ -349,20 +356,29 @@
           </tbody>
         </table>
       </section>
+
+      <!-- Glass-box shape functions: the model itself, not a SHAP estimate -->
+      <section class="card" id="shape-card" style="display:none;">
+        <h3>How the model decided — its own shape functions · glass-box, no SHAP</h3>
+        <p class="help-text" style="color:#94a3b8; margin:0 0 8px;">Each curve is the EBM champion's actual term for one feature — the line <em>is</em> the model's reasoning, read directly. The marker shows where this borrower sits and the exact points the model gave them.</p>
+        <div id="shape-viewer"></div>
+      </section>
     </main>
   </div>
 
   <div class="loading-overlay" id="loading-overlay">
     <div class="spinner"></div>
     <div style="font-weight:bold; color:white;">Simulating Pipeline...</div>
-    <div class="help-text" style="color:#94a3b8;">Generating raw data &bull; Cleaning in-memory &bull; Scoring CatBoost</div>
+    <div class="help-text" style="color:#94a3b8;">Generating raw data &bull; Cleaning in-memory &bull; Scoring · EBM champion + challenger panel</div>
   </div>
 
   <script>
     let gaugeChart = null, radarChart = null;
     let overridesOpen = false;
+    let approveScore = 580, reviewScore = 480;
 
-    const scoreColor = s => s >= 750 ? '#22c55e' : s >= 550 ? '#eab308' : '#ef4444';
+    const scoreColor = s => s >= approveScore ? '#22c55e' : s >= reviewScore ? '#eab308' : '#ef4444';
+    const scoreGrade = s => s >= approveScore ? 'STRONG' : s >= reviewScore ? 'MODERATE' : 'HIGH RISK';
     const pillarColor = s => s >= 75 ? '#22c55e' : s >= 55 ? '#4ade80' : s >= 35 ? '#eab308' : '#ef4444';
     const fmtINR = n => '₹' + Math.round(n).toLocaleString('en-IN');
 
@@ -438,7 +454,7 @@
       // Update score display
       document.getElementById('credit-score').textContent = score.credit_score;
       document.getElementById('credit-score').style.color = scoreColor(score.credit_score);
-      const grade = score.credit_score >= 750 ? 'STRONG' : score.credit_score >= 550 ? 'MODERATE' : 'HIGH RISK';
+      const grade = scoreGrade(score.credit_score);
       document.getElementById('score-grade').textContent = grade;
       document.getElementById('score-grade').style.color = scoreColor(score.credit_score);
       
@@ -531,10 +547,32 @@
       } else {
         traceBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b;">No details available.</td></tr>`;
       }
+
+      // champion/challenger panel + glass-box shape functions
+      if (window.AltCredit) {
+        document.getElementById('model-panel-card').style.display = score.panel ? 'block' : 'none';
+        AltCredit.renderModelPanel(document.getElementById('model-panel-body'), score.panel);
+        AltCredit.loadShapeFunctions().then(map => {
+          AltCredit.renderShapeViewer(document.getElementById('shape-viewer'), map, score.feature_trace||{}, score.shap_drivers||[]);
+          document.getElementById('shape-card').style.display =
+            document.getElementById('shape-viewer').style.display === 'none' ? 'none' : 'block';
+        });
+      }
     }
 
-    // Run Med Risk preset by default on page load
-    runSimulation();
+    // Load live cutoffs, then run Med Risk preset on page load
+    (async function initSandbox() {
+      try {
+        const resp = await fetch('/score/portfolio/summary');
+        if (resp.ok) {
+          const pf = await resp.json();
+          const th = pf.decision_thresholds || {};
+          if (th.approve_score) approveScore = th.approve_score;
+          if (th.review_score) reviewScore = th.review_score;
+        }
+      } catch (_) {}
+      runSimulation();
+    })();
   </script>
 </body>
 </html>

@@ -18,9 +18,16 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-# Calibrated for 300-900 range: base score 600 at 50:1 odds, PDO=50
+# Calibrated for the 300-900 range, anchored to the population's *actual* odds.
+# The base score 600 sits at ~10:1 good:bad (≈9% PD, the dataset's base default
+# rate). A 50:1 anchor was previously used, but that only mapped sensibly when the
+# model was over-confident (CatBoost pushing good borrowers to near-0 PD). The
+# glass-box EBM champion is honestly calibrated (median PD ≈ base rate), so we
+# anchor to real population odds: this spreads calibrated PDs across the band
+# (strong ≈5% PD → ~646, base rate ≈9% → ~600, weak ≈17% PD → ~548).
+# Decision cutoffs (APPROVE/REVIEW) live in convergence.panel.
 BASE_SCORE = 600
-BASE_ODDS = 50.0  # good:bad = 50:1 at base score
+BASE_ODDS = 10.0  # good:bad ≈ 10:1 at base score (≈9% PD, the population base rate)
 PDO = 50  # points to double the odds
 SCORE_MIN = 300
 SCORE_MAX = 900

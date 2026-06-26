@@ -3,10 +3,13 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from convergence.feature_meta import FEATURE_META
+from convergence.scorecard import shap_to_points
 from convergence.score_engine import portfolio_summary, score_all_users, score_user
 from core.auth import get_session_user_id, require_api_key, require_own_session
 from core.database import AsyncSessionLocal, get_db
-from core.model_cache import get_model_card, get_model_version, reload_model_cache
+from core.model_cache import get_cached_champion, get_model_card, get_model_version, reload_model_cache
+from models_ai.ebm_model import ebm_shape_functions
 from models.pydantic_schemas import (
     CreditScoreResponse,
     ModelCardResponse,
@@ -14,7 +17,7 @@ from models.pydantic_schemas import (
     PortfolioSummaryResponse,
     TrainResponse,
 )
-from models_ai.catboost_model import train_from_db
+from models_ai.ensemble import train_all_from_db
 from models_econometric.ecm_model import run_ecm_pipeline
 
 logger = logging.getLogger(__name__)
@@ -89,13 +92,58 @@ async def get_model_card_endpoint() -> ModelCardResponse:
     )
 
 
+_shape_cache: dict = {}
+
+
+@router.get("/model/explanations")
+async def get_model_explanations() -> dict:
+    """EBM champion's global shape functions — the model's own decision curves.
+
+    Each feature's contribution is read directly off its shape function; there is no
+    SHAP approximation. ``points`` are the log-odds contributions expressed on the
+    same credit-score scale used everywhere else (positive = raises the score).
+    """
+    version = get_model_version()
+    if _shape_cache.get("version") != version:
+        try:
+            champion = get_cached_champion()
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=503, detail="Model not trained.") from exc
+        features = []
+        for fn in ebm_shape_functions(champion):
+            meta = FEATURE_META.get(fn["feature"], {})
+            features.append(
+                {
+                    "feature": fn["feature"],
+                    "label": meta.get("label", fn["feature"].replace("_", " ").title()),
+                    "source": meta.get("source", ""),
+                    "fmt": meta.get("fmt", "number"),
+                    "direction": meta.get("direction", ""),
+                    "x": fn["x"],
+                    "points": [round(shap_to_points(v), 2) for v in fn["logodds"]],
+                }
+            )
+        _shape_cache.update(
+            {
+                "version": version,
+                "payload": {
+                    "model": "ebm",
+                    "explanation_method": "ebm-additive-terms",
+                    "note": "These curves are the model itself, not a SHAP approximation.",
+                    "features": features,
+                },
+            }
+        )
+    return _shape_cache["payload"]
+
+
 @router.post("/train", response_model=TrainResponse, dependencies=[Depends(require_api_key)])
 async def train_models() -> TrainResponse:
     """Run ECM pipeline and train CatBoost (admin endpoint)."""
     try:
         async with AsyncSessionLocal() as session:
             ecm_result = await run_ecm_pipeline(session)
-            train_result = await train_from_db(session)
+            train_result = await train_all_from_db(session)
         reload_model_cache()
         metrics = train_result.get("metrics", {})
         return TrainResponse(

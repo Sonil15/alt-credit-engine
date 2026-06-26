@@ -193,6 +193,12 @@
         </div>
       </div>
 
+      <!-- Champion / challenger model panel -->
+      <div class="chart-card" id="model-panel-card" style="display:none;">
+        <h2>Model Panel — champion decides, challengers audit</h2>
+        <div id="model-panel-body"></div>
+      </div>
+
       <!-- Pillars: radar + bars -->
       <div class="two-col">
         <div class="chart-card">
@@ -205,14 +211,21 @@
         </div>
       </div>
 
-      <!-- Explainability -->
+      <!-- Explainability: the model's own additive contributions (no SHAP) -->
       <div class="chart-card">
-        <h2>Why this score — SHAP drivers (impact in points)</h2>
+        <h2>Why this score — the model's own contributions (in points)</h2>
         <canvas id="shap-chart" height="120"></canvas>
         <div class="drivers" id="drivers-list"></div>
         <div class="reason-box" id="reason-codes-box" style="display:none;">
           <strong>Adverse Action Reason Codes:</strong> <span id="reason-codes-text"></span>
         </div>
+      </div>
+
+      <!-- Glass-box shape functions: the model itself, not a SHAP estimate -->
+      <div class="chart-card" id="shape-card" style="display:none;">
+        <h2>How the model decided — its own shape functions <span style="font-weight:600;color:#2563eb;">· glass-box, no SHAP</span></h2>
+        <p class="trace-sub">Each curve is the EBM champion's actual term for one feature — the line <em>is</em> the model's reasoning, read directly. The blue marker shows where this borrower sits and the exact points the model gave them.</p>
+        <div id="shape-viewer"></div>
       </div>
 
       <!-- End-to-end decision pipeline -->
@@ -240,8 +253,8 @@
           <div class="pl-arrow">→</div>
           <div class="pl-stage">
             <div class="pl-box pl-ml">
-              <div class="pl-t">ML Model · CatBoost</div>
-              <div class="pl-d">Gradient boosting → probability of default</div>
+              <div class="pl-t">Glass-box Champion · EBM</div>
+              <div class="pl-d">Additive model → probability of default (CatBoost + Logistic audit it)</div>
               <div class="pl-v pd" id="pl-pd" style="color:#dc2626;">—</div>
             </div>
           </div>
@@ -249,7 +262,7 @@
           <div class="pl-stage">
             <div class="pl-box pl-score">
               <div class="pl-t">Scorecard · PDO</div>
-              <div class="pl-d">log-odds → 300–900 band + SHAP points</div>
+              <div class="pl-d">log-odds → 300–900 band + additive points</div>
               <div class="pl-v" id="pl-score" style="color:#2563eb;">—</div>
             </div>
           </div>
@@ -262,7 +275,7 @@
             </div>
           </div>
         </div>
-        <p class="pl-note">The <span class="eng eng-ecm">Econometric</span> engine and <span class="eng eng-stat">Statistical</span> extraction both produce input features; the <strong>CatBoost ML model</strong> consumes all of them and assigns every point shown in the Signal Trace below.</p>
+        <p class="pl-note">The <span class="eng eng-ecm">Econometric</span> engine and <span class="eng eng-stat">Statistical</span> extraction both produce input features; the <strong>glass-box EBM champion</strong> consumes all of them and assigns every point shown in the Signal Trace below — and those points are the model's own additive terms, not a SHAP approximation.</p>
       </div>
 
       <!-- Input data -> score linkage -->
@@ -281,10 +294,13 @@
     </div>
   </div>
 
+  <script src="/static/panel_viz.js"></script>
   <script>
     let shapChart=null, gaugeChart=null, distChart=null, radarChart=null, fairnessChart=null;
+    let approveScore = 580, reviewScore = 480;
     const fmtINR = n => '₹' + Math.round(n).toLocaleString('en-IN');
-    const scoreColor = s => s >= 750 ? '#16a34a' : s >= 550 ? '#eab308' : '#dc2626';
+    const scoreColor = s => s >= approveScore ? '#16a34a' : s >= reviewScore ? '#eab308' : '#dc2626';
+    const scoreGrade = s => s >= approveScore ? 'STRONG' : s >= reviewScore ? 'MODERATE' : 'HIGH RISK';
     const pillarColor = s => s >= 75 ? '#16a34a' : s >= 55 ? '#22c55e' : s >= 35 ? '#eab308' : '#dc2626';
 
     async function loadModelCard() {
@@ -305,11 +321,19 @@
         document.getElementById('pf-edr').textContent = (pf.expected_default_rate*100).toFixed(1)+'%';
         document.getElementById('pf-avg').textContent = Math.round(pf.avg_score);
 
+        const th = pf.decision_thresholds || {};
+        if (th.approve_score) approveScore = th.approve_score;
+        if (th.review_score) reviewScore = th.review_score;
+
         const dist = pf.score_distribution||{};
+        const distKeys = Object.keys(dist);
+        const distLabels = distKeys.length === 3
+          ? [`Reject (300–${reviewScore - 1})`, `Review (${reviewScore}–${approveScore - 1})`, `Approve (${approveScore}–900)`]
+          : distKeys;
         if (distChart) distChart.destroy();
         distChart = new Chart(document.getElementById('distribution-chart'), {
           type:'bar',
-          data:{ labels:['Reject (300–549)','Review (550–749)','Approve (750–900)'],
+          data:{ labels: distLabels,
             datasets:[{ data:Object.values(dist), backgroundColor:['#dc2626','#eab308','#16a34a'], borderRadius:6 }] },
           options:{ plugins:{legend:{display:false}}, scales:{y:{ticks:{precision:0}}} }
         });
@@ -367,7 +391,7 @@
       document.getElementById('score-panel').style.display='block';
       document.getElementById('credit-score').textContent = d.credit_score;
       document.getElementById('credit-score').style.color = scoreColor(d.credit_score);
-      const grade = d.credit_score>=750?'STRONG':d.credit_score>=550?'MODERATE':'HIGH RISK';
+      const grade = scoreGrade(d.credit_score);
       const ge = document.getElementById('score-grade'); ge.textContent = grade; ge.style.color = scoreColor(d.credit_score);
       document.getElementById('pd-value').textContent = (d.probability_of_default*100).toFixed(1)+'%';
       document.getElementById('display-user-id').textContent = d.user_id+' · '+(d.model_version||'');
@@ -396,6 +420,17 @@
       renderShap(d.shap_drivers||[]);
       renderPipeline(d);
       renderTrace(d.feature_trace||{});
+
+      // champion/challenger panel + glass-box shape functions
+      if (window.AltCredit) {
+        document.getElementById('model-panel-card').style.display = d.panel ? 'block' : 'none';
+        AltCredit.renderModelPanel(document.getElementById('model-panel-body'), d.panel);
+        AltCredit.loadShapeFunctions().then(map => {
+          AltCredit.renderShapeViewer(document.getElementById('shape-viewer'), map, d.feature_trace||{}, d.shap_drivers||[]);
+          document.getElementById('shape-card').style.display =
+            document.getElementById('shape-viewer').style.display === 'none' ? 'none' : 'block';
+        });
+      }
 
       const rcBox = document.getElementById('reason-codes-box');
       const rcText = d.reason_codes_text || (d.reason_codes||[]).join('; ');
