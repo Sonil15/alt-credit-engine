@@ -203,8 +203,8 @@ three and writes artifacts `ebm_champion.pkl`, `catboost_model.cbm`,
 - [x] Benchmark EBM vs CatBoost on synthetic data.
 - [x] Implement EBM champion + challenger panel + agreement gate in the scoring path.
 - [x] Re-anchor the scorecard to the champion's honest probabilities.
-- [x] Render EBM shape functions in the UI (dashboard + sandbox) — interactive curve viewer with the borrower marked, served by `GET /score/model/explanations`.
-- [x] Surface the `panel` agreement block on the bank dashboard and the sandbox.
+- [x] Render EBM shape functions in the UI (dashboard) — interactive curve viewer with the borrower marked, served by `GET /score/model/explanations`.
+- [x] Surface the `panel` agreement block on the bank dashboard.
 - [x] Conformal prediction for statistically-guaranteed abstention.
 
 **Conformal abstention (shipped).** Split conformal prediction on the EBM
@@ -234,13 +234,12 @@ honesty standard as the benchmark caveats in §4.
 
 ### UI notes (shipped)
 - `frontend/static/panel_viz.js` — shared, dependency-free renderer for the Model
-  Panel card and the SVG shape-function viewer; included by `dashboard.html` and
-  `sandbox.html`.
+  Panel card and the SVG shape-function viewer; included by `dashboard.html`.
 - `GET /score/model/explanations` — public endpoint returning the EBM's global shape
   functions (bin edges + per-bin points, version-cached).
 - Stale "CatBoost / SHAP" copy in both pages updated to "glass-box EBM champion" and
   "the model's own additive terms".
-- Demo moment to rehearse: in the sandbox, find a borrower where the Model Panel
+- Demo moment to rehearse: on the dashboard, find a borrower where the Model Panel
   shows **CatBoost → APPROVE but the champion routes to REVIEW** (hard conflict) —
   "the old black box would have lent; the panel caught it." And open a shape-function
   curve: "this line *is* the model — no SHAP — and here is exactly where this
