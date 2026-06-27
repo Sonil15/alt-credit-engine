@@ -180,3 +180,34 @@ async def get_credit_score(
     except Exception as exc:
         logger.exception("Scoring failed for user %s", user_id)
         raise HTTPException(status_code=500, detail="Scoring failed") from exc
+
+from pydantic import BaseModel
+import uuid
+from models.db_models import AuditLog
+
+class OverrideRequest(BaseModel):
+    user_id: str
+    officer_id: str
+    original_decision: str
+    new_decision: str
+    justification: str
+
+@router.post("/audit/override", dependencies=[Depends(require_api_key)])
+async def log_decision_override(
+    req: OverrideRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        log_entry = AuditLog(
+            user_id=uuid.UUID(req.user_id),
+            officer_id=req.officer_id,
+            original_decision=req.original_decision,
+            new_decision=req.new_decision,
+            justification=req.justification
+        )
+        db.add(log_entry)
+        await db.commit()
+        return {"status": "success", "message": "Override logged successfully"}
+    except Exception as exc:
+        logger.exception("Failed to log override")
+        raise HTTPException(status_code=500, detail="Failed to log override") from exc

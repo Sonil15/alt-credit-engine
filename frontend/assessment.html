@@ -229,6 +229,14 @@
 
   <script src="/static/voice.js?v=2"></script>
   <script>
+    function checkBackToApply() {
+      if (window.location.pathname === '/apply' || window.location.pathname.endsWith('/apply')) {
+        window.location.replace('/apply');
+      }
+    }
+    checkBackToApply();
+    window.addEventListener('pageshow', checkBackToApply);
+
     const params = new URLSearchParams(window.location.search);
     let userId = params.get('user_id') || crypto.randomUUID();
     let language = params.get('lang') || localStorage.getItem('altcredit_lang') || 'en';
@@ -392,10 +400,11 @@
       msg += "\n\n" + instruction;
       
       addBubble(msg, 'agent');
-      if (voice.synth) await voice.speak(msg, language);
       
       document.getElementById('begin-btn').textContent = START_TIMER_LABEL[language] || START_TIMER_LABEL.en;
       document.getElementById('begin-bar').classList.remove('hidden');
+
+      if (voice.synth) voice.speak(msg, language);
     }
 
     async function beginQuestions() {
@@ -463,7 +472,8 @@
       await new Promise(r => setTimeout(r, 3500));
       localStorage.setItem('altcredit_last_session', sessionId);
       localStorage.setItem('altcredit_last_user_id', userId);
-      window.location.replace('/borrower?session=' + encodeURIComponent(sessionId));
+      history.replaceState(null, '', '/apply');
+      window.location.assign('/borrower?session=' + encodeURIComponent(sessionId));
     }
 
     document.getElementById('send-btn').onclick = () => submitAnswer(input.value);

@@ -146,6 +146,50 @@ def _top_drivers(contributions: list[dict[str, float]], top_n: int = 3) -> list[
     return ordered[:top_n]
 
 
+def _generate_actionable_insights(shap_drivers: list[dict[str, float]]) -> list[str]:
+    mapping = {
+        "avg_days_late": "Tip: Ensuring all telecom and utility bills are paid on time improves your score.",
+        "missed_payments_count": "Tip: Ensuring all telecom and utility bills are paid on time improves your score.",
+        "necessity_ratio": "Tip: Maintaining a healthy balance of essential spending helps your profile.",
+        "avg_merchant_rating": "Tip: Higher merchant ratings on transactions indicate better digital reliability.",
+        "monthly_spend_volatility": "Tip: Demonstrating stable spending patterns will improve your score.",
+        "spatial_variance_score": "Tip: Showing location stability over time helps build your profile.",
+        "anchor_count": "Tip: Establishing routine locations (like home/work) improves profile confidence.",
+        "monthly_income_mean": "Tip: Increasing or stabilizing your monthly inflow strengthens your assessment.",
+        "cashflow_volatility": "Tip: Demonstrating consistent monthly cash flow will improve your score.",
+        "resilience_coefficient": "Tip: Maintaining a buffer in your account improves financial resilience.",
+        "trend_slope": "Tip: A positive trend in your account balance over time will improve your score.",
+        "is_stationary": "Tip: Reducing unpredictable spikes in cash flow will strengthen your profile.",
+        "upi_spend_consistency": "Tip: Consistent digital payment habits build a stronger profile.",
+        "small_dues_payment_promptness": "Tip: Prompt payment of small dues builds positive credit history.",
+        "e_wallet_topup_frequency": "Tip: Regular usage of digital wallets can positively impact your score.",
+        "daily_transaction_count": "Tip: Higher transaction volume indicates a healthier micro-enterprise.",
+        "average_ticket_size": "Tip: Stable or growing average ticket sizes improve your business profile.",
+        "harvest_income_spike": "Tip: Consistent cycles in farming income help validate agricultural profiles.",
+        "input_purchase_consistency": "Tip: Regular purchases of agricultural inputs build a stronger profile.",
+        "utility_payment_consistency": "Tip: Consistent payment of household utilities is a strong positive signal.",
+        "grocery_spend_stability": "Tip: Stable household spending patterns improve your credit assessment."
+    }
+    
+    insights = []
+    # If a shap_value is positive, it means it increased Probability of Default (hurt the score)
+    for driver in shap_drivers:
+        feature = driver.get("feature", "")
+        shap_val = driver.get("shap_value", 0.0)
+        
+        # Only provide tip if the feature was actually detrimental (shap_value > 0)
+        if shap_val > 0.0 and feature in mapping:
+            insights.append(mapping[feature])
+            
+    # Remove duplicates and limit to 3
+    unique_insights = list(dict.fromkeys(insights))
+    
+    if not unique_insights:
+        unique_insights.append("Tip: Continue building a consistent digital transaction history across all your accounts.")
+        
+    return unique_insights[:3]
+
+
 def _finalize_score_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return sanitize_for_json(payload)
 
@@ -257,6 +301,9 @@ def _build_payload(
 
     lending = recommend_terms(probability_of_default, credit_score, decision, user_row)
     is_simulated = bool(safe_float(user_row.get("is_simulated", 0.0)) == 1.0)
+    
+    approval_likelihood = "High" if decision == "APPROVE" else "Moderate" if decision == "REVIEW" else "Needs Review"
+    actionable_insights = _generate_actionable_insights(shap_drivers)
 
     return _finalize_score_payload(
         {
@@ -264,6 +311,8 @@ def _build_payload(
             "credit_score": credit_score,
             "probability_of_default": safe_round(probability_of_default, 4),
             "decision": decision,
+            "approval_likelihood": approval_likelihood,
+            "actionable_insights": actionable_insights,
             "auto_reject": auto_reject,
             "reject_reason": reject_reason,
             "shap_drivers": shap_drivers,

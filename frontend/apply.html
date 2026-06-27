@@ -85,7 +85,7 @@
       background: #2563eb;
     }
   </style>
-  <script src="/static/translations.js"></script>
+  <script src="/static/translations.js?v=1.0.2"></script>
 </head>
 <body>
   <div class="topbar">
@@ -118,9 +118,12 @@
 
   <div class="container">
 
-    <div class="section-title">
-      <span data-i18n="apply-prev-title">Previous Applications</span>
-      <span class="count" id="app-count">0</span>
+    <div class="section-title" style="justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span data-i18n="apply-prev-title">Previous Applications</span>
+        <span class="count" id="app-count">0</span>
+      </div>
+      <a id="manage-consent-btn" href="/consent" style="display: none; font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 600;" data-i18n="apply-manage-consent">Manage Consent</a>
     </div>
 
     <div id="empty-state" class="empty-state">
@@ -190,8 +193,12 @@
         const latest = apps[apps.length - 1];
         if (latest && latest.userId) {
           const link = document.getElementById('privacy-link');
-          if (link) {
-            link.href = '/consent?user_id=' + encodeURIComponent(latest.userId);
+          const btn = document.getElementById('manage-consent-btn');
+          const url = '/consent?user_id=' + encodeURIComponent(latest.userId);
+          if (link) link.href = url;
+          if (btn) {
+            btn.href = url;
+            btn.style.display = 'inline-block';
           }
         }
       }

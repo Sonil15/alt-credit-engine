@@ -72,7 +72,7 @@
       background: #2563eb;
     }
   </style>
-  <script src="/static/translations.js"></script>
+  <script src="/static/translations.js?v=1.0.2"></script>
 </head>
 <body>
   <div class="topbar">
@@ -114,28 +114,26 @@
         </div>
 
         <div class="meta-grid">
-          <div class="meta-box">
-            <div class="k" data-i18n="borrower-pd-label">Probability of Default</div>
-            <div class="v" id="pd-val">—</div>
+          <div class="meta-box" style="grid-column: span 2;">
+            <div class="k" data-i18n="borrower-likelihood-label">Approval Likelihood</div>
+            <div class="v" id="likelihood-val">—</div>
           </div>
-          <div class="meta-box">
-            <div class="k" data-i18n="borrower-conf-label">Confidence</div>
-            <div class="v" id="conf-val">—</div>
-          </div>
+        </div>
+
+        <div id="adverse-action-box" class="reason-box" style="display:none; background: #fee2e2; border-color: #fca5a5; color: #991b1b;">
+          <strong data-i18n="borrower-adverse-title">Adverse Action Notice:</strong> 
+          <span id="adverse-action-text" data-i18n="borrower-adverse-text">Based on your credit assessment, we are unable to approve your application at this time.</span>
         </div>
 
         <div id="reason-box" class="reason-box" style="display:none">
-          <strong data-i18n="borrower-factors-label">Key Factors:</strong> <span id="reason-text"></span>
-        </div>
-
-        <div id="drivers-section" style="display:none">
-          <div class="drivers-title" data-i18n="borrower-drivers-title">Top Score Drivers</div>
-          <div id="drivers-list"></div>
+          <strong data-i18n="borrower-factors-label">Actionable Insights:</strong> 
+          <ul id="insights-list" style="margin-top: 8px; padding-left: 16px;"></ul>
         </div>
 
         <div class="actions">
           <a href="/consent" id="privacy-action" class="btn btn-secondary" data-i18n="borrower-btn-privacy">Privacy Rights</a>
-          <a href="/apply" class="btn btn-secondary" data-i18n="borrower-btn-home">Home</a>
+          <button id="human-review-btn" class="btn btn-secondary" style="display:none" onclick="requestHumanReview()" data-i18n="borrower-btn-human">Request Human Review</button>
+          <a href="/apply" class="btn btn-primary" data-i18n="borrower-btn-home">Home</a>
         </div>
       </div>
     </div>
@@ -183,34 +181,36 @@
       const badge = document.getElementById('decision-badge');
       badge.textContent = d.decision;
       badge.className = 'badge badge-' + d.decision;
-      document.getElementById('pd-val').textContent = (d.probability_of_default * 100).toFixed(1) + '%';
-      document.getElementById('conf-val').textContent = typeof d.confidence_pct === 'number' ? d.confidence_pct.toFixed(0) + '%' : 'N/A';
+      
+      document.getElementById('likelihood-val').textContent = d.approval_likelihood || 'Needs Review';
 
-      if (d.reason_codes_text) {
-        document.getElementById('reason-text').textContent = d.reason_codes_text;
-        document.getElementById('reason-box').style.display = 'block';
+      if (d.decision === 'REJECT') {
+        document.getElementById('adverse-action-box').style.display = 'block';
+        document.getElementById('human-review-btn').style.display = 'inline-block';
       }
 
-      if (d.shap_drivers && d.shap_drivers.length) {
-        const list = document.getElementById('drivers-list');
-        list.innerHTML = ''; // clear previous
-        d.shap_drivers.slice(0, 5).forEach(dr => {
-          const v = dr.shap_value ?? 0;
-          const row = document.createElement('div');
-          row.className = 'driver-row';
-          // positive shap_value = raises PD = hurts score (red); negative = helps (green)
-          const valClass = v > 0 ? 'val-down' : 'val-up';
-          const sign = v > 0 ? '−' : '+';
-          row.innerHTML = `<span class="name">${dr.feature}</span><span class="val ${valClass}">${sign}${Math.abs(v).toFixed(3)}</span>`;
-          list.appendChild(row);
+      if (d.actionable_insights && d.actionable_insights.length) {
+        const list = document.getElementById('insights-list');
+        list.innerHTML = '';
+        d.actionable_insights.forEach(insight => {
+          const li = document.createElement('li');
+          li.textContent = insight;
+          li.style.marginBottom = '6px';
+          list.appendChild(li);
         });
-        document.getElementById('drivers-section').style.display = 'block';
+        document.getElementById('reason-box').style.display = 'block';
       }
 
       document.getElementById('privacy-link').href = '/consent?user_id=' + encodeURIComponent(d.user_id);
       document.getElementById('privacy-action').href = '/consent?user_id=' + encodeURIComponent(d.user_id);
 
       saveApplication({ sessionId, userId: d.user_id, score: d.credit_score, decision: d.decision });
+    }
+
+    function requestHumanReview() {
+      alert("Your request for a manual human review has been submitted. A loan officer will review your file.");
+      document.getElementById('human-review-btn').textContent = 'Review Requested';
+      document.getElementById('human-review-btn').disabled = true;
     }
 
     function saveApplication(app) {

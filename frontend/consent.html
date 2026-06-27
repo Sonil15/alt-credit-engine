@@ -140,7 +140,7 @@
       background: #2563eb;
     }
   </style>
-  <script src="/static/translations.js"></script>
+  <script src="/static/translations.js?v=1.0.2"></script>
 </head>
 <body>
   <div class="phone">
@@ -172,16 +172,22 @@
           <a href="/consent/compliance" style="color:#60a5fa;" data-i18n="consent-compliance-link">Compliance</a>
         </p>
         <p style="font-size:14px;color:#94a3b8;margin-bottom:8px;" data-i18n="consent-select-scopes">Select FI data scopes to share:</p>
+        <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px; margin-bottom: 16px; border-radius: 4px;">
+          <p style="font-size:12px;color:#92400e;margin:0;">
+            <strong data-i18n="consent-pre-warning-note">Note:</strong>
+            <span data-i18n="consent-pre-warning-text">Providing less data may lower the confidence score of your assessment, which could negatively affect your final creditworthiness evaluation.</span>
+          </p>
+        </div>
         <ul class="scope-list">
-          <li id="li-telecom"><input type="checkbox" id="scope-telecom" checked> <span data-i18n="scope-telecom">Telecom bills</span> <span id="opt-telecom" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-telecom" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
-          <li id="li-ecommerce"><input type="checkbox" id="scope-ecommerce" checked> <span data-i18n="scope-ecommerce">E-commerce history</span> <span id="opt-ecommerce" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-ecommerce" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
-          <li id="li-geo"><input type="checkbox" id="scope-geo" checked> <span data-i18n="scope-geo">Location stability</span> <span id="opt-geo" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-geo" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
-          <li id="li-cashflow"><input type="checkbox" id="scope-cashflow" checked> <span data-i18n="scope-cashflow">Bank cash flow</span> <span id="opt-cashflow" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-cashflow" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
+          <li id="li-telecom"><input type="checkbox" id="scope-telecom"> <span data-i18n="scope-telecom">Telecom bills</span> <span id="opt-telecom" style="color:#64748b; font-size:12px; display:none;">(Optional)</span></li>
+          <li id="li-ecommerce"><input type="checkbox" id="scope-ecommerce"> <span data-i18n="scope-ecommerce">E-commerce history</span> <span id="opt-ecommerce" style="color:#64748b; font-size:12px; display:none;">(Optional)</span></li>
+          <li id="li-geo"><input type="checkbox" id="scope-geo"> <span data-i18n="scope-geo">Location stability</span> <span id="opt-geo" style="color:#64748b; font-size:12px; display:none;">(Optional)</span></li>
+          <li id="li-cashflow"><input type="checkbox" id="scope-cashflow"> <span data-i18n="scope-cashflow">Bank cash flow</span> <span id="opt-cashflow" style="color:#64748b; font-size:12px; display:none;">(Optional)</span></li>
           
-          <li id="li-campus" style="display:none;"><input type="checkbox" id="scope-campus" checked> <span data-i18n="scope-campus">Campus & UPI transactions</span> <span id="nec-campus" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
-          <li id="li-vendor" style="display:none;"><input type="checkbox" id="scope-vendor" checked> <span data-i18n="scope-vendor">Micro-enterprise UPI volumes</span> <span id="nec-vendor" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
-          <li id="li-farmer" style="display:none;"><input type="checkbox" id="scope-farmer" checked> <span data-i18n="scope-farmer">Farming cycles & purchases</span> <span id="nec-farmer" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
-          <li id="li-household" style="display:none;"><input type="checkbox" id="scope-household" checked> <span data-i18n="scope-household">Household utility payments</span> <span id="nec-household" style="color:#f59e0b; font-size:12px; display:none;" data-i18n="consent-necessary-label">(Necessary for Score)</span></li>
+          <li id="li-campus" style="display:none;"><input type="checkbox" id="scope-campus"> <span data-i18n="scope-campus">Campus & UPI transactions</span></li>
+          <li id="li-vendor" style="display:none;"><input type="checkbox" id="scope-vendor"> <span data-i18n="scope-vendor">Micro-enterprise UPI volumes</span></li>
+          <li id="li-farmer" style="display:none;"><input type="checkbox" id="scope-farmer"> <span data-i18n="scope-farmer">Farming cycles & purchases</span></li>
+          <li id="li-household" style="display:none;"><input type="checkbox" id="scope-household"> <span data-i18n="scope-household">Household utility payments</span></li>
           
           <li id="li-survey"><input type="checkbox" id="scope-survey" checked disabled> <span data-i18n="scope-survey">Psychometric survey</span></li>
         </ul>
@@ -244,6 +250,9 @@
         </div>
 
         <div class="action-row">
+          <button class="btn btn-primary" id="continue-assessment-btn" onclick="startAssessment()" data-i18n="consent-btn-start">
+            Start Psychometric Assessment
+          </button>
           <button class="btn btn-danger" id="erase-btn" onclick="confirmErase()" disabled data-i18n="consent-btn-erase">
             Request Data Deletion
           </button>
