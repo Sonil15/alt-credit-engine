@@ -188,6 +188,7 @@ class ConsentTokenResponse(BaseModel):
 class ConsentRevokeRequest(BaseModel):
     consent_id: str | None = None
     user_id: str | None = None
+    scopes: list[str] | None = None
 
 
 class ConsentRevokeResponse(BaseModel):
@@ -223,6 +224,8 @@ class ConsentStatusResponse(BaseModel):
     erasure_requested: bool = False
     erasure_status: str | None = None
     erasure_timestamp: str | None = None
+    active_scopes: list[str] = []
+    revoked_scopes: list[str] = []
 
 
 class HealthResponse(BaseModel):

@@ -63,12 +63,13 @@ async def authorize_consent(
     )
 
     _active_consents[consent_id] = {
-        "scopes": CONSENT_SCOPES,
+        "scopes": CONSENT_SCOPES.copy(),
         "purpose": CONSENT_PURPOSE,
         "data_fiduciary": DATA_FIDUCIARY,
         "expires_at": _consent_expiry(),
         "status": "active",
         "user_id": user_id,
+        "revoked_scopes": [],
     }
 
     if user_id:
@@ -120,16 +121,69 @@ async def revoke_consent(request: ConsentRevokeRequest) -> ConsentRevokeResponse
         record = _active_consents.get(consent_id, {})
         user_id = record.get("user_id")
 
-    _revoked_consents.add(consent_id)
-    if consent_id in _active_consents:
-        _active_consents[consent_id]["status"] = "revoked"
+    if request.scopes:
+        if consent_id not in _active_consents:
+            _active_consents[consent_id] = {
+                "scopes": CONSENT_SCOPES.copy(),
+                "purpose": CONSENT_PURPOSE,
+                "data_fiduciary": DATA_FIDUCIARY,
+                "expires_at": _consent_expiry(),
+                "status": "active",
+                "user_id": user_id,
+                "revoked_scopes": [],
+            }
+        record = _active_consents[consent_id]
+        if "revoked_scopes" not in record:
+            record["revoked_scopes"] = []
+        if "scopes" not in record:
+            record["scopes"] = CONSENT_SCOPES.copy()
+
+        for sc in request.scopes:
+            if sc in record["scopes"]:
+                record["scopes"].remove(sc)
+            if sc not in record["revoked_scopes"]:
+                record["revoked_scopes"].append(sc)
+
+        if not record["scopes"]:
+            _revoked_consents.add(consent_id)
+            record["status"] = "revoked"
+            if user_id:
+                _revoked_users.add(user_id)
+    else:
+        _revoked_consents.add(consent_id)
+        if consent_id in _active_consents:
+            record = _active_consents[consent_id]
+            record["status"] = "revoked"
+            record["revoked_scopes"] = CONSENT_SCOPES.copy()
+            record["scopes"] = []
+        else:
+            _active_consents[consent_id] = {
+                "scopes": [],
+                "purpose": CONSENT_PURPOSE,
+                "data_fiduciary": DATA_FIDUCIARY,
+                "expires_at": _consent_expiry(),
+                "status": "revoked",
+                "user_id": user_id,
+                "revoked_scopes": CONSENT_SCOPES.copy(),
+            }
+        if user_id:
+            _revoked_users.add(user_id)
+
     if user_id:
-        _revoked_users.add(user_id)
+        _user_consent_map[user_id] = consent_id
+
+    # Determine response status
+    is_fully_revoked = (
+        consent_id in _revoked_consents or
+        not request.scopes or
+        (consent_id in _active_consents and not _active_consents[consent_id]["scopes"])
+    )
+    status_str = "revoked" if is_fully_revoked else "partial_revoked"
 
     return ConsentRevokeResponse(
         consent_id=consent_id,
         user_id=user_id,
-        status="revoked",
+        status=status_str,
         effective_from=now,
     )
 
@@ -188,6 +242,21 @@ async def request_erasure(
     )
 
 
+def get_revoked_scopes(user_id: str) -> list[str]:
+    """Return the list of revoked scopes for a given user_id."""
+    if user_id in _revoked_users:
+        return CONSENT_SCOPES.copy()
+    
+    consent_id = _user_consent_map.get(user_id)
+    if consent_id:
+        if consent_id in _revoked_consents:
+            return CONSENT_SCOPES.copy()
+        record = _active_consents.get(consent_id)
+        if record:
+            return record.get("revoked_scopes", [])
+    return []
+
+
 @router.get("/status/{user_id}", response_model=ConsentStatusResponse)
 async def consent_status(
     user_id: str,
@@ -195,12 +264,23 @@ async def consent_status(
 ) -> ConsentStatusResponse:
     """Return consent and erasure status for a borrower (for privacy dashboard)."""
     consent_id = _user_consent_map.get(user_id)
-    if consent_id and consent_id in _revoked_consents:
+    active_scopes = []
+    revoked_scopes = []
+
+    if user_id in _revoked_users:
         c_status = "revoked"
+        revoked_scopes = CONSENT_SCOPES.copy()
+    elif consent_id and consent_id in _revoked_consents:
+        c_status = "revoked"
+        revoked_scopes = CONSENT_SCOPES.copy()
     elif consent_id and consent_id in _active_consents:
-        c_status = "active"
-    elif user_id in _revoked_users:
-        c_status = "revoked"
+        record = _active_consents[consent_id]
+        active_scopes = list(record.get("scopes", []))
+        revoked_scopes = list(record.get("revoked_scopes", []))
+        if revoked_scopes:
+            c_status = "partial" if active_scopes else "revoked"
+        else:
+            c_status = "active"
     else:
         c_status = "unknown"
 
@@ -225,6 +305,8 @@ async def consent_status(
         erasure_requested=bool(erasure),
         erasure_status=erasure.get("status") if erasure else None,
         erasure_timestamp=erasure.get("timestamp") if erasure else None,
+        active_scopes=active_scopes,
+        revoked_scopes=revoked_scopes,
     )
 
 

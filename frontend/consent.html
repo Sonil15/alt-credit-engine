@@ -77,6 +77,7 @@
     .pill-unknown { background: #334155; color: #94a3b8; }
     .pill-deleted { background: #7f1d1d; color: #fca5a5; }
     .pill-present { background: #1e3a5f; color: #93c5fd; }
+    .pill-partial { background: #7c2d12; color: #ffedd5; }
     .action-row { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
     .retained-note {
       font-size: 12px; color: #64748b; margin-top: 14px;
@@ -225,16 +226,24 @@
           <div id="consent-pill"></div>
         </div>
 
+        <div class="status-card" id="scopes-card" style="display:none;">
+          <div class="label">Consent Scopes</div>
+          <div id="scopes-list-container" style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
         <div class="status-card">
           <div class="label" data-i18n="consent-data-title">Your Data</div>
           <div class="value" id="data-status-text" data-i18n="consent-status-checking">Checking…</div>
           <div id="data-pill"></div>
         </div>
 
+        <div style="font-size:13px; color:#94a3b8; line-height:1.5; margin: 14px 0; padding: 12px; background: #0f172a; border-radius: 12px; border-left: 3px solid #3b82f6;">
+          Revoking a data source stops <strong>future</strong> collection. To delete your <strong>past</strong> application data, use the Request Data Deletion button.
+        </div>
+
         <div class="action-row">
-          <button class="btn btn-primary" id="revoke-btn" onclick="doRevoke()" disabled data-i18n="consent-btn-revoke">
-            Revoke Consent
-          </button>
           <button class="btn btn-danger" id="erase-btn" onclick="confirmErase()" disabled data-i18n="consent-btn-erase">
             Request Data Deletion
           </button>
@@ -335,18 +344,105 @@
       if (s.consent_status === 'active') {
         csText.textContent = t('consent-status-active');
         csPill.innerHTML = '<span class="pill pill-active">ACTIVE</span>';
-        revokeBtn.disabled = false;
-        revokeBtn.textContent = t('consent-btn-revoke');
+        if (revokeBtn) {
+          revokeBtn.disabled = false;
+          revokeBtn.textContent = t('consent-btn-revoke');
+        }
+      } else if (s.consent_status === 'partial') {
+        csText.textContent = 'Partially Revoked';
+        csPill.innerHTML = '<span class="pill pill-partial">PARTIAL</span>';
+        if (revokeBtn) {
+          revokeBtn.disabled = false;
+          revokeBtn.textContent = t('consent-btn-revoke');
+        }
       } else if (s.consent_status === 'revoked') {
         csText.textContent = t('consent-status-revoked');
         csPill.innerHTML = '<span class="pill pill-revoked">REVOKED</span>';
-        revokeBtn.disabled = true;
-        revokeBtn.textContent = t('consent-btn-revoked');
+        if (revokeBtn) {
+          revokeBtn.disabled = true;
+          revokeBtn.textContent = t('consent-btn-revoked');
+        }
       } else {
         csText.textContent = t('consent-status-unknown');
         csPill.innerHTML = '<span class="pill pill-unknown">UNKNOWN</span>';
-        revokeBtn.disabled = false;
-        revokeBtn.textContent = t('consent-btn-revoke');
+        if (revokeBtn) {
+          revokeBtn.disabled = false;
+          revokeBtn.textContent = t('consent-btn-revoke');
+        }
+      }
+
+      // Render scopes card
+      const scopesCard = document.getElementById('scopes-card');
+      const container = document.getElementById('scopes-list-container');
+      if (scopesCard && container) {
+        if ((s.active_scopes && s.active_scopes.length) || (s.revoked_scopes && s.revoked_scopes.length)) {
+          scopesCard.style.display = 'block';
+          container.innerHTML = '';
+          
+          // Display active scopes
+          if (s.active_scopes) {
+            s.active_scopes.forEach(scope => {
+              if (scope === 'survey') return; // psychometric survey cannot be revoked granularly
+              
+              const div = document.createElement('div');
+              div.style.display = 'flex';
+              div.style.justifyContent = 'space-between';
+              div.style.alignItems = 'center';
+              div.style.padding = '8px 12px';
+              div.style.background = '#1e293b';
+              div.style.borderRadius = '8px';
+              div.style.fontSize = '13px';
+              
+              const labelSpan = document.createElement('span');
+              labelSpan.style.fontWeight = '500';
+              labelSpan.textContent = t('scope-' + scope) || scope;
+              
+              const btn = document.createElement('button');
+              btn.className = 'btn btn-danger';
+              btn.style.width = 'auto';
+              btn.style.margin = '0';
+              btn.style.padding = '6px 12px';
+              btn.style.fontSize = '12px';
+              btn.style.borderRadius = '6px';
+              btn.textContent = 'Revoke';
+              btn.onclick = () => doRevokeScope(scope);
+              
+              div.appendChild(labelSpan);
+              div.appendChild(btn);
+              container.appendChild(div);
+            });
+          }
+          
+          // Display revoked scopes
+          if (s.revoked_scopes) {
+            s.revoked_scopes.forEach(scope => {
+              const div = document.createElement('div');
+              div.style.display = 'flex';
+              div.style.justifyContent = 'space-between';
+              div.style.alignItems = 'center';
+              div.style.padding = '8px 12px';
+              div.style.background = '#1e293b';
+              div.style.borderRadius = '8px';
+              div.style.fontSize = '13px';
+              div.style.opacity = '0.6';
+              
+              const labelSpan = document.createElement('span');
+              labelSpan.style.fontWeight = '500';
+              labelSpan.textContent = t('scope-' + scope) || scope;
+              
+              const span = document.createElement('span');
+              span.className = 'pill pill-revoked';
+              span.style.marginTop = '0';
+              span.textContent = 'REVOKED';
+              
+              div.appendChild(labelSpan);
+              div.appendChild(span);
+              container.appendChild(div);
+            });
+          }
+        } else {
+          scopesCard.style.display = 'none';
+        }
       }
 
       // Data status
@@ -374,12 +470,36 @@
     }
 
     // ── Revoke ──────────────────────────────────────────────────────────────
+    async function doRevokeScope(scope) {
+      const lang = getCurrentLanguage();
+      const t = (key) => (ALTCREDIT_DICTIONARY[lang] && ALTCREDIT_DICTIONARY[lang][key]) || ALTCREDIT_DICTIONARY['en'][key] || key;
+
+      try {
+        const body = consentId
+          ? { consent_id: consentId, user_id: userId, scopes: [scope] }
+          : { user_id: userId, scopes: [scope] };
+        const resp = await fetch('/consent/revoke', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!resp.ok) throw new Error((await resp.json()).detail || 'Revoke failed');
+        showSuccess((t('scope-' + scope) || scope) + ' consent revoked.');
+        await loadStatus();
+      } catch (err) {
+        showError('Revocation failed: ' + err.message);
+      }
+    }
+
     async function doRevoke() {
       const lang = getCurrentLanguage();
       const t = (key) => (ALTCREDIT_DICTIONARY[lang] && ALTCREDIT_DICTIONARY[lang][key]) || ALTCREDIT_DICTIONARY['en'][key] || key;
 
-      document.getElementById('revoke-btn').disabled = true;
-      document.getElementById('revoke-btn').textContent = t('consent-btn-revoking');
+      const revokeBtn = document.getElementById('revoke-btn');
+      if (revokeBtn) {
+        revokeBtn.disabled = true;
+        revokeBtn.textContent = t('consent-btn-revoking');
+      }
       try {
         const body = consentId
           ? { consent_id: consentId, user_id: userId }
@@ -394,8 +514,10 @@
         await loadStatus();
       } catch (err) {
         showError('Revocation failed: ' + err.message);
-        document.getElementById('revoke-btn').disabled = false;
-        document.getElementById('revoke-btn').textContent = t('consent-btn-revoke');
+        if (revokeBtn) {
+          revokeBtn.disabled = false;
+          revokeBtn.textContent = t('consent-btn-revoke');
+        }
       }
     }
 

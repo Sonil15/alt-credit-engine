@@ -95,7 +95,7 @@
     </div>
     <div class="topbar-right" style="display: flex; align-items: center; gap: 16px;">
       <div id="language-selector-root"></div>
-      <a href="/consent" data-i18n="apply-topbar-privacy">Privacy Rights</a>
+      <a id="privacy-link" href="/consent" data-i18n="apply-topbar-privacy">Privacy Rights</a>
     </div>
   </div>
 
@@ -184,9 +184,24 @@
       }
     }
 
+    function updatePrivacyLink() {
+      const apps = loadApplications();
+      if (apps.length > 0) {
+        const latest = apps[apps.length - 1];
+        if (latest && latest.userId) {
+          const link = document.getElementById('privacy-link');
+          if (link) {
+            link.href = '/consent?user_id=' + encodeURIComponent(latest.userId);
+          }
+        }
+      }
+    }
+
     function render() {
       const apps = loadApplications();
       document.getElementById('app-count').textContent = apps.length;
+
+      updatePrivacyLink();
 
       if (!apps.length) return;
 

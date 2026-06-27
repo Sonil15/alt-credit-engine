@@ -43,6 +43,22 @@ MISSED_PAYMENTS_THRESHOLD = 5
 # Below this confidence we never silently auto-approve a thin file.
 LOW_CONFIDENCE_PCT = 60.0
 
+SCOPE_TO_FEATURES = {
+    "telecom": ["avg_days_late", "missed_payments_count"],
+    "ecommerce": ["necessity_ratio", "avg_merchant_rating", "monthly_spend_volatility"],
+    "geo": ["spatial_variance_score", "anchor_count"],
+    "cashflow": ["monthly_income_mean", "cashflow_volatility", "resilience_coefficient", "trend_slope", "is_stationary"],
+    "survey": [
+        "conscientiousness", "locus_of_control", "financial_self_efficacy",
+        "present_bias", "debt_attitude", "risk_tolerance",
+        "delayed_gratification", "honesty", "cognitive_reflection", "resourcefulness"
+    ],
+    "campus": ["upi_spend_consistency", "small_dues_payment_promptness", "e_wallet_topup_frequency"],
+    "vendor": ["daily_transaction_count", "average_ticket_size"],
+    "farmer": ["harvest_income_spike", "input_purchase_consistency"],
+    "household": ["utility_payment_consistency", "grocery_spend_stability"]
+}
+
 
 def check_red_flags(row: pd.Series) -> tuple[bool, str | None]:
     spatial = safe_float(row.get("spatial_variance_score", 0.0))
@@ -159,6 +175,7 @@ def _build_payload(
     champion,
     challengers: dict,
     norm_stats: dict,
+    revoked_scopes: list[str] | None = None,
 ) -> dict[str, Any]:
     """Assemble the full score payload for a single user (no DB I/O)."""
     auto_reject, reject_reason = check_red_flags(user_row)
@@ -233,6 +250,10 @@ def _build_payload(
             + ", ".join(confidence["missing_sources"])
             + ")"
         )
+    if revoked_scopes:
+        reason_codes.append(
+            f"Consent withdrawn for data source(s): {', '.join(revoked_scopes)}"
+        )
 
     lending = recommend_terms(probability_of_default, credit_score, decision, user_row)
     is_simulated = bool(safe_float(user_row.get("is_simulated", 0.0)) == 1.0)
@@ -278,10 +299,21 @@ async def score_user(session: AsyncSession, user_id: str, *, persist: bool = Tru
     champion = get_cached_champion()
     challengers = get_cached_challengers()
 
-    user_wide = wide[user_mask]
+    user_wide = wide[user_mask].copy()
+
+    # Mask features for revoked scopes
+    from api.routes.consent import get_revoked_scopes
+    revoked_scopes = get_revoked_scopes(user_id)
+    if revoked_scopes:
+        for scope in revoked_scopes:
+            features_to_mask = SCOPE_TO_FEATURES.get(scope, [])
+            for feat in features_to_mask:
+                if feat in user_wide.columns:
+                    user_wide[feat] = np.nan
+
     pd_df = champion_predict_pd(champion, user_wide)
     probability_of_default = safe_float(pd_df.iloc[0]["probability_of_default"])
-    feature_row = get_feature_matrix_for_user(wide, user_id)
+    feature_row = get_feature_matrix_for_user(user_wide, user_id)
 
     result = _build_payload(
         user_id=str(user_id),
@@ -291,6 +323,7 @@ async def score_user(session: AsyncSession, user_id: str, *, persist: bool = Tru
         champion=champion,
         challengers=challengers,
         norm_stats=norm_stats,
+        revoked_scopes=revoked_scopes,
     )
 
     if persist:
@@ -307,16 +340,24 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
     norm_stats = compute_norm_stats(wide)
     champion = get_cached_champion()
     challengers = get_cached_challengers()
-    pd_df = champion_predict_pd(champion, wide)
+    from api.routes.consent import get_revoked_scopes
 
     results = []
     for _, row in wide.iterrows():
         user_id = str(row["user_id"])
         try:
-            user_wide = wide[wide["user_id"].astype(str) == user_id]
-            pd_row = pd_df[pd_df["user_id"] == user_id]
+            user_wide = wide[wide["user_id"].astype(str) == user_id].copy()
+            revoked_scopes = get_revoked_scopes(user_id)
+            if revoked_scopes:
+                for scope in revoked_scopes:
+                    features_to_mask = SCOPE_TO_FEATURES.get(scope, [])
+                    for feat in features_to_mask:
+                        if feat in user_wide.columns:
+                            user_wide[feat] = np.nan
+
+            pd_row = champion_predict_pd(champion, user_wide)
             probability_of_default = safe_float(pd_row.iloc[0]["probability_of_default"])
-            feature_row = get_feature_matrix_for_user(wide, user_id)
+            feature_row = get_feature_matrix_for_user(user_wide, user_id)
 
             result = _build_payload(
                 user_id=user_id,
@@ -326,6 +367,7 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
                 champion=champion,
                 challengers=challengers,
                 norm_stats=norm_stats,
+                revoked_scopes=revoked_scopes,
             )
             await _persist_decision(session, result)
             results.append(result)
