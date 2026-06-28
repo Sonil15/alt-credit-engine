@@ -1,8 +1,8 @@
 {
   "alpha": 0.1,
   "coverage_target": 0.9,
-  "threshold_q": 0.658928,
-  "n_calibration": 20,
+  "threshold_q": 0.466041,
+  "n_calibration": 15,
   "empirical_coverage": 1.0,
   "model": "ebm_champion"
 }

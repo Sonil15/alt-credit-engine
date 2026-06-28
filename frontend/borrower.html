@@ -71,6 +71,13 @@
       color: #ffffff;
       background: #2563eb;
     }
+    
+    @media print {
+      .topbar, .actions, #loading, #error-section { display: none !important; }
+      body { background: white; margin: 0; padding: 0; }
+      .container { margin: 0; padding: 0; max-width: 100%; }
+      .card { box-shadow: none; border: none; padding: 16px; margin: 0; }
+    }
   </style>
   <script src="/static/translations.js?v=1.0.2"></script>
 </head>
@@ -109,14 +116,18 @@
 
         <div class="score-hero">
           <div class="score-num" id="score-num">—</div>
-          <div class="score-label" data-i18n="borrower-out-of">out of 900</div>
+          <div class="score-label" data-i18n="borrower-out-of">Score Range: 300 - 900</div>
           <div><span class="badge" id="decision-badge">—</span></div>
         </div>
 
         <div class="meta-grid">
-          <div class="meta-box" style="grid-column: span 2;">
+          <div class="meta-box">
             <div class="k" data-i18n="borrower-likelihood-label">Approval Likelihood</div>
             <div class="v" id="likelihood-val">—</div>
+          </div>
+          <div class="meta-box">
+            <div class="k" data-i18n="borrower-date-label">Date of Assessment</div>
+            <div class="v" id="assessment-date" style="font-size: 18px;">—</div>
           </div>
         </div>
 
@@ -125,14 +136,26 @@
           <span id="adverse-action-text" data-i18n="borrower-adverse-text">Based on your credit assessment, we are unable to approve your application at this time.</span>
         </div>
 
+        <div id="drivers-box" class="meta-box" style="display:none; margin-bottom: 24px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+          <div class="drivers-title" data-i18n="borrower-drivers-title">Top Score Drivers</div>
+          <div id="drivers-list"></div>
+        </div>
+
         <div id="reason-box" class="reason-box" style="display:none">
-          <strong data-i18n="borrower-factors-label">Actionable Insights:</strong> 
+          <strong data-i18n="borrower-factors-label">Key Factors Affecting Your Score:</strong> 
           <ul id="insights-list" style="margin-top: 8px; padding-left: 16px;"></ul>
+        </div>
+        
+        <div id="rights-notice" class="reason-box" style="display:none; background: #f8fafc; border-color: #cbd5e1; color: #475569; font-size: 13px; margin-bottom: 24px;">
+          <strong style="color:#0f172a;" data-i18n="borrower-rights-title">Consumer Rights Notice:</strong><br>
+          <span data-i18n="borrower-rights-text">You have a right under the Fair Credit Reporting Act to know the information contained in your credit file at the consumer reporting agency. The reporting agency played no part in our decision and is unable to supply specific reasons why we have denied credit or offered less favorable terms to you. You also have a right to a free copy of your report and to dispute its accuracy.</span><br><br>
+          <strong data-i18n="borrower-provider-label">Provided By:</strong> <span data-i18n="borrower-provider-name">Alt-Credit Engine, IIT Kharagpur</span>
         </div>
 
         <div class="actions">
           <a href="/consent" id="privacy-action" class="btn btn-secondary" data-i18n="borrower-btn-privacy">Privacy Rights</a>
           <button id="human-review-btn" class="btn btn-secondary" style="display:none" onclick="requestHumanReview()" data-i18n="borrower-btn-human">Request Human Review</button>
+          <button class="btn btn-secondary" onclick="window.print()" data-i18n="borrower-btn-print">Print Record</button>
           <a href="/apply" class="btn btn-primary" data-i18n="borrower-btn-home">Home</a>
         </div>
       </div>
@@ -183,10 +206,58 @@
       badge.className = 'badge badge-' + d.decision;
       
       document.getElementById('likelihood-val').textContent = d.approval_likelihood || 'Needs Review';
+      
+      const now = new Date();
+      document.getElementById('assessment-date').textContent = now.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 
       if (d.decision === 'REJECT') {
         document.getElementById('adverse-action-box').style.display = 'block';
         document.getElementById('human-review-btn').style.display = 'inline-block';
+        document.getElementById('rights-notice').style.display = 'block';
+      }
+
+      if (d.feature_trace && d.feature_trace.top_drivers && d.feature_trace.top_drivers.length) {
+        const list = document.getElementById('drivers-list');
+        list.innerHTML = '';
+        d.feature_trace.top_drivers.forEach(driver => {
+          const row = document.createElement('div');
+          row.className = 'driver-row';
+          
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'name';
+          nameSpan.textContent = driver.label || driver.feature.replace(/_/g, ' ');
+          
+          const valSpan = document.createElement('span');
+          const pts = driver.points ?? 0;
+          valSpan.className = 'val ' + (pts >= 0 ? 'val-up' : 'val-down');
+          valSpan.textContent = (pts >= 0 ? '+' : '') + pts.toFixed(1) + ' pts';
+          
+          row.appendChild(nameSpan);
+          row.appendChild(valSpan);
+          list.appendChild(row);
+        });
+        document.getElementById('drivers-box').style.display = 'block';
+      } else if (d.shap_drivers && d.shap_drivers.length) {
+        const list = document.getElementById('drivers-list');
+        list.innerHTML = '';
+        d.shap_drivers.forEach(driver => {
+          const row = document.createElement('div');
+          row.className = 'driver-row';
+          
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'name';
+          nameSpan.textContent = driver.feature.replace(/_/g, ' ');
+          
+          const valSpan = document.createElement('span');
+          const pts = driver.points ?? 0;
+          valSpan.className = 'val ' + (pts >= 0 ? 'val-up' : 'val-down');
+          valSpan.textContent = (pts >= 0 ? '+' : '') + pts.toFixed(1) + ' pts';
+          
+          row.appendChild(nameSpan);
+          row.appendChild(valSpan);
+          list.appendChild(row);
+        });
+        document.getElementById('drivers-box').style.display = 'block';
       }
 
       if (d.actionable_insights && d.actionable_insights.length) {

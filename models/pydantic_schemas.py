@@ -268,6 +268,8 @@ class CreditScoreResponse(BaseModel):
     explanation_method: str = "ebm-additive-terms"
     model_version: str = "unknown"
     is_simulated: bool = False
+    approval_likelihood: str | None = None
+    actionable_insights: list[str] = []
 
     @field_validator("probability_of_default", mode="before")
     @classmethod

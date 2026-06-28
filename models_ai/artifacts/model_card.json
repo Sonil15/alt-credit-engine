@@ -6,8 +6,8 @@
     "catboost",
     "logistic"
   ],
-  "trained_at": "2026-06-26T12:21:53.939178+00:00",
-  "users_trained": 122,
+  "trained_at": "2026-06-28T04:09:44.375360+00:00",
+  "users_trained": 93,
   "feature_columns": [
     "avg_days_late",
     "missed_payments_count",
@@ -32,125 +32,28 @@
     "trend_slope"
   ],
   "metrics": {
-    "auc": 0.8043,
-    "gini": 0.6087,
-    "ks": 0.6957,
-    "accuracy": 0.72,
-    "default_rate": 0.08,
-    "calibration": [
-      {
-        "bin_start": 0.0,
-        "bin_end": 0.1,
-        "predicted_mean": 0.07441761970369871,
-        "observed_rate": 0.0,
-        "count": 5
-      },
-      {
-        "bin_start": 0.1,
-        "bin_end": 0.2,
-        "predicted_mean": 0.1431443174612759,
-        "observed_rate": 0.0,
-        "count": 3
-      },
-      {
-        "bin_start": 0.2,
-        "bin_end": 0.30000000000000004,
-        "predicted_mean": 0.23552466895861604,
-        "observed_rate": 0.0,
-        "count": 4
-      },
-      {
-        "bin_start": 0.30000000000000004,
-        "bin_end": 0.4,
-        "predicted_mean": 0.34784715589197046,
-        "observed_rate": 0.0,
-        "count": 3
-      },
-      {
-        "bin_start": 0.4,
-        "bin_end": 0.5,
-        "predicted_mean": 0.426236809248335,
-        "observed_rate": 0.3333333333333333,
-        "count": 3
-      },
-      {
-        "bin_start": 0.5,
-        "bin_end": 0.6000000000000001,
-        "predicted_mean": 0.544865046996877,
-        "observed_rate": 0.2,
-        "count": 5
-      },
-      {
-        "bin_start": 0.6000000000000001,
-        "bin_end": 0.7000000000000001,
-        "predicted_mean": 0.6355131604135646,
-        "observed_rate": 0.0,
-        "count": 1
-      },
-      {
-        "bin_start": 0.7000000000000001,
-        "bin_end": 0.8,
-        "predicted_mean": 0.7169234030906558,
-        "observed_rate": 0.0,
-        "count": 1
-      }
-    ],
-    "confusion": {
-      "labels": [
-        "APPROVE",
-        "REVIEW",
-        "REJECT"
-      ],
-      "matrix": [
-        [
-          11,
-          10,
-          2
-        ],
-        [
-          0,
-          0,
-          0
-        ],
-        [
-          0,
-          1,
-          1
-        ]
-      ],
-      "accuracy": 0.48
-    },
+    "auc": 0.5,
+    "gini": 0.0,
+    "ks": 0.0,
+    "accuracy": 0.05263157894736842,
+    "default_rate": 0.0,
+    "calibration": [],
+    "confusion": {},
     "roc_curve": {
-      "fpr": [
-        0.0,
-        0.0435,
-        0.087,
-        0.087,
-        0.3043,
-        0.3043,
-        1.0
-      ],
-      "tpr": [
-        0.0,
-        0.0,
-        0.0,
-        0.5,
-        0.5,
-        1.0,
-        1.0
-      ]
+      "fpr": [],
+      "tpr": []
     }
   },
   "cv_metrics": {
-    "cv_auc_mean": 0.8453,
-    "cv_auc_std": 0.1179
+    "cv_auc_mean": 0.9444,
+    "cv_auc_std": 0.0
   },
   "challenger_metrics": {
     "catboost": {
-      "auc": 0.7826
+      "auc": 0.5
     },
     "logistic": {
-      "auc": 0.6739
+      "auc": 0.5
     }
   },
   "scorecard": {
@@ -171,8 +74,8 @@
   "conformal": {
     "alpha": 0.1,
     "coverage_target": 0.9,
-    "threshold_q": 0.658928,
-    "n_calibration": 20,
+    "threshold_q": 0.466041,
+    "n_calibration": 15,
     "empirical_coverage": 1.0,
     "model": "ebm_champion"
   }
