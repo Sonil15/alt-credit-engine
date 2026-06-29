@@ -4,142 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>Alt-Credit Consent Gateway</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0f172a; color: #e2e8f0; min-height: 100vh;
-      display: flex; justify-content: center; padding: 16px;
-    }
-    .phone {
-      width: 100%; max-width: 390px; background: #1e293b; border-radius: 24px;
-      overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-    }
-    .status-bar {
-      background: #0f172a; padding: 12px 20px; font-size: 12px;
-      display: flex; justify-content: space-between; color: #94a3b8;
-    }
-    .status-bar a { color: #64748b; text-decoration: none; }
-    .header { padding: 24px 20px 16px; text-align: center; border-bottom: 1px solid #334155; }
-    .header h1 { font-size: 20px; font-weight: 700; color: #f8fafc; }
-    .header p { font-size: 13px; color: #94a3b8; margin-top: 6px; }
-    .content { padding: 20px; }
-    .step { display: none; }
-    .step.active { display: block; }
-    .scope-list { list-style: none; margin: 16px 0; }
-    .scope-list li {
-      display: flex; align-items: center; gap: 12px; padding: 12px;
-      background: #0f172a; border-radius: 12px; margin-bottom: 8px; font-size: 14px;
-    }
-    .scope-list input { width: 18px; height: 18px; accent-color: #3b82f6; }
-    .disclosure {
-      background: #0f172a; border: 1px solid #334155; border-radius: 12px;
-      padding: 14px; margin-top: 16px; font-size: 13px; color: #94a3b8; line-height: 1.6;
-    }
-    .disclosure strong { color: #e2e8f0; }
-    .disclosure ul { margin: 8px 0 0 16px; }
-    .disclosure ul li { margin-bottom: 4px; }
-    .disclosure .caveat {
-      margin-top: 10px; padding: 10px; background: #1e293b; border-radius: 8px;
-      border-left: 3px solid #f59e0b; font-size: 12px; color: #fbbf24;
-    }
-    .btn {
-      width: 100%; padding: 14px; border: none; border-radius: 12px;
-      font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 16px;
-      transition: opacity 0.15s;
-    }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary { background: #3b82f6; color: white; }
-    .btn-primary:hover:not(:disabled) { background: #2563eb; }
-    .btn-danger { background: #991b1b; color: white; }
-    .btn-danger:hover:not(:disabled) { background: #7f1d1d; }
-    .btn-ghost {
-      background: transparent; color: #94a3b8; border: 1px solid #334155;
-      font-size: 13px; padding: 10px; margin-top: 10px;
-    }
-    .btn-ghost:hover { border-color: #64748b; color: #e2e8f0; }
-    .progress { display: flex; gap: 6px; justify-content: center; margin-bottom: 20px; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #334155; }
-    .dot.active { background: #3b82f6; }
-
-    /* Privacy dashboard */
-    .status-card {
-      background: #0f172a; border-radius: 14px; padding: 16px; margin-bottom: 14px;
-    }
-    .status-card .label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; }
-    .status-card .value { font-size: 16px; font-weight: 700; margin-top: 4px; }
-    .pill {
-      display: inline-block; padding: 4px 10px; border-radius: 999px;
-      font-size: 12px; font-weight: 700; margin-top: 6px;
-    }
-    .pill-active { background: #14532d; color: #86efac; }
-    .pill-revoked { background: #7f1d1d; color: #fca5a5; }
-    .pill-unknown { background: #334155; color: #94a3b8; }
-    .pill-deleted { background: #7f1d1d; color: #fca5a5; }
-    .pill-present { background: #1e3a5f; color: #93c5fd; }
-    .pill-partial { background: #7c2d12; color: #ffedd5; }
-    .action-row { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
-    .retained-note {
-      font-size: 12px; color: #64748b; margin-top: 14px;
-      border-top: 1px solid #334155; padding-top: 12px; line-height: 1.6;
-    }
-    .retained-note strong { color: #94a3b8; }
-    .success-banner {
-      background: #14532d; border: 1px solid #166534; color: #86efac;
-      border-radius: 12px; padding: 14px; font-size: 14px; margin-bottom: 14px;
-      display: none;
-    }
-    .error-banner {
-      background: #7f1d1d; border: 1px solid #991b1b; color: #fca5a5;
-      border-radius: 12px; padding: 14px; font-size: 14px; margin-bottom: 14px;
-      display: none;
-    }
-    .confirm-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-      display: none; justify-content: center; align-items: center; z-index: 100;
-    }
-    .confirm-overlay.open { display: flex; }
-    .confirm-box {
-      background: #1e293b; border-radius: 20px; padding: 28px; max-width: 340px; width: 90%;
-      border: 1px solid #334155;
-    }
-    .confirm-box h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
-    .confirm-box p { font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 20px; }
-    .confirm-box .row { display: flex; gap: 10px; }
-    .confirm-box .row button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
-    .confirm-box .row .cancel-btn { background: #334155; color: #e2e8f0; }
-    .confirm-box .row .confirm-btn { background: #dc2626; color: white; }
-
-    .lang-selector {
-      display: inline-flex;
-      gap: 4px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 3px;
-      border-radius: 10px;
-    }
-
-    .lang-btn {
-      background: transparent;
-      border: none;
-      color: #94a3b8;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .lang-btn:hover {
-      color: #ffffff;
-    }
-
-    .lang-btn.active {
-      color: #ffffff;
-      background: #2563eb;
-    }
-  </style>
+  <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/consent.css?v=1.0.0">
   <script src="/static/translations.js?v=1.0.2"></script>
 </head>
 <body>
@@ -184,8 +50,13 @@
           <li id="li-geo"><input type="checkbox" id="scope-geo"> <span data-i18n="scope-geo">Location stability</span> <span id="opt-geo" style="color:#64748b; font-size:12px; display:none;">(Optional)</span></li>
           <li id="li-cashflow"><input type="checkbox" id="scope-cashflow"> <span data-i18n="scope-cashflow">Bank cash flow</span> <span id="opt-cashflow" style="color:#64748b; font-size:12px; display:none;">(Optional)</span></li>
           
-          <li id="li-campus" style="display:none;"><input type="checkbox" id="scope-campus"> <span data-i18n="scope-campus">Campus & UPI transactions</span></li>
-          <li id="li-vendor" style="display:none;"><input type="checkbox" id="scope-vendor"> <span data-i18n="scope-vendor">Micro-enterprise UPI volumes</span></li>
+          <li id="li-campus" style="display:none; flex-direction:column; align-items:flex-start;">
+            <div><input type="checkbox" id="scope-campus"> <span data-i18n="scope-campus">Campus & UPI transactions</span> <span id="opt-campus" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-campus" style="color:#10b981; font-size:12px; display:none;">(Necessary for Score)</span></div>
+            <div style="font-size:11px; color:#64748b; margin-left:24px; margin-top:4px;" data-i18n="scope-campus-desc">
+              Includes: UPI expenses, Small dues history, and E-wallet usage. Providing at least 1 of these 3 will count as data provided for confidence scoring.
+            </div>
+          </li>
+          <li id="li-vendor" style="display:none;"><input type="checkbox" id="scope-vendor"> <span data-i18n="scope-vendor">Micro-enterprise UPI volumes</span> <span id="opt-vendor" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-vendor" style="color:#10b981; font-size:12px; display:none;">(Necessary for Score)</span></li>
           <li id="li-farmer" style="display:none;"><input type="checkbox" id="scope-farmer"> <span data-i18n="scope-farmer">Farming cycles & purchases</span></li>
           <li id="li-household" style="display:none;"><input type="checkbox" id="scope-household"> <span data-i18n="scope-household">Household utility payments</span></li>
           
@@ -710,5 +581,6 @@
       });
     });
   </script>
+  <script src="/static/session_timeout.js"></script>
 </body>
 </html>

@@ -110,35 +110,44 @@ async def _ingest_assessment(
         debt_attitude = float(payload.get("debt_attitude", 0.5))
         theta = (conscientiousness + locus_of_control + financial_self_efficacy + (1.0 - present_bias) + debt_attitude) / 5.0
 
-        # Generate mock records in-memory (bypassing secure_vault for safety)
+        # Generate mock records conditionally based on active consent
         from synthetic_data.generate_raw_mock import (
             generate_telecom_invoices,
             generate_ecommerce_orders,
             generate_geo_locations,
             generate_cashflow_transactions,
         )
-        telecom_raw = generate_telecom_invoices(str(user_id), theta)
-        ecommerce_raw = generate_ecommerce_orders(str(user_id), theta)
-        geo_raw = generate_geo_locations(str(user_id), theta)
-        cashflow_raw = generate_cashflow_transactions(str(user_id), theta)
-
-        # Extract features directly in-memory using cleaners
         from preprocessing.clean_telecom import clean_telecom
         from preprocessing.clean_ecommerce import clean_ecommerce
         from preprocessing.clean_geo import clean_geo
         from preprocessing.clean_cashflow import clean_cashflow
-        
-        telecom_feats, telecom_series = clean_telecom(telecom_raw)
-        ecommerce_feats = clean_ecommerce(ecommerce_raw)
-        geo_feats = clean_geo(geo_raw)
-        cashflow_feats, cashflow_series = clean_cashflow(cashflow_raw)
+        from api.routes.consent import get_revoked_scopes
 
-        # Combine all mock features and mark user as simulated
+        revoked_scopes = get_revoked_scopes(str(user_id))
         sim_features = {}
-        sim_features.update(telecom_feats)
-        sim_features.update(ecommerce_feats)
-        sim_features.update(geo_feats)
-        sim_features.update(cashflow_feats)
+        telecom_series = None
+        cashflow_series = None
+
+        if "telecom" not in revoked_scopes:
+            telecom_raw = generate_telecom_invoices(str(user_id), theta)
+            telecom_feats, telecom_series = clean_telecom(telecom_raw)
+            sim_features.update(telecom_feats)
+
+        if "ecommerce" not in revoked_scopes:
+            ecommerce_raw = generate_ecommerce_orders(str(user_id), theta)
+            ecommerce_feats = clean_ecommerce(ecommerce_raw)
+            sim_features.update(ecommerce_feats)
+
+        if "geo" not in revoked_scopes:
+            geo_raw = generate_geo_locations(str(user_id), theta)
+            geo_feats = clean_geo(geo_raw)
+            sim_features.update(geo_feats)
+
+        if "cashflow" not in revoked_scopes:
+            cashflow_raw = generate_cashflow_transactions(str(user_id), theta)
+            cashflow_feats, cashflow_series = clean_cashflow(cashflow_raw)
+            sim_features.update(cashflow_feats)
+
         sim_features["is_simulated"] = 1.0
 
         cohort = payload.get("cohort", "Salaried")
@@ -152,17 +161,17 @@ async def _ingest_assessment(
         }
         sim_features["cohort_code"] = cohort_codes.get(cohort, 0.0)
 
-        if cohort == "Student":
+        if cohort == "Student" and "campus" not in revoked_scopes:
             sim_features["upi_spend_consistency"] = round(0.5 + theta * 0.5, 2)
             sim_features["small_dues_payment_promptness"] = round(0.6 + theta * 0.4, 2)
             sim_features["e_wallet_topup_frequency"] = round(0.3 + theta * 0.7, 2)
-        elif cohort == "Vendor":
+        elif cohort == "Vendor" and "vendor" not in revoked_scopes:
             sim_features["daily_transaction_count"] = round(10.0 + theta * 50.0, 2)
             sim_features["average_ticket_size"] = round(50.0 + theta * 450.0, 2)
-        elif cohort == "Farmer":
+        elif cohort == "Farmer" and "farmer" not in revoked_scopes:
             sim_features["harvest_income_spike"] = round(1.0 + theta * 9.0, 2)
             sim_features["input_purchase_consistency"] = round(0.5 + theta * 0.5, 2)
-        elif cohort == "Homemaker":
+        elif cohort == "Homemaker" and "household" not in revoked_scopes:
             sim_features["utility_payment_consistency"] = round(0.5 + theta * 0.5, 2)
             sim_features["grocery_spend_stability"] = round(0.5 + theta * 0.5, 2)
 

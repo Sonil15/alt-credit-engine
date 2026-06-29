@@ -4,95 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Alt-Credit — Your Assessment Result</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
-    .topbar { background: #0f172a; color: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; }
-    .topbar h1 { font-size: 18px; font-weight: 700; }
-    .topbar .sub { font-size: 13px; color: #94a3b8; }
-    .topbar a { color: #93c5fd; font-size: 13px; text-decoration: none; margin-left: 16px; }
-    .container { max-width: 680px; margin: 40px auto; padding: 0 24px 48px; }
-    .card { background: white; border-radius: 20px; padding: 36px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
-    .card h2 { font-size: 20px; font-weight: 700; color: #334155; margin-bottom: 28px; }
-    .score-hero { text-align: center; margin-bottom: 32px; }
-    .score-num { font-size: 72px; font-weight: 800; color: #2563eb; line-height: 1; }
-    .score-label { font-size: 13px; color: #94a3b8; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .badge { display: inline-block; padding: 8px 20px; border-radius: 24px; font-size: 15px; font-weight: 700; margin-top: 16px; }
-    .badge-APPROVE { background: #dcfce7; color: #166534; }
-    .badge-REVIEW  { background: #fef9c3; color: #854d0e; }
-    .badge-REJECT  { background: #fee2e2; color: #991b1b; }
-    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
-    .meta-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; }
-    .meta-box .k { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-    .meta-box .v { font-size: 22px; font-weight: 700; margin-top: 6px; color: #0f172a; }
-    .reason-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 16px; font-size: 14px; color: #9a3412; margin-bottom: 24px; }
-    .drivers-title { font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 12px; }
-    .driver-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-    .driver-row:last-child { border-bottom: none; }
-    .driver-row .name { color: #475569; }
-    .driver-row .val { font-weight: 700; }
-    .val-up { color: #16a34a; }
-    .val-down { color: #dc2626; }
-    .actions { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
-    .btn { padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; display: inline-block; text-align: center; }
-    .btn-primary { background: #2563eb; color: white; }
-    .btn-secondary { background: #f1f5f9; color: #475569; }
-    .error-box { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 20px; border-radius: 12px; font-size: 14px; }
-    .loading { text-align: center; padding: 60px 24px; color: #94a3b8; font-size: 16px; }
-    .spinner { width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .lang-selector {
-      display: inline-flex;
-      gap: 4px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 3px;
-      border-radius: 10px;
-    }
-
-    .lang-btn {
-      background: transparent;
-      border: none;
-      color: #94a3b8;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .lang-btn:hover {
-      color: #ffffff;
-    }
-
-    .lang-btn.active {
-      color: #ffffff;
-      background: #2563eb;
-    }
-    
-    @media print {
-      .topbar, .actions, #loading, #error-section { display: none !important; }
-      body { background: white; margin: 0; padding: 0; }
-      .container { margin: 0; padding: 0; max-width: 100%; }
-      .card { box-shadow: none; border: none; padding: 16px; margin: 0; }
-    }
-  </style>
+  <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/borrower.css?v=1.0.0">
   <script src="/static/translations.js?v=1.0.2"></script>
 </head>
 <body>
-  <div class="topbar">
-    <div>
-      <h1 data-i18n="borrower-topbar-title">Alt-Credit</h1>
-      <div class="sub" data-i18n="borrower-topbar-sub">Your Credit Assessment</div>
+  <header class="app-header">
+    <div class="app-header-left">
+      <h1><a href="/" style="color: inherit; text-decoration: none;" data-i18n="borrower-topbar-title">Alt-Credit</a> <span class="sub" data-i18n="borrower-topbar-sub">Your Credit Assessment</span></h1>
     </div>
-    <div style="display: flex; align-items: center; gap: 16px;">
+    <div class="app-header-right">
       <div id="language-selector-root"></div>
       <a href="/" data-i18n="borrower-topbar-home">Home</a>
       <a id="privacy-link" href="/consent" data-i18n="borrower-topbar-privacy">Privacy Rights</a>
     </div>
-  </div>
+  </header>
 
   <div class="container">
     <div id="loading" class="loading">
@@ -147,9 +73,19 @@
         </div>
         
         <div id="rights-notice" class="reason-box" style="display:none; background: #f8fafc; border-color: #cbd5e1; color: #475569; font-size: 13px; margin-bottom: 24px;">
-          <strong style="color:#0f172a;" data-i18n="borrower-rights-title">Consumer Rights Notice:</strong><br>
-          <span data-i18n="borrower-rights-text">You have a right under the Fair Credit Reporting Act to know the information contained in your credit file at the consumer reporting agency. The reporting agency played no part in our decision and is unable to supply specific reasons why we have denied credit or offered less favorable terms to you. You also have a right to a free copy of your report and to dispute its accuracy.</span><br><br>
-          <strong data-i18n="borrower-provider-label">Provided By:</strong> <span data-i18n="borrower-provider-name">Alt-Credit Engine, IIT Kharagpur</span>
+          <strong style="color:#0f172a;" data-i18n="borrower-rights-title">Your Rights & Fair Practice Rules:</strong><br>
+          <span data-i18n="borrower-rights-text">Under Reserve Bank of India (RBI) guidelines, you have the right to know why a loan decision was made. Your score was calculated using alternative data like telecom bills and bank entries. You are also entitled to one free credit report every year from authorized credit bureaus (like CIBIL, Experian, or CRIF).</span><br><br>
+          <strong data-i18n="borrower-provider-label">Assessment Provided By:</strong> <span data-i18n="borrower-provider-name">Alt-Credit Engine, IIT Kharagpur</span>
+        </div>
+
+        <div id="grievance-box" class="reason-box" style="background: #f0fdf4; border-color: #bbf7d0; color: #166534; font-size: 13px; margin-bottom: 24px;">
+          <strong style="color:#14532d; font-size: 14px;" data-i18n="borrower-grievance-title">Questions or Complaints?</strong><br>
+          <span data-i18n="borrower-grievance-text" style="display:block; margin: 4px 0 8px;">If you find any mistakes in your report or want to file a complaint, contact our Nodal Grievance Officer:</span>
+          <div style="background: white; border: 1px solid #dcfce7; padding: 10px; border-radius: 8px; margin-bottom: 8px;">
+            <strong style="color:#14532d;" data-i18n="borrower-gro-name">Nodal Officer: XXXXX XXXXX</strong><br>
+            <span data-i18n="borrower-gro-contact" style="color: #166534;">Email: xxxxx@xxxxx.xx | Phone: +XX XXXXX-XXXXX</span>
+          </div>
+          <span data-i18n="borrower-gro-ombudsman" style="font-size: 12px; display:block; color: #15803d; line-height: 1.4;">If your complaint is not resolved within 30 days, you can lodge a complaint with the RBI Ombudsman at https://cms.rbi.org.in</span>
         </div>
 
         <div class="actions">
@@ -166,9 +102,35 @@
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get('session');
 
+    const lang = getCurrentLanguage();
+    const t = (key) => (ALTCREDIT_DICTIONARY[lang] && ALTCREDIT_DICTIONARY[lang][key]) || ALTCREDIT_DICTIONARY['en'][key] || key;
+
+    // Map dynamic backend insights strings to translation keys
+    const insightKeyMap = {
+      "Tip: Ensuring all telecom and utility bills are paid on time improves your score.": "insight-bill_payment",
+      "Tip: Maintaining a healthy balance of essential spending helps your profile.": "insight-necessity_ratio",
+      "Tip: Higher merchant ratings on transactions indicate better digital reliability.": "insight-merchant_rating",
+      "Tip: Demonstrating stable spending patterns will improve your score.": "insight-spend_volatility",
+      "Tip: Showing location stability over time helps build your profile.": "insight-spatial_variance",
+      "Tip: Establishing routine locations (like home/work) improves profile confidence.": "insight-anchor_count",
+      "Tip: Increasing or stabilizing your monthly inflow strengthens your assessment.": "insight-income_mean",
+      "Tip: Demonstrating consistent monthly cash flow will improve your score.": "insight-cashflow_volatility",
+      "Tip: Maintaining a buffer in your account improves financial resilience.": "insight-resilience",
+      "Tip: A positive trend in your account balance over time will improve your score.": "insight-trend_slope",
+      "Tip: Reducing unpredictable spikes in cash flow will strengthen your profile.": "insight-stationary",
+      "Tip: Consistent digital payment habits build a stronger profile.": "insight-upi_consistency",
+      "Tip: Prompt payment of small dues builds positive credit history.": "insight-small_dues",
+      "Tip: Regular usage of digital wallets can positively impact your score.": "insight-wallet_freq",
+      "Tip: Higher transaction volume indicates a healthier micro-enterprise.": "insight-daily_transactions",
+      "Tip: Stable or growing average ticket sizes improve your business profile.": "insight-average_ticket",
+      "Tip: Consistent cycles in farming income help validate agricultural profiles.": "insight-harvest_income",
+      "Tip: Regular purchases of agricultural inputs build a stronger profile.": "insight-input_purchase",
+      "Tip: Consistent payment of household utilities is a strong positive signal.": "insight-utility_consistency",
+      "Tip: Stable household spending patterns improve your credit assessment.": "insight-grocery_stability",
+      "Tip: Continue building a consistent digital transaction history across all your accounts.": "insight-default"
+    };
+
     if (!sessionId) {
-      const lang = getCurrentLanguage();
-      const t = (key) => (ALTCREDIT_DICTIONARY[lang] && ALTCREDIT_DICTIONARY[lang][key]) || ALTCREDIT_DICTIONARY['en'][key] || key;
       showError(t('borrower-error-session'));
     } else {
       loadScore();
@@ -216,48 +178,33 @@
         document.getElementById('rights-notice').style.display = 'block';
       }
 
+      const renderDrivers = (drivers) => {
+        const list = document.getElementById('drivers-list');
+        list.innerHTML = '';
+        drivers.forEach(driver => {
+          const row = document.createElement('div');
+          row.className = 'driver-row';
+          
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'name';
+          nameSpan.textContent = t('feature-' + driver.feature) || driver.label || driver.feature.replace(/_/g, ' ');
+          
+          const valSpan = document.createElement('span');
+          const pts = driver.points ?? 0;
+          valSpan.className = 'val badge-driver ' + (pts >= 0 ? 'badge-driver-up' : 'badge-driver-down');
+          valSpan.textContent = pts >= 0 ? t('borrower-driver-positive') : t('borrower-driver-negative');
+          
+          row.appendChild(nameSpan);
+          row.appendChild(valSpan);
+          list.appendChild(row);
+        });
+        document.getElementById('drivers-box').style.display = 'block';
+      };
+
       if (d.feature_trace && d.feature_trace.top_drivers && d.feature_trace.top_drivers.length) {
-        const list = document.getElementById('drivers-list');
-        list.innerHTML = '';
-        d.feature_trace.top_drivers.forEach(driver => {
-          const row = document.createElement('div');
-          row.className = 'driver-row';
-          
-          const nameSpan = document.createElement('span');
-          nameSpan.className = 'name';
-          nameSpan.textContent = driver.label || driver.feature.replace(/_/g, ' ');
-          
-          const valSpan = document.createElement('span');
-          const pts = driver.points ?? 0;
-          valSpan.className = 'val ' + (pts >= 0 ? 'val-up' : 'val-down');
-          valSpan.textContent = (pts >= 0 ? '+' : '') + pts.toFixed(1) + ' pts';
-          
-          row.appendChild(nameSpan);
-          row.appendChild(valSpan);
-          list.appendChild(row);
-        });
-        document.getElementById('drivers-box').style.display = 'block';
+        renderDrivers(d.feature_trace.top_drivers);
       } else if (d.shap_drivers && d.shap_drivers.length) {
-        const list = document.getElementById('drivers-list');
-        list.innerHTML = '';
-        d.shap_drivers.forEach(driver => {
-          const row = document.createElement('div');
-          row.className = 'driver-row';
-          
-          const nameSpan = document.createElement('span');
-          nameSpan.className = 'name';
-          nameSpan.textContent = driver.feature.replace(/_/g, ' ');
-          
-          const valSpan = document.createElement('span');
-          const pts = driver.points ?? 0;
-          valSpan.className = 'val ' + (pts >= 0 ? 'val-up' : 'val-down');
-          valSpan.textContent = (pts >= 0 ? '+' : '') + pts.toFixed(1) + ' pts';
-          
-          row.appendChild(nameSpan);
-          row.appendChild(valSpan);
-          list.appendChild(row);
-        });
-        document.getElementById('drivers-box').style.display = 'block';
+        renderDrivers(d.shap_drivers);
       }
 
       if (d.actionable_insights && d.actionable_insights.length) {
@@ -265,7 +212,8 @@
         list.innerHTML = '';
         d.actionable_insights.forEach(insight => {
           const li = document.createElement('li');
-          li.textContent = insight;
+          const translatedInsight = t(insightKeyMap[insight]) || insight;
+          li.textContent = translatedInsight;
           li.style.marginBottom = '6px';
           list.appendChild(li);
         });
@@ -307,5 +255,6 @@
       setupLanguageSelector('language-selector-root');
     });
   </script>
+  <script src="/static/session_timeout.js"></script>
 </body>
 </html>

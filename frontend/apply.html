@@ -4,100 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Alt-Credit — Borrower Portal</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
-
-    .topbar { background: #0f172a; color: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-    .topbar-left h1 { font-size: 18px; font-weight: 700; }
-    .topbar-left .sub { font-size: 12px; color: #94a3b8; margin-top: 2px; }
-    .topbar-right a { color: #93c5fd; font-size: 13px; text-decoration: none; margin-left: 20px; }
-    .topbar-right a:hover { color: white; }
-
-    .hero { background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); color: white; padding: 52px 24px 44px; text-align: center; }
-    .hero-badge { display: inline-block; padding: 5px 14px; border-radius: 999px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); font-size: 12px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; color: #bfdbfe; margin-bottom: 18px; }
-    .hero h2 { font-size: clamp(24px, 4vw, 36px); font-weight: 800; line-height: 1.2; margin-bottom: 12px; }
-    .hero p { font-size: 15px; color: #cbd5e1; max-width: 520px; margin: 0 auto 28px; line-height: 1.6; }
-    .hero-cta { display: inline-block; padding: 14px 32px; background: #2563eb; color: white; font-size: 15px; font-weight: 700; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 14px rgba(37,99,235,0.4); transition: transform 0.15s; }
-    .hero-cta:hover { transform: translateY(-1px); }
-
-    .container { max-width: 760px; margin: 0 auto; padding: 36px 24px 60px; }
-
-    /* Previous applications */
-    .section-title { font-size: 16px; font-weight: 700; color: #334155; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
-    .section-title .count { background: #e0e7ff; color: #3730a3; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
-
-    .empty-state { background: white; border-radius: 16px; padding: 36px 24px; text-align: center; color: #94a3b8; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 32px; }
-    .empty-state .icon { font-size: 32px; margin-bottom: 12px; }
-
-    .app-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
-    .app-card { background: white; border-radius: 14px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; text-decoration: none; color: inherit; border: 1px solid transparent; transition: border-color 0.15s, box-shadow 0.15s; }
-    .app-card:hover { border-color: #bfdbfe; box-shadow: 0 4px 16px rgba(37,99,235,0.1); }
-    .app-card-left .date { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
-    .app-card-left .uid { font-size: 12px; color: #cbd5e1; font-family: ui-monospace, monospace; }
-    .app-card-score { font-size: 28px; font-weight: 800; color: #2563eb; }
-    .badge { display: inline-block; padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; }
-    .badge-APPROVE { background: #dcfce7; color: #166534; }
-    .badge-REVIEW  { background: #fef9c3; color: #854d0e; }
-    .badge-REJECT  { background: #fee2e2; color: #991b1b; }
-    .badge-PENDING { background: #f1f5f9; color: #64748b; }
-    .app-card-arrow { color: #cbd5e1; font-size: 18px; }
-
-    /* How it works */
-    .steps-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-    .steps-card h3 { font-size: 15px; font-weight: 700; color: #334155; margin-bottom: 18px; }
-    .step-row { display: grid; grid-template-columns: 36px 1fr; gap: 14px; padding: 11px 0; border-bottom: 1px solid #f1f5f9; align-items: start; }
-    .step-row:last-child { border-bottom: none; }
-    .step-num { width: 36px; height: 36px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .step-row strong { display: block; font-size: 14px; color: #0f172a; margin-bottom: 3px; }
-    .step-row span { font-size: 13px; color: #64748b; line-height: 1.5; }
-
-    .footer { text-align: center; font-size: 13px; color: #94a3b8; margin-top: 36px; }
-    .footer a { color: #2563eb; text-decoration: none; margin: 0 10px; }
-
-    .lang-selector {
-      display: inline-flex;
-      gap: 4px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 3px;
-      border-radius: 10px;
-    }
-
-    .lang-btn {
-      background: transparent;
-      border: none;
-      color: #94a3b8;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .lang-btn:hover {
-      color: #ffffff;
-    }
-
-    .lang-btn.active {
-      color: #ffffff;
-      background: #2563eb;
-    }
-  </style>
+  <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/apply.css?v=1.0.0">
   <script src="/static/translations.js?v=1.0.2"></script>
 </head>
 <body>
-  <div class="topbar">
-    <div class="topbar-left">
-      <h1 data-i18n="apply-topbar-title">Alt-Credit</h1>
-      <div class="sub" data-i18n="apply-topbar-sub">Borrower Portal</div>
+  <header class="app-header">
+    <div class="app-header-left">
+      <h1><a href="/" style="color: inherit; text-decoration: none;" data-i18n="apply-topbar-title">Alt-Credit</a> <span class="sub" data-i18n="apply-topbar-sub">Borrower Portal</span></h1>
     </div>
-    <div class="topbar-right" style="display: flex; align-items: center; gap: 16px;">
+    <div class="app-header-right">
       <div id="language-selector-root"></div>
       <a id="privacy-link" href="/consent" data-i18n="apply-topbar-privacy">Privacy Rights</a>
     </div>
-  </div>
+  </header>
 
   <div class="hero">
     <div class="hero-badge" data-i18n="apply-hero-badge">Thin-File Credit</div>
@@ -246,5 +166,6 @@
       setupLanguageSelector('language-selector-root');
     });
   </script>
+  <script src="/static/session_timeout.js"></script>
 </body>
 </html>
