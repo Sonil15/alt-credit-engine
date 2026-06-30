@@ -198,8 +198,18 @@ async def log_decision_override(
     db: AsyncSession = Depends(get_db)
 ):
     try:
+        user_uuid = uuid.UUID(req.user_id)
+    except (ValueError, AttributeError, TypeError) as exc:
+        raise HTTPException(
+            status_code=400, detail=f"Invalid user_id: {req.user_id!r}"
+        ) from exc
+
+    if not req.justification.strip():
+        raise HTTPException(status_code=400, detail="Justification is required")
+
+    try:
         log_entry = AuditLog(
-            user_id=uuid.UUID(req.user_id),
+            user_id=user_uuid,
             officer_id=req.officer_id,
             original_decision=req.original_decision,
             new_decision=req.new_decision,
@@ -209,5 +219,6 @@ async def log_decision_override(
         await db.commit()
         return {"status": "success", "message": "Override logged successfully"}
     except Exception as exc:
+        await db.rollback()
         logger.exception("Failed to log override")
         raise HTTPException(status_code=500, detail="Failed to log override") from exc

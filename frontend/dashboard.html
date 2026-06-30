@@ -215,6 +215,7 @@
   <script>
     let shapChart=null, gaugeChart=null, distChart=null, radarChart=null, fairnessChart=null;
     let approveScore = 580, reviewScore = 480;
+    let currentUserId = '';
     const fmtINR = n => '₹' + Math.round(n).toLocaleString('en-IN');
     const scoreColor = s => s >= approveScore ? '#16a34a' : s >= reviewScore ? '#eab308' : '#dc2626';
     const scoreGrade = s => s >= approveScore ? 'STRONG' : s >= reviewScore ? 'MODERATE' : 'HIGH RISK';
@@ -311,6 +312,7 @@
       const grade = scoreGrade(d.credit_score);
       const ge = document.getElementById('score-grade'); ge.textContent = grade; ge.style.color = scoreColor(d.credit_score);
       document.getElementById('pd-value').textContent = (d.probability_of_default*100).toFixed(1)+'%';
+      currentUserId = d.user_id;
       document.getElementById('display-user-id').textContent = d.user_id+' · '+(d.model_version||'');
       const badge = document.getElementById('decision-badge'); badge.textContent=d.decision; badge.className='badge badge-'+d.decision;
       const cohortBadge = document.getElementById('cohort-badge');
@@ -508,8 +510,9 @@
       if (!just.trim()) { alert('Justification is required for auditing.'); return; }
       
       const currentDec = document.getElementById('decision-badge').textContent;
-      const uid = document.getElementById('user-id-input').value.trim() || document.getElementById('display-user-id').textContent;
-      
+      const uid = document.getElementById('user-id-input').value.trim() || currentUserId;
+      if (!uid) { alert('Load a borrower before overriding the decision.'); return; }
+
       try {
         const res = await fetch('/score/audit/override', {
           method: 'POST',
@@ -528,7 +531,9 @@
           document.getElementById('decision-badge').textContent = newDec;
           document.getElementById('decision-badge').className = 'badge badge-' + newDec;
         } else {
-          alert('Failed to log override.');
+          let detail = res.statusText;
+          try { detail = (await res.json()).detail || detail; } catch(_) {}
+          alert('Failed to log override: ' + detail);
         }
       } catch(e) {
         alert('Error logging override: ' + e);
