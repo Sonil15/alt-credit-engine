@@ -10,6 +10,7 @@ from psychometric.scoring import (
     score_likert_answer,
     score_open_ended_answer,
 )
+from psychometric import session as session_mod
 from psychometric.session import (
     create_session,
     get_session,
@@ -17,6 +18,8 @@ from psychometric.session import (
     force_timeout_session,
     extend_session,
     begin_timer,
+    extract_open_ended_score,
+    _resolve_open_ended_score,
 )
 
 
@@ -67,6 +70,94 @@ def test_open_ended_extraction_fallback():
     responsible = score_open_ended_answer("I pay bills and save money every month.")
     avoidant = score_open_ended_answer("I avoid checking debt and delay payments.")
     assert responsible > avoidant
+
+
+def test_open_ended_fallback_hindi():
+    # Pays bills/rent first and saves vs. ignores debt, delays payment, worries.
+    responsible = score_open_ended_answer(
+        "मैं हर महीने बिल और किराया पहले भरता हूँ और बचत करता हूँ।"
+    )
+    avoidant = score_open_ended_answer(
+        "मैं कर्ज नजरअंदाज करता हूँ, भुगतान में देरी करता हूँ और चिंता करता हूँ।"
+    )
+    # A Hindi answer must produce real signal, not collapse to neutral 0.5.
+    assert responsible > 0.5
+    assert avoidant < 0.5
+    assert responsible > avoidant
+
+
+def test_open_ended_fallback_bengali():
+    # Pays bills/rent first and saves vs. ignores debt, delays, worries.
+    responsible = score_open_ended_answer(
+        "আমি প্রতি মাসে প্রথমে বিল ও ভাড়া পরিশোধ করি এবং সঞ্চয় করি।"
+    )
+    avoidant = score_open_ended_answer(
+        "আমি ঋণ উপেক্ষা করি, সব কিছুতে দেরি করি এবং দুশ্চিন্তা করি।"
+    )
+    assert responsible > 0.5
+    assert avoidant < 0.5
+    assert responsible > avoidant
+
+
+def test_open_ended_fallback_negation():
+    # Negated responsible cues must not read as responsible in any language.
+    en_plain = score_open_ended_answer("I pay bills and save money every month.")
+    en_neg = score_open_ended_answer("I do not pay bills and I do not save money.")
+    assert en_neg < 0.5
+    assert en_neg < en_plain
+
+    hi_plain = score_open_ended_answer("मैं बचत करता हूँ और बिल भरता हूँ।")
+    hi_neg = score_open_ended_answer("मैं बचत नहीं करता और बिल नहीं भरता।")
+    assert hi_neg < 0.5
+    assert hi_neg < hi_plain
+
+    bn_plain = score_open_ended_answer("আমি সঞ্চয় করি এবং বিল পরিশোধ করি।")
+    bn_neg = score_open_ended_answer("আমি সঞ্চয় করি না এবং বিল পরিশোধ করি না।")
+    assert bn_neg < 0.5
+    assert bn_neg < bn_plain
+
+
+def test_resolve_uses_score_when_confident():
+    text = "I pay rent and utilities first, then groceries."
+    assert _resolve_open_ended_score(
+        {"responsibility_score": 0.82, "confidence": 0.9}, text
+    ) == 0.82
+
+
+def test_resolve_trusts_score_when_confidence_missing():
+    # The score is the primary signal; absent/garbled confidence is treated as confident.
+    text = "I always clear my bills first."
+    assert _resolve_open_ended_score({"responsibility_score": 0.7}, text) == 0.7
+
+
+def test_resolve_falls_back_on_low_confidence():
+    # Low self-reported confidence must defer to the deterministic scorer, not 0.5.
+    text = "I avoid checking debt and delay payments."
+    resolved = _resolve_open_ended_score(
+        {"responsibility_score": 0.95, "confidence": 0.1}, text
+    )
+    assert resolved == score_open_ended_answer(text)
+
+
+def test_resolve_falls_back_on_missing_or_invalid_score():
+    text = "I pay bills and save money every month."
+    fallback = score_open_ended_answer(text)
+    assert _resolve_open_ended_score({}, text) == fallback  # missing field (was silent 0.5)
+    assert _resolve_open_ended_score({"responsibility_score": "abc"}, text) == fallback
+    assert _resolve_open_ended_score({"responsibility_score": 1.7}, text) == fallback  # out of range
+
+
+@pytest.mark.asyncio
+async def test_extract_open_ended_score_caches(monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "GROQ_API_KEY", "")  # force deterministic fallback path
+    session_mod._open_ended_cache.clear()
+    text = "I always pay rent and utilities first."
+
+    first = await extract_open_ended_score(text, "en")
+    assert (settings.GROQ_MODEL, "en", text.strip()) in session_mod._open_ended_cache
+    second = await extract_open_ended_score(text, "en")
+    assert first == second == score_open_ended_answer(text)
 
 
 @pytest.mark.asyncio

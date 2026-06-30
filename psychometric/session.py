@@ -84,19 +84,69 @@ def _parse_groq_json(content: str) -> dict[str, Any]:
         raise
 
 
-async def extract_open_ended_score(text: str, language: str) -> float:
-    """LLM extraction with deterministic keyword fallback."""
-    settings = get_settings()
-    if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_groq_api_key_here":
+# Minimum self-reported confidence before we trust the LLM's score over the
+# deterministic keyword fallback.
+OPEN_ENDED_CONFIDENCE_THRESHOLD = 0.5
+
+# Cache of resolved open-ended scores keyed by (model, language, normalized text)
+# so repeated demo answers are stable and don't re-hit the API.
+_open_ended_cache: dict[tuple[str, str, str], float] = {}
+
+
+def _resolve_open_ended_score(parsed: dict[str, Any], text: str) -> float:
+    """Apply confidence routing to a parsed Groq response (pure, no network).
+
+    Groq is the primary signal; we defer to the deterministic keyword scorer when
+    the model's answer is malformed, out of range, or self-reported low-confidence
+    — rather than silently returning a neutral 0.5. Missing/garbled ``confidence``
+    is treated as confident, since the score itself is the primary signal.
+    """
+    try:
+        score = float(parsed.get("responsibility_score"))
+    except (TypeError, ValueError):
+        return score_open_ended_answer(text)
+    if not 0.0 <= score <= 1.0:
         return score_open_ended_answer(text)
 
+    try:
+        confidence = float(parsed.get("confidence"))
+    except (TypeError, ValueError):
+        confidence = 1.0
+    if confidence < OPEN_ENDED_CONFIDENCE_THRESHOLD:
+        return score_open_ended_answer(text)
+
+    return score
+
+
+async def extract_open_ended_score(text: str, language: str) -> float:
+    """LLM extraction with confidence routing and a deterministic keyword fallback.
+
+    Groq is the primary path; we fall back to ``score_open_ended_answer`` whenever
+    the call fails or ``_resolve_open_ended_score`` rejects the response. Results
+    are cached per (model, language, answer) so repeated demo runs are stable and
+    call-free.
+    """
+    settings = get_settings()
+    cache_key = (settings.GROQ_MODEL, language, text.strip())
+    if cache_key in _open_ended_cache:
+        return _open_ended_cache[cache_key]
+
+    if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_groq_api_key_here":
+        score = score_open_ended_answer(text)
+        _open_ended_cache[cache_key] = score
+        return score
+
     prompt = (
-        "Analyze this financial behavior response. Return ONLY JSON:\n"
-        '{"responsibility_score": <float 0.0 to 1.0>}\n'
+        "You are scoring a borrower's financial responsibility from their own words. "
+        "Judge the stance and behaviour described (do they prioritise essentials, plan "
+        "ahead, take ownership?), NOT the emotional tone — a stressed but responsible "
+        "answer still scores high. Answers may be in English, Hindi, or Bengali.\n"
+        "Return ONLY JSON with two keys:\n"
+        '{"responsibility_score": <float 0.0 to 1.0>, "confidence": <float 0.0 to 1.0>}\n'
         f"Language hint: {language}\nText:\n{text}"
     )
 
-    def _call() -> float:
+    def _call() -> dict[str, Any]:
         client = Groq(api_key=settings.GROQ_API_KEY)
         completion = client.chat.completions.create(
             model=settings.GROQ_MODEL,
@@ -104,16 +154,20 @@ async def extract_open_ended_score(text: str, language: str) -> float:
                 {"role": "system", "content": "You are a financial psychometric analyst. JSON only."},
                 {"role": "user", "content": prompt},
             ],
-            temperature=0.1,
+            temperature=0,
+            seed=7,
             max_tokens=100,
         )
-        parsed = _parse_groq_json(completion.choices[0].message.content or "{}")
-        return max(0.0, min(1.0, float(parsed.get("responsibility_score", 0.5))))
+        return _parse_groq_json(completion.choices[0].message.content or "{}")
 
     try:
-        return await asyncio.to_thread(_call)
+        parsed = await asyncio.to_thread(_call)
+        score = _resolve_open_ended_score(parsed, text)
     except Exception:
-        return score_open_ended_answer(text)
+        score = score_open_ended_answer(text)
+
+    _open_ended_cache[cache_key] = score
+    return score
 
 
 def _render_item(item: Item, language: str) -> dict[str, Any]:

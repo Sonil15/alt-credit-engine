@@ -20,17 +20,156 @@ CONSTRUCTS = [
     "resourcefulness",
 ]
 
-# Keyword heuristics for open-ended extraction (multilingual hints)
-RESPONSIBLE_KEYWORDS = re.compile(
-    r"\b(pay|bills|rent|save|budget|priority|first|utility|groceries|"
-    r"भर|बिल|बचत|बजट|প্রথম|বিল|সঞ্চয়)\b",
+# --- Open-ended fallback lexicon (multilingual, curated) --------------------
+#
+# This is the *deterministic* scorer used when Groq is unavailable or its read is
+# rejected (see psychometric.session.extract_open_ended_score). It must stay
+# pure, offline, and dependency-free — no VADER (English-only, would regress
+# hi/bn), no transformers.
+#
+# English terms are matched with word boundaries (so "pay" never fires inside
+# "display"). Devanagari (Hindi) and Bengali terms are matched as *substrings*
+# of a token, because those scripts attach vowel signs, suffixes, and
+# postpositions ("बिल" → "बिलों", "সঞ্চয়" → "সঞ্চয়ের") that a strict word-boundary
+# match would miss. Negation particles, by contrast, are matched as whole tokens
+# so the standalone "ना" / "না" does not light up inside "करना" / "করি".
+
+# Paying essentials first, saving, budgeting, prioritising, planning.
+RESPONSIBLE_EN = re.compile(
+    r"\b("
+    r"pays?|paid|paying|repay(?:s|ed|ing|ment|ments)?|"
+    r"bills?|rent|"
+    r"sav(?:e|es|ed|ing|ings)|"
+    r"budget(?:s|ed|ing)?|"
+    r"priorit(?:y|ies|ise|ize|ised|ized|ising|izing)|"
+    r"first|before|essentials?|necessit(?:y|ies)|"
+    r"utilit(?:y|ies)|electricity|"
+    r"grocer(?:y|ies)|"
+    r"plan(?:s|ned|ning)?|"
+    r"emergenc(?:y|ies)|responsib(?:le|ility)|ontime"
+    r")\b",
     re.IGNORECASE,
 )
-AVOIDANT_KEYWORDS = re.compile(
-    r"\b(avoid|ignore|delay|stress|worried|debt|"
-    r"टाल|चिंता|দেরি|উদ্বেগ)\b",
+RESPONSIBLE_INDIC = (
+    # Hindi
+    "भर",        # bhar-na — to pay (a bill)
+    "चुक",       # chukana — pay off / settle
+    "बिल",       # bill
+    "किराय",     # rent (किराया / किराये)
+    "बचत",       # savings
+    "बचा",       # bacha-na — to save
+    "बजट",       # budget
+    "ज़रूरी",     # essential / necessary
+    "जरूरी",
+    "प्राथमिकता",  # priority
+    "पहले",      # first / before
+    "योजना",     # plan
+    "बिजली",     # electricity
+    "राशन",      # rations / groceries
+    # Bengali
+    "পরিশোধ",    # poriśodh — repayment / pay off
+    "বিল",       # bill
+    "ভাড়া",      # rent
+    "সঞ্চয়",     # savings
+    "বাজেট",     # budget
+    "প্রথম",      # first
+    "আগে",       # before / first
+    "অগ্রাধিকার",  # priority
+    "পরিকল্পনা",  # plan
+    "প্রয়োজনীয়",  # essential / necessary
+    "জরুরি",     # urgent / essential
+    "বিদ্যুৎ",    # electricity
+)
+
+# Avoiding, delaying, ignoring debt and bills (plus the worry/stress around it).
+AVOIDANT_EN = re.compile(
+    r"\b("
+    r"avoid(?:s|ed|ing)?|ignor(?:e|es|ed|ing)|neglect(?:s|ed|ing)?|"
+    r"delay(?:s|ed|ing)?|postpone(?:s|d|ing)?|defer(?:s|red|ring)?|"
+    r"procrastinat(?:e|es|ed|ing)|"
+    r"skip(?:s|ped|ping)?|miss(?:es|ed|ing)?|forget|forgot|forgotten|"
+    r"late|overdue|"
+    r"debts?|"
+    r"stress(?:ed|ful)?|worr(?:y|ies|ied)|anxious|anxiety"
+    r")\b",
     re.IGNORECASE,
 )
+AVOIDANT_INDIC = (
+    # Hindi
+    "टाल",        # taal-na — postpone / put off
+    "टालमटोल",     # procrastination
+    "नजरअंदाज",   # ignore
+    "अनदेखा",     # overlook / ignore
+    "देर",        # late / delay (देरी)
+    "भूल",        # forget
+    "चिंता",       # worry / anxiety
+    "तनाव",       # stress
+    "क़र्ज़",       # debt / loan
+    "कर्ज",
+    "उधार",       # borrowing / loan
+    "बकाया",      # arrears / overdue
+    # Bengali
+    "এড়ি",        # eriye — avoid
+    "উপেক্ষা",     # ignore
+    "অগ্রাহ্য",     # disregard / ignore
+    "দেরি",       # delay / late
+    "বিলম্ব",      # delay
+    "ভুল",        # forget / mistake (ভুলে)
+    "দুশ্চিন্তা",    # worry / anxiety
+    "চিন্তা",       # worry
+    "উদ্বেগ",      # anxiety
+    "চাপ",        # stress / pressure
+    "ঋণ",         # debt / loan
+    "ধার",        # borrow / loan
+    "বকেয়া",      # arrears / overdue
+)
+
+# Negation particles — matched as whole tokens (see note above). English
+# contractions are caught generically via an ``n't`` suffix check.
+NEGATION_EN = frozenset(
+    {
+        "not", "no", "never", "none", "nor", "neither", "without", "cannot",
+        "cant", "dont", "doesnt", "didnt", "wont", "wouldnt", "shouldnt",
+        "couldnt", "isnt", "arent", "wasnt", "werent", "havent", "hasnt",
+    }
+)
+NEGATION_INDIC = frozenset(
+    {
+        "नहीं", "नही", "ना", "मत", "बिना",   # Hindi: no / not / don't / without
+        "না", "নেই", "নয়", "নি", "ছাড়া",     # Bengali: no / not / is-not / without
+    }
+)
+
+# How many tokens on either side of a keyword a negation particle reaches.
+# Small, because we only want to catch the local "do not <verb>" / "<noun> नहीं"
+# pattern, not negate a whole sentence.
+_NEGATION_WINDOW = 2
+
+# Splits on whitespace and common ASCII/Indic punctuation (including the
+# Devanagari/Bengali danda । ॥) while keeping apostrophes so contractions like
+# "don't" survive as a single token.
+_TOKEN_RE = re.compile(r"[^\s।॥,.;:!?()\[\]{}\"“”`/\\|—–…]+")
+
+
+def _tokenize(text: str) -> list[str]:
+    return _TOKEN_RE.findall(text.lower())
+
+
+def _is_negation(token: str) -> bool:
+    return (
+        token in NEGATION_EN
+        or token.endswith("n't")
+        or token in NEGATION_INDIC
+    )
+
+
+def _label(token: str) -> str | None:
+    """Classify a token as 'responsible', 'avoidant', or None."""
+    if RESPONSIBLE_EN.search(token) or any(t in token for t in RESPONSIBLE_INDIC):
+        return "responsible"
+    if AVOIDANT_EN.search(token) or any(t in token for t in AVOIDANT_INDIC):
+        return "avoidant"
+    return None
 
 
 def score_likert_answer(item: Item, answer: str) -> float | None:
@@ -48,11 +187,37 @@ def score_forced_choice_answer(item: Item, answer: str) -> dict[str, float] | No
 
 
 def score_open_ended_answer(text: str) -> float:
-    """Deterministic keyword-based score for open-ended responses."""
+    """Deterministic, offline keyword score for open-ended responses (en/hi/bn).
+
+    Curated multilingual lexicon (see module top): responsible cues push the
+    score up, avoidant cues push it down, starting from a neutral 0.5. A nearby
+    negation particle flips a cue's polarity, so "I do NOT save" / "बचत नहीं" /
+    "সঞ্চয় করি না" reads as avoidant rather than responsible. Pure function — same
+    text always yields the same score in [0, 1]; no network, no heavy deps.
+    """
     if not text.strip():
         return 0.5
-    responsible = len(RESPONSIBLE_KEYWORDS.findall(text))
-    avoidant = len(AVOIDANT_KEYWORDS.findall(text))
+
+    tokens = _tokenize(text)
+    negation_positions = {i for i, tok in enumerate(tokens) if _is_negation(tok)}
+
+    responsible = 0
+    avoidant = 0
+    for i, token in enumerate(tokens):
+        label = _label(token)
+        if label is None:
+            continue
+        negated = any(
+            (i - d) in negation_positions or (i + d) in negation_positions
+            for d in range(1, _NEGATION_WINDOW + 1)
+        )
+        if negated:
+            label = "avoidant" if label == "responsible" else "responsible"
+        if label == "responsible":
+            responsible += 1
+        else:
+            avoidant += 1
+
     base = 0.5 + (responsible * 0.12) - (avoidant * 0.1)
     return max(0.0, min(1.0, base))
 
