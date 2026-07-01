@@ -28,6 +28,9 @@ logger = logging.getLogger(__name__)
 MOCK_DATA_PATH = Path(__file__).resolve().parent.parent / "synthetic_data" / "mock_data_100_users.json"
 DATA_TYPES = ("telecom", "ecommerce", "geo", "cashflow", "survey")
 PROTECTED_GROUP_CODES = {"general": 0, "obc": 1, "sc": 2, "st": 3, "minority": 4}
+GENDER_CODES = {"male": 0, "female": 1, "other": 2}
+GEOGRAPHY_CODES = {"rural": 0, "semi_urban": 1, "urban": 2}
+INCOME_BRACKET_CODES = {"low": 0, "mid": 1, "high": 2}
 
 
 async def _already_seeded() -> bool:
@@ -50,6 +53,24 @@ async def _store_ground_truth(user_id: str, ground_truth: dict) -> None:
             user_id,
             "borrower_type",
             1.0 if ground_truth.get("borrower_type") == "msme" else 0.0,
+        )
+        await upsert_feature(
+            session,
+            user_id,
+            "gender_code",
+            float(GENDER_CODES.get(ground_truth.get("gender", "male"), 0)),
+        )
+        await upsert_feature(
+            session,
+            user_id,
+            "geography_code",
+            float(GEOGRAPHY_CODES.get(ground_truth.get("geography", "rural"), 0)),
+        )
+        await upsert_feature(
+            session,
+            user_id,
+            "income_bracket_code",
+            float(INCOME_BRACKET_CODES.get(ground_truth.get("income_bracket", "mid"), 1)),
         )
         await session.commit()
 

@@ -170,6 +170,19 @@ or explain anything.
 logit(PD)`, so `base_points + Σ feature_points == credit_score` (pre-clamp) holds
 exactly — verified live (e.g. 419.5 ≈ 420). No approximation anywhere.
 
+**Typical-applicant re-centering (shipped).** Raw EBM terms are measured against the
+model's own intercept, which — because we train with balanced class weights — sits
+near a 50/50 coin-flip rather than the real ~9% applicant base rate. Against that
+intercept nearly every low-risk applicant beat the baseline on nearly every feature,
+so ~50% of borrowers saw an all-positive driver list ("What Affected Your Score" with
+no negatives). `models_ai/ebm_model.py::ebm_mean_contributions()` computes the
+population-average per-feature contribution (the *typical applicant*); `convergence
+/score_engine.py::_champion_contributions()` subtracts that baseline from each term
+before converting to points, and shifts `base_points` by the same amount so the
+reconciliation identity above still holds exactly. All-positive driver lists fell
+from ~50% to ~14% of the portfolio. This changes the *explanation baseline* only —
+PD, credit score, and decision are untouched.
+
 **The agreement gate (final rule).** Hard red-flag rejects always stand. Otherwise:
 a *hard conflict* (one model would APPROVE while another would REJECT) → REVIEW; a
 *contested APPROVE* (champion approves, panel not unanimous) → REVIEW; everything

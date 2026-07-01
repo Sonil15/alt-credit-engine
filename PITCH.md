@@ -104,6 +104,26 @@ Copy this block for each feature:
 - **Demo moment:** The decision split (APPROVE / REVIEW / REJECT) across the portfolio
   sitting at a believable distribution, not 100% approvals.
 
+### Typical-applicant-centered drivers (honest "What Affected Your Score")
+- **Judge problem it answers:** "Your borrower explanation shows only positives — is
+  this real explainability or a feel-good marketing panel?"
+- **Pitch line:** "We explain each borrower *against the typical applicant*, not against
+  the model's intercept — so 'What Affected Your Score' shows genuine strengths *and*
+  what needs work, instead of an all-green wall."
+- **Differentiator:** We diagnosed a real bias: the EBM is trained with balanced class
+  weights, so its intercept sits at a ~48% coin-flip, not the real ~9% base rate.
+  Measured against that intercept, almost every applicant beats the baseline on almost
+  every feature, so ~50% of borrowers saw *zero* negative drivers. We re-center each
+  contribution on the population-average (the typical applicant) — a driver is positive
+  only when the borrower genuinely beats a peer on that signal. All-positive cases fell
+  from ~50% to ~14% (the remainder are genuinely strong borrowers — honest, not faked).
+- **Demo moment:** Open a mid-band borrower (~550) and read the mixed drivers — strong
+  cash-flow *and* an unstable-income flag — then note the score/PD/decision are
+  untouched: we fixed the *explanation baseline*, not the model.
+- **Honest caveat:** This re-centers the explanation only; the model, PD and decision are
+  unchanged, and `base_points + Σ driver_points` still reconciles to the score exactly
+  (base_points now reads as "the typical applicant's score").
+
 ### Zero-friction demo run
 - **Judge problem it answers:** "Will this actually run, or is it a fragile demo?"
 - **Pitch line:** "One command, populated dashboard — SQLite default, self-seeds demo
@@ -139,19 +159,49 @@ Copy this block for each feature:
   language model — it reads clear stances well; the LLM remains the primary, nuanced
   path when available.
 
-### Five-pillar sub-scores + thin-file confidence indicator
+### Application throttle (anti-gaming the psychometric assessment)
+- **Judge problem it answers:** "A psychometric questionnaire is only predictive the
+  first time — what stops a rejected borrower from re-applying repeatedly, memorising the
+  items, and rehearsing the 'right' answers until they pass?"
+- **Pitch line:** "We cap applications per borrower per rolling window — a repeat
+  applicant already knows the questionnaire, so unlimited retries would let them game the
+  behavioural signal. One honest sitting, not a coached retake."
+- **Differentiator:** Most teams treat the assessment as replayable; we recognise the
+  psychometric items as a *finite, learnable* instrument and protect their validity with
+  a server-side limit (default 1 per 30 days, keyed on borrower identity, configurable).
+  The refusal is explicit — a 429 with the date they can re-apply — not a silent failure.
+- **Demo moment:** Complete an assessment, immediately try to start another for the same
+  borrower, and show the block with the concrete "apply again on or after <date>" message.
+- **Honest caveat:** The limit is keyed on the borrower's identifier; a determined actor
+  forging fresh identities is an identity/KYC problem upstream, not one this control
+  claims to solve.
+
+### Five-facet sub-scores + thin-file confidence indicator
 - **Judge problem it answers:** "A single number is opaque — what is the borrower
   actually strong or weak on?"
-- **Pitch line:** "We break the score into five readable pillars, normalised against the
+- **Pitch line:** "We break the score into five readable facets, normalised against the
   population, with an explicit confidence flag when the file is thin."
-- **Demo moment:** The pillar radar on the dashboard + the thin-file confidence badge.
+- **Demo moment:** The facet radar on the dashboard + the thin-file confidence badge.
 
-### Fairness analysis
+### Multi-dimension Fairness Monitor
 - **Judge problem it answers:** "Alternate data can encode bias — how do you know you're
-  not discriminating?"
-- **Pitch line:** "Fairness isn't an afterthought — we measure and surface group
-  disparities as part of the scoring output."
-- **Demo moment:** The fairness chart on the dashboard.
+  not discriminating, and against which groups?"
+- **Pitch line:** "We monitor approval-rate parity across five slices simultaneously —
+  borrower category, gender, geography, income bracket, and social category — with a
+  live 80% rule check on each."
+- **Differentiator:** Most teams check one protected attribute. We built a configurable
+  dimension framework: adding a new slice is a one-line entry, and the dashboard selector
+  lets the loan officer or regulator switch views in one click. Demographic fields are
+  monitoring-only — they are never model inputs. Default view is borrower category
+  (Individual vs MSME) — the slice a loan officer reasons about — rather than leading
+  with a sensitive attribute.
+- **Demo moment:** Open the Fairness Monitor, switch between dimensions live — point out
+  that geography passes the 80% rule (rural borrowers approved at comparable rates) while
+  income bracket flags a disparity worth investigating, which is exactly the kind of
+  signal a responsible lending programme should surface and act on.
+- **Honest caveat:** Demographic fields are synthetic — distributions approximate
+  realistic proportions but are not derived from real borrower data. The monitoring
+  framework is what to demonstrate, not the specific ratios.
 
 ### Adverse-action reason codes
 - **Judge problem it answers:** "If you decline someone, can you tell them why — as
@@ -159,6 +209,18 @@ Copy this block for each feature:
 - **Pitch line:** "Every decision produces plain-language reasons a borrower can act on,
   derived from the model's own additive terms."
 - **Demo moment:** Open a declined/review borrower and read the human-readable reasons.
+
+### Loan-officer-readable dashboard labels (no psychometric jargon)
+- **Judge problem it answers:** "A loan officer isn't a psychologist — will they actually
+  understand what the score is telling them?"
+- **Pitch line:** "The dashboard speaks the loan officer's language: 'Sense of financial
+  control' and 'Tendency to spend impulsively', not 'locus of control' and 'present bias'."
+- **Differentiator:** Construct names stay intact under the hood (auditable, in the item
+  bank and model features), but every term the reviewer sees in the Signal Trace, the
+  five-facet profile ("Character & Money Mindset"), and the reason codes is rephrased in
+  plain English — so the explainability is usable, not just present.
+- **Demo moment:** Point at the psychometric signals in the trace and read them aloud —
+  they need no translation for the panel.
 
 ### Consent & data-protection posture (Data Fiduciary / DPDP-aligned)
 - **Judge problem it answers:** "You're using alternate personal data — is this lawful

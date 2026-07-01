@@ -28,13 +28,22 @@ class Settings:
     # dashboard is populated the instant the server boots. Defaults to true.
     SEED_ON_STARTUP: str = os.getenv("SEED_ON_STARTUP", "true")
 
-    # Simulated 5-pillar mode on psychometric survey completion (for testing/demo only).
+    # Simulated 5-facet mode on psychometric survey completion (for testing/demo only).
     # MUST default to false for safety so real production files aren't contaminated.
-    SIMULATE_ALL_PILLARS: str = os.getenv("SIMULATE_ALL_PILLARS", "false")
+    SIMULATE_ALL_FACETS: str = os.getenv("SIMULATE_ALL_FACETS", "false")
 
     # Time limits for the psychometric assessment (in seconds)
     PSYCHOMETRIC_TIME_LIMIT_SECONDS: int = int(os.getenv("PSYCHOMETRIC_TIME_LIMIT_SECONDS", "420"))
     PSYCHOMETRIC_EXTENSION_SECONDS: int = int(os.getenv("PSYCHOMETRIC_EXTENSION_SECONDS", "120"))
+
+    # Application throttle. A borrower may submit at most APPLICATION_LIMIT_COUNT
+    # completed assessments per rolling APPLICATION_LIMIT_WINDOW_DAYS window. This
+    # is an anti-gaming control: a repeat applicant already knows the psychometric
+    # questionnaire from earlier sittings, so unlimited re-applications would let
+    # them rehearse answers. Keyed on the borrower's user_id.
+    APPLICATION_LIMIT_ENABLED: str = os.getenv("APPLICATION_LIMIT_ENABLED", "true")
+    APPLICATION_LIMIT_COUNT: int = int(os.getenv("APPLICATION_LIMIT_COUNT", "1"))
+    APPLICATION_LIMIT_WINDOW_DAYS: int = int(os.getenv("APPLICATION_LIMIT_WINDOW_DAYS", "30"))
 
     # Storage backend. Defaults to Postgres (the deployed/Render configuration).
     # Set USE_SQLITE=true for an optional zero-dependency local run (a SQLite
@@ -85,8 +94,12 @@ class Settings:
         return self.SEED_ON_STARTUP.strip().lower() in {"1", "true", "yes"}
 
     @property
-    def simulate_all_pillars_enabled(self) -> bool:
-        return self.SIMULATE_ALL_PILLARS.strip().lower() in {"1", "true", "yes"}
+    def simulate_all_facets_enabled(self) -> bool:
+        return self.SIMULATE_ALL_FACETS.strip().lower() in {"1", "true", "yes"}
+
+    @property
+    def application_limit_enabled(self) -> bool:
+        return self.APPLICATION_LIMIT_ENABLED.strip().lower() in {"1", "true", "yes"}
 
     @property
     def cors_origins_list(self) -> list[str]:

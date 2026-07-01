@@ -1,6 +1,6 @@
-"""Per-pillar sub-scores mapping directly to the problem-statement data sources.
+"""Per-facet sub-scores mapping directly to the problem-statement data sources.
 
-Each borrower is summarised across five interpretable pillars (0-100), one per
+Each borrower is summarised across five interpretable facets (0-100), one per
 alternative-data source the bank ingests. Scores are normalised *relative to the
 scored population* (winsorised p10-p90) rather than against hand-tuned magic
 constants, so they adapt to whatever scale the cleaners produce and stay
@@ -18,15 +18,15 @@ import pandas as pd
 from core.json_utils import safe_float
 
 # direction: "high" = larger raw value is better, "low" = larger is worse.
-PillarFeature = tuple[str, str, float]  # (feature_name, direction, weight)
+FacetFeature = tuple[str, str, float]  # (feature_name, direction, weight)
 
 
 @dataclass(frozen=True)
-class Pillar:
+class Facet:
     key: str
     label: str
     source: str  # plain-language data source for the UI
-    features: tuple[PillarFeature, ...]
+    features: tuple[FacetFeature, ...]
 
 
 class BorrowerCohort(str, Enum):
@@ -48,7 +48,7 @@ COHORT_CODE_MAP = {
 }
 
 
-COHORT_EXPECTED_PILLARS: dict[BorrowerCohort, list[str]] = {
+COHORT_EXPECTED_FACETS: dict[BorrowerCohort, list[str]] = {
     BorrowerCohort.SALARIED: [
         "telecom_reliability",
         "spending_behaviour",
@@ -87,8 +87,8 @@ COHORT_EXPECTED_PILLARS: dict[BorrowerCohort, list[str]] = {
 }
 
 
-PILLARS: tuple[Pillar, ...] = (
-    Pillar(
+FACETS: tuple[Facet, ...] = (
+    Facet(
         key="telecom_reliability",
         label="Telecom Reliability",
         source="Mobile & broadband payments",
@@ -97,7 +97,7 @@ PILLARS: tuple[Pillar, ...] = (
             ("missed_payments_count", "low", 0.6),
         ),
     ),
-    Pillar(
+    Facet(
         key="spending_behaviour",
         label="Spending Behaviour",
         source="E-commerce purchase patterns",
@@ -107,7 +107,7 @@ PILLARS: tuple[Pillar, ...] = (
             ("monthly_spend_volatility", "low", 0.3),
         ),
     ),
-    Pillar(
+    Facet(
         key="location_stability",
         label="Location Stability",
         source="Geolocation & delivery consistency",
@@ -116,7 +116,7 @@ PILLARS: tuple[Pillar, ...] = (
             ("anchor_count", "high", 0.4),
         ),
     ),
-    Pillar(
+    Facet(
         key="cashflow_resilience",
         label="Cashflow Resilience",
         source="Bank cash-flow (econometric ECM)",
@@ -128,9 +128,9 @@ PILLARS: tuple[Pillar, ...] = (
             ("is_stationary", "high", 0.05),
         ),
     ),
-    Pillar(
+    Facet(
         key="psychometric_character",
-        label="Psychometric Character",
+        label="Character & Money Mindset",
         source="Behavioural assessment",
         features=(
             ("conscientiousness", "high", 0.1),
@@ -145,7 +145,7 @@ PILLARS: tuple[Pillar, ...] = (
             ("resourcefulness", "high", 0.1),
         ),
     ),
-    Pillar(
+    Facet(
         key="campus_transaction_behavior",
         label="Campus & UPI Transaction Behavior",
         source="UPI expenses & small dues history",
@@ -155,7 +155,7 @@ PILLARS: tuple[Pillar, ...] = (
             ("e_wallet_topup_frequency", "high", 0.2),
         ),
     ),
-    Pillar(
+    Facet(
         key="vendor_transaction_velocity",
         label="Vendor Transaction Velocity",
         source="Micro-enterprise UPI/payment volumes",
@@ -164,7 +164,7 @@ PILLARS: tuple[Pillar, ...] = (
             ("average_ticket_size", "high", 0.5),
         ),
     ),
-    Pillar(
+    Facet(
         key="agricultural_seasonality",
         label="Agricultural Seasonality",
         source="Farming cycles & input purchases",
@@ -173,7 +173,7 @@ PILLARS: tuple[Pillar, ...] = (
             ("input_purchase_consistency", "high", 0.4),
         ),
     ),
-    Pillar(
+    Facet(
         key="household_reliability",
         label="Household Reliability",
         source="Electricity/Water/Gas & Groceries",
@@ -184,13 +184,13 @@ PILLARS: tuple[Pillar, ...] = (
     ),
 )
 
-ALL_PILLAR_FEATURES = [feat for pillar in PILLARS for feat, _, _ in pillar.features]
+ALL_FACET_FEATURES = [feat for facet in FACETS for feat, _, _ in facet.features]
 
 
 def compute_norm_stats(wide: pd.DataFrame) -> dict[str, tuple[float, float]]:
     """Winsorised p10/p90 bounds per feature, computed across the population."""
     stats: dict[str, tuple[float, float]] = {}
-    for feature in ALL_PILLAR_FEATURES:
+    for feature in ALL_FACET_FEATURES:
         if feature in wide.columns:
             col = pd.to_numeric(wide[feature], errors="coerce").dropna()
         else:
@@ -216,7 +216,7 @@ def feature_goodness(value: float, lo: float, hi: float, direction: str) -> floa
     return fraction if direction == "high" else 1.0 - fraction
 
 
-def _pillar_has_data(row: pd.Series, features: tuple[PillarFeature, ...]) -> bool:
+def _facet_has_data(row: pd.Series, features: tuple[FacetFeature, ...]) -> bool:
     for feat, _, _ in features:
         if feat in row and abs(safe_float(row.get(feat, 0.0))) > 1e-9:
             return True
@@ -233,12 +233,12 @@ def grade(score: float) -> str:
     return "Poor"
 
 
-def compute_pillar_scores(
+def compute_facet_scores(
     row: pd.Series,
     norm_stats: dict[str, tuple[float, float]],
     cohort: BorrowerCohort | str | None = None,
 ) -> list[dict]:
-    """Return a list of pillar dicts (score 0-100, grade, data presence)."""
+    """Return a list of facet dicts (score 0-100, grade, data presence)."""
     if cohort is None:
         if "cohort_code" in row:
             code = safe_float(row.get("cohort_code", 0.0))
@@ -258,18 +258,18 @@ def compute_pillar_scores(
         except ValueError:
             cohort = BorrowerCohort.SALARIED
 
-    expected_keys = COHORT_EXPECTED_PILLARS.get(cohort, COHORT_EXPECTED_PILLARS[BorrowerCohort.SALARIED])
-    filtered_pillars = [
-        p for p in PILLARS
-        if p.key in expected_keys or _pillar_has_data(row, p.features)
+    expected_keys = COHORT_EXPECTED_FACETS.get(cohort, COHORT_EXPECTED_FACETS[BorrowerCohort.SALARIED])
+    filtered_facets = [
+        p for p in FACETS
+        if p.key in expected_keys or _facet_has_data(row, p.features)
     ]
 
     results: list[dict] = []
-    for pillar in filtered_pillars:
+    for facet in filtered_facets:
         weighted = 0.0
         total_weight = 0.0
         contributing: list[dict] = []
-        for feat, direction, weight in pillar.features:
+        for feat, direction, weight in facet.features:
             # Dynamic weights adjustment for Gig Worker
             if cohort == BorrowerCohort.GIG_WORKER:
                 if feat == "cashflow_volatility":
@@ -308,12 +308,12 @@ def compute_pillar_scores(
         score = round(100.0 * weighted / total_weight, 1) if total_weight else 0.0
         results.append(
             {
-                "key": pillar.key,
-                "label": pillar.label,
-                "source": pillar.source,
+                "key": facet.key,
+                "label": facet.label,
+                "source": facet.source,
                 "score": score,
                 "grade": grade(score),
-                "has_data": _pillar_has_data(row, pillar.features),
+                "has_data": _facet_has_data(row, facet.features),
                 "features": contributing,
             }
         )
@@ -321,16 +321,16 @@ def compute_pillar_scores(
 
 
 def compute_confidence(
-    pillar_scores: list[dict],
+    facet_scores: list[dict],
     cohort: BorrowerCohort | str | None = None,
 ) -> dict:
     """Data-sufficiency / confidence from how many features are backed by real data."""
-    total_pillars = len(pillar_scores) or 1
-    pillars_with_data = sum(1 for p in pillar_scores if p["has_data"])
-    
+    total_facets = len(facet_scores) or 1
+    facets_with_data = sum(1 for p in facet_scores if p["has_data"])
+
     total_features = 0
     features_with_data = 0
-    for p in pillar_scores:
+    for p in facet_scores:
         total_features += len(p["features"])
         if p["has_data"] and p["key"] != "psychometric_character":
             features_with_data += len(p["features"])
@@ -345,9 +345,9 @@ def compute_confidence(
                 cohort = BorrowerCohort(cohort)
             except ValueError:
                 cohort = BorrowerCohort.SALARIED
-        expected_keys = COHORT_EXPECTED_PILLARS.get(cohort, COHORT_EXPECTED_PILLARS[BorrowerCohort.SALARIED])
-        expected_pillars = [p for p in PILLARS if p.key in expected_keys]
-        denominator = sum(len(p.features) for p in expected_pillars)
+        expected_keys = COHORT_EXPECTED_FACETS.get(cohort, COHORT_EXPECTED_FACETS[BorrowerCohort.SALARIED])
+        expected_facets = [p for p in FACETS if p.key in expected_keys]
+        denominator = sum(len(p.features) for p in expected_facets)
     else:
         denominator = total_features
 
@@ -358,8 +358,8 @@ def compute_confidence(
         "confidence_pct": pct,
         "features_with_data": features_with_data,
         "features_total": denominator,
-        "pillars_with_data": pillars_with_data,
-        "pillars_total": total_pillars,
-        "thin_file": pillars_with_data < total_pillars,
-        "missing_sources": [p["label"] for p in pillar_scores if not p["has_data"]],
+        "facets_with_data": facets_with_data,
+        "facets_total": total_facets,
+        "thin_file": facets_with_data < total_facets,
+        "missing_sources": [p["label"] for p in facet_scores if not p["has_data"]],
     }

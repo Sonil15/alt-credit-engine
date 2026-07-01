@@ -14,7 +14,7 @@ from convergence.fairness import compute_fairness_report
 from convergence.feature_meta import build_feature_trace
 from convergence.lending import recommend_terms
 from convergence.panel import APPROVE_SCORE, REVIEW_SCORE, compute_agreement, decision_thresholds
-from convergence.pillars import BorrowerCohort, COHORT_CODE_MAP, compute_confidence, compute_norm_stats, compute_pillar_scores
+from convergence.facets import BorrowerCohort, COHORT_CODE_MAP, compute_confidence, compute_norm_stats, compute_facet_scores
 from convergence.reason_codes import format_reason_codes, shap_to_reason_codes
 from convergence.scorecard import (
     expected_value_to_base_points,
@@ -33,7 +33,7 @@ from models_ai.conformal import apply_conformal_gate, conformal_report
 from models.db_models import ScoreDecision
 from models_ai.catboost_model import get_feature_matrix_for_user
 from models_ai.constants import FEATURE_COLUMNS
-from models_ai.ebm_model import ebm_contributions
+from models_ai.ebm_model import ebm_contributions, ebm_mean_contributions
 from models_ai.ebm_model import predict_pd as champion_predict_pd
 
 logger = logging.getLogger(__name__)
@@ -96,24 +96,48 @@ def _decision_from_score(credit_score: int, auto_reject: bool, confidence_pct: f
     return "REJECT"
 
 
-def _champion_contributions(champion, feature_row: pd.DataFrame) -> tuple[list[dict[str, float]], float]:
-    """Per-feature contributions (+score points) from the EBM champion's own terms.
+def _champion_contributions(
+    champion,
+    feature_row: pd.DataFrame,
+    baseline_contrib: dict[str, float] | None = None,
+) -> tuple[list[dict[str, float]], float]:
+    """Per-feature contributions (+score points) from the EBM champion's own terms,
+    centered on the *typical applicant*.
 
     These are the model's additive terms in log-odds space — not a SHAP
-    approximation — so ``base_points + Σ points`` reconstructs the score exactly.
+    approximation. The raw terms are measured against the EBM intercept, which (because
+    we train with balanced class weights) sits near a 50/50 coin-flip rather than the
+    real ~9% applicant base rate. Against that intercept a typical low-risk borrower
+    beats the baseline on nearly every feature, so the drivers come out all-positive
+    and "needs work" signals never surface.
+
+    We re-center each contribution on ``baseline_contrib`` — the population-average
+    contribution per feature (the typical applicant, from
+    :func:`models_ai.ebm_model.ebm_mean_contributions`). A driver is then positive only
+    when the borrower beats a typical applicant on that signal, and negative when they
+    fall short. The intercept is shifted to the typical applicant's log-odds in lock
+    step, so ``base_points + Σ points`` still reconstructs the score exactly.
+
     The ``shap_value`` key is retained for payload/schema compatibility; it now
-    carries the EBM term contribution rather than a Shapley value.
+    carries the centered EBM term contribution rather than a Shapley value.
     """
     contrib_map, base = ebm_contributions(champion, feature_row)
+    baseline_contrib = baseline_contrib or {}
     contributions = [
         {
             "feature": name,
-            "shap_value": safe_float(contrib_map.get(name, 0.0)),
-            "points": safe_round(shap_to_points(contrib_map.get(name, 0.0)), 1),
+            "shap_value": (
+                centered := safe_float(contrib_map.get(name, 0.0))
+                - safe_float(baseline_contrib.get(name, 0.0))
+            ),
+            "points": safe_round(shap_to_points(centered), 1),
         }
         for name in FEATURE_COLUMNS
     ]
-    return contributions, base
+    # Shift the baseline so base_points = the typical applicant's score; preserves
+    # base_points + Σ centered_points == credit_score (PD/score itself untouched).
+    typical_base = base + sum(safe_float(v) for v in baseline_contrib.values())
+    return contributions, typical_base
 
 
 def _challenger_pd(model, feature_row: pd.DataFrame) -> float:
@@ -219,6 +243,7 @@ def _build_payload(
     champion,
     challengers: dict,
     norm_stats: dict,
+    baseline_contrib: dict[str, float] | None = None,
     revoked_scopes: list[str] | None = None,
 ) -> dict[str, Any]:
     """Assemble the full score payload for a single user (no DB I/O)."""
@@ -243,8 +268,8 @@ def _build_payload(
 
     cohort = cohort_enum.value if hasattr(cohort_enum, "value") else str(cohort_enum)
 
-    pillar_scores = compute_pillar_scores(user_row, norm_stats, cohort=cohort_enum)
-    confidence = compute_confidence(pillar_scores, cohort=cohort_enum)
+    facet_scores = compute_facet_scores(user_row, norm_stats, cohort=cohort_enum)
+    confidence = compute_confidence(facet_scores, cohort=cohort_enum)
     confidence["cohort"] = str(cohort)
 
     credit_score = pd_to_credit_score(probability_of_default)
@@ -264,7 +289,7 @@ def _build_payload(
     pre_conformal_decision = decision
     decision = apply_conformal_gate(decision, auto_reject, conformal)
 
-    contributions, base_value = _champion_contributions(champion, feature_row)
+    contributions, base_value = _champion_contributions(champion, feature_row, baseline_contrib)
     base_points = safe_round(expected_value_to_base_points(base_value), 1)
     factor_points = {item["feature"]: item["points"] for item in contributions}
 
@@ -321,7 +346,7 @@ def _build_payload(
             "base_points": base_points,
             "factor_points": factor_points,
             "feature_trace": feature_trace,
-            "pillar_scores": pillar_scores,
+            "facet_scores": facet_scores,
             "confidence": confidence,
             "confidence_pct": confidence["confidence_pct"],
             "thin_file": confidence["thin_file"],
@@ -347,6 +372,9 @@ async def score_user(session: AsyncSession, user_id: str, *, persist: bool = Tru
     norm_stats = compute_norm_stats(wide)
     champion = get_cached_champion()
     challengers = get_cached_challengers()
+    # Typical-applicant reference for centering the driver explanation (see
+    # _champion_contributions). Computed over the full applicant population.
+    baseline_contrib = ebm_mean_contributions(champion, wide)
 
     user_wide = wide[user_mask].copy()
 
@@ -372,6 +400,7 @@ async def score_user(session: AsyncSession, user_id: str, *, persist: bool = Tru
         champion=champion,
         challengers=challengers,
         norm_stats=norm_stats,
+        baseline_contrib=baseline_contrib,
         revoked_scopes=revoked_scopes,
     )
 
@@ -389,6 +418,9 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
     norm_stats = compute_norm_stats(wide)
     champion = get_cached_champion()
     challengers = get_cached_challengers()
+    # Typical-applicant reference, computed once over the full population (see
+    # _champion_contributions); shared across every borrower in the portfolio.
+    baseline_contrib = ebm_mean_contributions(champion, wide)
     from api.routes.consent import get_revoked_scopes
 
     results = []
@@ -416,6 +448,7 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
                 champion=champion,
                 challengers=challengers,
                 norm_stats=norm_stats,
+                baseline_contrib=baseline_contrib,
                 revoked_scopes=revoked_scopes,
             )
             await _persist_decision(session, result)

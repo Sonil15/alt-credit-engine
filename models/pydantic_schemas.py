@@ -258,7 +258,7 @@ class CreditScoreResponse(BaseModel):
     base_points: float = 0.0
     factor_points: dict[str, float] = {}
     feature_trace: dict[str, Any] = {}
-    pillar_scores: list[dict[str, Any]] = []
+    facet_scores: list[dict[str, Any]] = []
     confidence: dict[str, Any] = {}
     confidence_pct: float = 100.0
     thin_file: bool = False

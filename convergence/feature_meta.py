@@ -6,8 +6,8 @@ output* linkage, we pair
 each contribution with the borrower's actual value, the plain-language data source
 it came from, and a hint for how to format that value in the UI.
 
-``source`` strings mirror the data sources in :mod:`convergence.pillars` so the
-signal trace and the five-pillar profile tell the same story.
+``source`` strings mirror the data sources in :mod:`convergence.facets` so the
+signal trace and the five-facet profile tell the same story.
 """
 
 from __future__ import annotations
@@ -46,12 +46,12 @@ FEATURE_META: dict[str, dict[str, str]] = {
     "monthly_income_mean": {"label": "Avg monthly income", "source": "Bank cash-flow", "fmt": "rupee", "direction": "high", "engine": ENGINE_EXTRACTION},
     "monthly_expense_mean": {"label": "Avg monthly expense", "source": "Bank cash-flow", "fmt": "rupee", "direction": "low", "engine": ENGINE_EXTRACTION},
     "cashflow_volatility": {"label": "Cash-flow volatility", "source": "Bank cash-flow", "fmt": "rupee", "direction": "low", "engine": ENGINE_EXTRACTION},
-    "conscientiousness": {"label": "Conscientiousness", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
-    "locus_of_control": {"label": "Locus of control", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
-    "financial_self_efficacy": {"label": "Financial self-efficacy", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
-    "present_bias": {"label": "Present bias", "source": "Psychometric assessment", "fmt": "score01", "direction": "low", "engine": ENGINE_EXTRACTION},
-    "debt_attitude": {"label": "Healthy debt attitude", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
-    "response_validity": {"label": "Assessment consistency", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "conscientiousness": {"label": "Careful financial planning", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "locus_of_control": {"label": "Sense of financial control", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "financial_self_efficacy": {"label": "Confidence managing money", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "present_bias": {"label": "Tendency to spend impulsively", "source": "Psychometric assessment", "fmt": "score01", "direction": "low", "engine": ENGINE_EXTRACTION},
+    "debt_attitude": {"label": "Commitment to repaying debt", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "response_validity": {"label": "Answer consistency check", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
     # Time-series econometric engine — derived from the monthly net cash-flow series.
     "resilience_coefficient": {"label": "Income resilience (ECM γ)", "source": SOURCE_ECONOMETRIC, "fmt": "number", "direction": "high", "engine": ENGINE_ECONOMETRIC},
     "adf_statistic": {"label": "Stationarity statistic (ADF)", "source": SOURCE_ECONOMETRIC, "fmt": "number", "direction": "low", "engine": ENGINE_ECONOMETRIC},

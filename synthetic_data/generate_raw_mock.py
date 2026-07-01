@@ -318,6 +318,12 @@ def generate_user_profile(rng: random.Random | None = None) -> dict:
     }
     cohort_code = cohort_codes[cohort]
 
+    # Demographic dimensions — used only for fairness monitoring, never as model inputs.
+    gender = local_rng.choices(["male", "female", "other"], weights=[52, 45, 3])[0]
+    geography = local_rng.choices(["rural", "semi_urban", "urban"], weights=[40, 35, 25])[0]
+    # Income bracket tracks rough creditworthiness to surface a realistic disparity signal.
+    income_bracket = "low" if theta < 0.35 else ("high" if theta > 0.65 else "mid")
+
     extra_features = {
         "cohort_code": cohort_code,
     }
@@ -349,6 +355,9 @@ def generate_user_profile(rng: random.Random | None = None) -> dict:
             "protected_group": protected_group,
             "borrower_type": borrower_type,
             "cohort": cohort,
+            "gender": gender,
+            "geography": geography,
+            "income_bracket": income_bracket,
         },
     }
     if borrower_type == "msme":

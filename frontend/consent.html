@@ -479,7 +479,7 @@
         document.getElementById('purpose-val').textContent = purposeText;
 
         // Cohort expected mapping
-        const expectedPillars = {
+        const expectedFacets = {
           'Salaried': ['telecom', 'ecommerce', 'geo', 'cashflow', 'survey'],
           'GigWorker': ['telecom', 'ecommerce', 'geo', 'cashflow', 'survey'],
           'Student': ['geo', 'survey', 'campus'],
@@ -488,7 +488,7 @@
           'Homemaker': ['telecom', 'geo', 'survey', 'household']
         };
 
-        const cohortExpected = expectedPillars[cohort] || expectedPillars['Salaried'];
+        const cohortExpected = expectedFacets[cohort] || expectedFacets['Salaried'];
 
         // Define cohort-specific scopes and standard scopes
         const cohortSpecifics = ['campus', 'vendor', 'farmer', 'household'];

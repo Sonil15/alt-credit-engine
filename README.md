@@ -1,6 +1,6 @@
 # Alt-Credit Engine
 
-Privacy-preserving alternate credit scoring system for thin-file borrowers in India. Ingests alternative data (telecom, e-commerce, geolocation, cashflow, psychometric survey), encrypts it at rest, extracts ML features, and produces a **300–900 credit score** with EBM-native explainability, adverse-action reason codes, five-pillar sub-scores, risk-based lending terms, and portfolio fairness monitoring.
+Privacy-preserving alternate credit scoring system for thin-file borrowers in India. Ingests alternative data (telecom, e-commerce, geolocation, cashflow, psychometric survey), encrypts it at rest, extracts ML features, and produces a **300–900 credit score** with EBM-native explainability, adverse-action reason codes, five-facet sub-scores, risk-based lending terms, and portfolio fairness monitoring.
 
 ## Architecture
 
@@ -9,7 +9,7 @@ AA Consent Gateway → Ingest API → AES-256 Vault → Preprocessing → ml_fea
                                                                         ↓
                                                     ECM + EBM Champion & Challenger Panel (CatBoost/Logistic)
                                                                         ↓
-           Convergence (PDO scorecard + pillars + Native Explanations + Conformal Abstention + lending) → Audit Trail
+           Convergence (PDO scorecard + facets + Native Explanations + Conformal Abstention + lending) → Audit Trail
                                                                         ↓
                                                     Bank Dashboard (portfolio, model card, fairness)
 ```
@@ -29,10 +29,10 @@ AA Consent Gateway → Ingest API → AES-256 Vault → Preprocessing → ml_fea
 | **Borrower privacy dashboard** | Returning borrowers visit `/consent?user_id=<id>` to see live consent status (ACTIVE/REVOKED), data presence (PRESENT/DELETED), tracked scopes, and take action — all without re-authenticating |
 | **Borrower portal & session auth** | `/apply` page lists previous applications (stored in browser); borrower can only view their own score via session token (`X-Session-Id`); cannot see portfolio overview or other borrowers' data |
 | **Role-based access control** | Borrowers see only their own assessment; bank officers (with API key) see full portfolio, all scores, and admin endpoints; portfolio endpoints forbidden without authentication |
-| **Five-pillar sub-scores** | Per-data-source scores (telecom, spending, location, cashflow, psychometric), 0–100, population-normalised — drives the radar chart |
+| **Five-facet sub-scores** | Per-data-source scores (telecom, spending, location, cashflow, psychometric), 0–100, population-normalised — drives the radar chart |
 | **Coherent explainability** | EBM's native additive terms are exact (`base_points + Σ feature_points == credit_score`), avoiding post-hoc approximations (like SHAP) and enabling a globally stable points table |
 | **Risk-based lending** | Recommends max loan, risk-priced rate, tenure, and EMI per applicant |
-| **Confidence / thin-file** | Data-sufficiency score from how many pillars are backed by real data; low-confidence files routed to review, never silent auto-approve |
+| **Confidence / thin-file** | Data-sufficiency score from how many facets are backed by real data; low-confidence files routed to review, never silent auto-approve |
 | **Audit trail** | Every decision logged to `score_decisions` table |
 | **Self-seeding startup** | Demo cohort auto-loads into the DB on first boot (idempotent) — no manual seed/load/train; optional SQLite mode for offline laptop demos |
 | **Deployment** | Docker + docker-compose; live demo on Render |
@@ -81,7 +81,7 @@ This is only a convenience for local demos — Postgres remains the default and 
 | http://localhost:8000/consent?user_id=`<id>` | Borrower privacy dashboard — check granular consent & data status, revoke specific scopes, or request data erasure |
 | http://localhost:8000/assessment | Multilingual agentic psychometric chat (EN/HI/BN); redirects to result page when done |
 | http://localhost:8000/borrower?session=`<session_id>` | Borrower-only result page (session-authenticated); shows score, PD, decision, EBM native drivers, and adverse-action reason codes |
-| http://localhost:8000/dashboard | Bank LOS dashboard with portfolio model panel (EBM/CatBoost/Logistic), interactive EBM shape-function viewer, pillars radar, model card, fairness, and lending terms (API key required) |
+| http://localhost:8000/dashboard | Bank LOS dashboard with portfolio model panel (EBM/CatBoost/Logistic), interactive EBM shape-function viewer, facets radar, model card, fairness, and lending terms (API key required) |
 | http://localhost:8000/docs | FastAPI Swagger UI |
 | http://localhost:8000/consent/compliance | Regulatory compliance summary |
 

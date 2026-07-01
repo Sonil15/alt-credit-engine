@@ -52,8 +52,13 @@
         <canvas id="distribution-chart" height="150"></canvas>
       </div>
       <div class="chart-card">
-        <h2>Fairness Monitor (80% Rule)</h2>
-        <canvas id="fairness-chart" height="150"></canvas>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <h2 style="margin:0;">Fairness Monitor (80% Rule)</h2>
+          <label style="font-size:12px;color:#475569;">Group by
+            <select id="fairness-dimension" style="margin-left:6px;font-size:12px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;"></select>
+          </label>
+        </div>
+        <canvas id="fairness-chart" height="150" style="margin-top:10px;"></canvas>
         <p id="fairness-summary" style="margin-top:12px;font-size:13px;color:#475569;"></p>
       </div>
     </div>
@@ -114,15 +119,15 @@
         <div id="model-panel-body"></div>
       </div>
 
-      <!-- Pillars: radar + bars -->
+      <!-- Facets: radar + bars -->
       <div class="two-col">
         <div class="chart-card">
-          <h2>Five-Pillar Profile</h2>
-          <canvas id="pillar-radar" height="220"></canvas>
+          <h2>Five-Facet Profile</h2>
+          <canvas id="facet-radar" height="220"></canvas>
         </div>
         <div class="chart-card">
-          <h2>Pillar Sub-Scores</h2>
-          <div id="pillar-list"></div>
+          <h2>Facet Sub-Scores</h2>
+          <div id="facet-list"></div>
         </div>
       </div>
 
@@ -214,12 +219,13 @@
   <script src="/static/panel_viz.js"></script>
   <script>
     let shapChart=null, gaugeChart=null, distChart=null, radarChart=null, fairnessChart=null;
+    let lastFairness=null;
     let approveScore = 580, reviewScore = 480;
     let currentUserId = '';
     const fmtINR = n => '₹' + Math.round(n).toLocaleString('en-IN');
     const scoreColor = s => s >= approveScore ? '#16a34a' : s >= reviewScore ? '#eab308' : '#dc2626';
     const scoreGrade = s => s >= approveScore ? 'STRONG' : s >= reviewScore ? 'MODERATE' : 'HIGH RISK';
-    const pillarColor = s => s >= 75 ? '#16a34a' : s >= 55 ? '#22c55e' : s >= 35 ? '#eab308' : '#dc2626';
+    const facetColor = s => s >= 75 ? '#16a34a' : s >= 55 ? '#22c55e' : s >= 35 ? '#eab308' : '#dc2626';
 
     async function loadModelCard() {
       try {
@@ -256,20 +262,38 @@
           options:{ plugins:{legend:{display:false}}, scales:{y:{ticks:{precision:0}}} }
         });
 
-        const fair = pf.fairness||{}; const di = fair.disparate_impact_ratio ?? 1; const pass = fair.passes_80_rule;
-        const groups = fair.groups || {};
-        const labels = Object.keys(groups);
-        const vals = labels.map(k => (groups[k].approval_rate||0)*100);
-        if (fairnessChart) fairnessChart.destroy();
-        fairnessChart = new Chart(document.getElementById('fairness-chart'), {
-          type:'bar',
-          data:{ labels: labels.length?labels.map(l=>l.toUpperCase()):['—'],
-            datasets:[{ label:'Approval %', data: vals.length?vals:[0], backgroundColor:'#3b82f6', borderRadius:6 }] },
-          options:{ plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y.toFixed(1)+'% approved'}}}, scales:{y:{suggestedMax:100, title:{display:true,text:'Approval %'}}} }
-        });
-        document.getElementById('fairness-summary').innerHTML =
-          `Disparate impact ratio <strong>${di.toFixed(3)}</strong> — <span class="${pass?'fairness-ok':'fairness-warn'}">${pass?'Passes':'Flagged by'} 80% rule</span>. Monitored across protected groups per RBI fair-lending expectations.`;
+        lastFairness = pf.fairness || {};
+        const dims = lastFairness.dimensions || {};
+        const sel = document.getElementById('fairness-dimension');
+        const available = Object.values(dims).filter(d => d.available);
+        const prev = sel.value;
+        sel.innerHTML = available.map(d => `<option value="${d.key}">${d.label}</option>`).join('');
+        const chosen = available.some(d => d.key === prev) ? prev
+          : (dims[lastFairness.default_dimension] && dims[lastFairness.default_dimension].available
+              ? lastFairness.default_dimension
+              : (available[0] && available[0].key));
+        if (chosen) sel.value = chosen;
+        renderFairness(chosen);
       } catch(_) {}
+    }
+
+    function renderFairness(dimKey) {
+      const dims = (lastFairness && lastFairness.dimensions) || {};
+      const dim = dims[dimKey] || {};
+      const di = dim.disparate_impact_ratio ?? 1; const pass = dim.passes_80_rule;
+      const groups = dim.groups || {};
+      const labels = Object.keys(groups);
+      const vals = labels.map(k => (groups[k].approval_rate||0)*100);
+      if (fairnessChart) fairnessChart.destroy();
+      fairnessChart = new Chart(document.getElementById('fairness-chart'), {
+        type:'bar',
+        data:{ labels: labels.length?labels:['—'],
+          datasets:[{ label:'Approval %', data: vals.length?vals:[0], backgroundColor:'#3b82f6', borderRadius:6 }] },
+        options:{ plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y.toFixed(1)+'% approved'}}}, scales:{y:{suggestedMax:100, title:{display:true,text:'Approval %'}}} }
+      });
+      const dimLabel = (dim.label || 'group').toLowerCase();
+      document.getElementById('fairness-summary').innerHTML =
+        `Disparate impact ratio <strong>${di.toFixed(3)}</strong> — <span class="${pass?'fairness-ok':'fairness-warn'}">${pass?'Passes':'Flagged by'} 80% rule</span>. Approval-rate parity across <strong>${dimLabel}</strong> groups, per RBI fair-lending expectations.`;
     }
 
     async function loadScore() {
@@ -335,7 +359,7 @@
 
       renderGauge(d.credit_score);
       renderLending(d.lending||{});
-      renderPillars(d.pillar_scores||[]);
+      renderFacets(d.facet_scores||[]);
       renderShap(d.shap_drivers||[]);
       renderPipeline(d);
       renderTrace(d.feature_trace||{});
@@ -384,21 +408,21 @@
       rat.textContent = l.rationale || '';
     }
 
-    function renderPillars(pillars) {
-      const labels = pillars.map(p=>p.label);
-      const vals = pillars.map(p=>p.score);
+    function renderFacets(facets) {
+      const labels = facets.map(p=>p.label);
+      const vals = facets.map(p=>p.score);
       if (radarChart) radarChart.destroy();
-      radarChart = new Chart(document.getElementById('pillar-radar'), {
+      radarChart = new Chart(document.getElementById('facet-radar'), {
         type:'radar',
         data:{ labels, datasets:[{ label:'Sub-score', data:vals, fill:true,
           backgroundColor:'rgba(37,99,235,0.18)', borderColor:'#2563eb', pointBackgroundColor:'#2563eb' }] },
         options:{ scales:{ r:{ suggestedMin:0, suggestedMax:100, ticks:{stepSize:25} } }, plugins:{legend:{display:false}} }
       });
-      document.getElementById('pillar-list').innerHTML = pillars.map(p => `
-        <div class="pillar-row">
-          <div class="pillar-name"><div class="n">${p.label}</div><div class="s">${p.source||''}</div></div>
-          <div class="pillar-track"><div class="pillar-fill" style="width:${p.score}%;background:${pillarColor(p.score)}"></div></div>
-          <div class="pillar-val"><span class="g" style="color:${pillarColor(p.score)}">${p.score.toFixed(0)}</span> · ${p.grade}</div>
+      document.getElementById('facet-list').innerHTML = facets.map(p => `
+        <div class="facet-row">
+          <div class="facet-name"><div class="n">${p.label}</div><div class="s">${p.source||''}</div></div>
+          <div class="facet-track"><div class="facet-fill" style="width:${p.score}%;background:${facetColor(p.score)}"></div></div>
+          <div class="facet-val"><span class="g" style="color:${facetColor(p.score)}">${p.score.toFixed(0)}</span> · ${p.grade}</div>
         </div>`).join('');
     }
 
@@ -441,8 +465,8 @@
     function renderPipeline(d) {
       document.getElementById('pipeline-card').style.display = 'block';
       const conf = d.confidence || {};
-      const withData = conf.pillars_with_data ?? '—';
-      const total = conf.pillars_total ?? 5;
+      const withData = conf.facets_with_data ?? '—';
+      const total = conf.facets_total ?? 5;
       document.getElementById('pl-sources').textContent = `${withData}/${total} active`;
       document.getElementById('pl-pd').textContent = (d.probability_of_default*100).toFixed(1)+'%';
       document.getElementById('pl-score').textContent = d.credit_score;
@@ -578,6 +602,8 @@
         }
       }, 500);
     }
+
+    document.getElementById('fairness-dimension').addEventListener('change', (e) => renderFairness(e.target.value));
 
     initDashboard();
   </script>

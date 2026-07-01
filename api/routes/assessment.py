@@ -1,10 +1,13 @@
 import json
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.config import get_settings
 from core.database import get_db
 from core.security import get_encryptor
 from models.db_models import SecureVault
@@ -31,12 +34,70 @@ from psychometric.session import (
 router = APIRouter(prefix="/assessment", tags=["assessment"])
 
 
+def _to_naive_utc(dt: datetime) -> datetime:
+    """Normalise a (possibly tz-aware) timestamp to naive UTC for comparison.
+
+    SQLite stores naive UTC while Postgres returns tz-aware values; normalising
+    keeps the window check correct on both backends.
+    """
+    if dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
+
+
+async def _enforce_application_limit(db: AsyncSession, user_id: str | None) -> None:
+    """Reject a new application if the borrower has applied too recently.
+
+    A repeat applicant already knows the questionnaire and could rehearse answers,
+    so we cap completed assessments to ``APPLICATION_LIMIT_COUNT`` per rolling
+    ``APPLICATION_LIMIT_WINDOW_DAYS`` window, keyed on ``user_id``. Each completed
+    assessment writes a ``survey`` vault record, so we count those. Anonymous
+    starts (no/again non-UUID user_id) and a disabled limit are not throttled.
+    """
+    settings = get_settings()
+    if not settings.application_limit_enabled or not user_id:
+        return
+    try:
+        user_uuid = UUID(str(user_id))
+    except (ValueError, AttributeError, TypeError):
+        return  # non-UUID identity has no vault trail to match against
+
+    window_days = settings.APPLICATION_LIMIT_WINDOW_DAYS
+    window_start = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=window_days)
+
+    rows = (
+        await db.execute(
+            select(SecureVault.timestamp).where(
+                SecureVault.user_id == user_uuid,
+                SecureVault.data_type == "survey",
+            )
+        )
+    ).scalars().all()
+
+    recent = sorted(t for t in (_to_naive_utc(r) for r in rows) if t >= window_start)
+    if len(recent) < settings.APPLICATION_LIMIT_COUNT:
+        return
+
+    retry_on = (recent[0] + timedelta(days=window_days)).date().isoformat()
+    raise HTTPException(
+        status_code=429,
+        detail=(
+            f"Application limit reached: at most {settings.APPLICATION_LIMIT_COUNT} "
+            f"application(s) per {window_days} days per borrower. You can apply "
+            f"again on or after {retry_on}."
+        ),
+    )
+
+
 @router.post("/start", response_model=AssessmentStartResponse)
-async def start_assessment(request: AssessmentStartRequest) -> AssessmentStartResponse:
+async def start_assessment(
+    request: AssessmentStartRequest,
+    db: AsyncSession = Depends(get_db),
+) -> AssessmentStartResponse:
     """Start a multilingual agentic psychometric session."""
+    await _enforce_application_limit(db, request.user_id)
     session = create_session(user_id=request.user_id, language=request.language, cohort=request.cohort)
     payload = start_response(session)
-    from core.config import get_settings
     settings = get_settings()
     payload["time_limit_seconds"] = settings.PSYCHOMETRIC_TIME_LIMIT_SECONDS
     payload["extension_seconds"] = settings.PSYCHOMETRIC_EXTENSION_SECONDS
@@ -91,7 +152,7 @@ async def _ingest_assessment(
     await db.refresh(vault_record)
 
     from core.config import get_settings
-    if get_settings().simulate_all_pillars_enabled:
+    if get_settings().simulate_all_facets_enabled:
         # Process the survey synchronously to prevent redirect race conditions
         await process_vault_record(vault_record.id)
 

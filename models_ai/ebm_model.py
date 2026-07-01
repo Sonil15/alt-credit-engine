@@ -103,6 +103,38 @@ def ebm_contributions(
     return contributions, intercept
 
 
+def ebm_mean_contributions(
+    model: ExplainableBoostingClassifier, df: pd.DataFrame
+) -> dict[str, float]:
+    """Population-average per-feature log-odds contribution — the *typical applicant*.
+
+    The EBM's terms are mean-centered on the **balanced** training distribution
+    (we fit with ``class_weight='balanced'`` sample weights), so the intercept sits
+    near a 50/50 coin-flip (~48% PD) rather than the real applicant base rate (~9%).
+    Measured against that intercept, a typical low-risk applicant beats the baseline
+    on almost every feature, so nearly every raw contribution is PD-reducing and the
+    borrower-facing drivers come out all-positive.
+
+    Averaging each term over the *actual* applicant population gives the contribution
+    of the typical applicant. :mod:`convergence.score_engine` re-centers each
+    borrower's contributions on this reference so a driver reads as positive only when
+    the borrower genuinely beats a typical applicant on that signal, and negative when
+    they fall short — restoring an honest mix of "helps" and "needs work" drivers.
+    """
+    if df.empty:
+        return {feat: 0.0 for feat in FEATURE_COLUMNS}
+    features = fill_missing_features(df.copy())
+    terms = np.asarray(model.eval_terms(features))  # (n_rows, n_terms)
+    means: dict[str, float] = {feat: 0.0 for feat in FEATURE_COLUMNS}
+    for term_idx, term_features in enumerate(model.term_features_):
+        if len(term_features) != 1:
+            continue  # interactions=0, but guard against pair terms regardless
+        feat_name = model.term_names_[term_idx]
+        if feat_name in means:
+            means[feat_name] = float(np.mean(terms[:, term_idx]))
+    return means
+
+
 def _finite(value: float, fallback: float) -> float:
     v = float(value)
     return v if np.isfinite(v) else fallback
