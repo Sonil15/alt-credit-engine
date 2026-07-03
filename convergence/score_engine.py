@@ -170,6 +170,17 @@ def _top_drivers(contributions: list[dict[str, float]], top_n: int = 3) -> list[
     return ordered[:top_n]
 
 
+def _top_negative_drivers(contributions: list[dict[str, float]], top_n: int = 3) -> list[dict[str, float]]:
+    """The strongest *adverse* drivers — features that raised default risk (a positive
+    centered contribution lowers the score). Selected on their own, not filtered out of
+    a magnitude-ranked slice, so a rejected/marginal borrower always yields real
+    adverse-action reason codes and targeted tips even when large positive drivers exist.
+    """
+    adverse = [item for item in contributions if safe_float(item["shap_value"]) > 0]
+    adverse.sort(key=lambda item: item["shap_value"], reverse=True)
+    return adverse[:top_n]
+
+
 def _generate_actionable_insights(shap_drivers: list[dict[str, float]]) -> list[str]:
     mapping = {
         "avg_days_late": "Tip: Ensuring all telecom and utility bills are paid on time improves your score.",
@@ -294,8 +305,9 @@ def _build_payload(
     factor_points = {item["feature"]: item["points"] for item in contributions}
 
     shap_drivers = _top_drivers(contributions)
+    negative_drivers = _top_negative_drivers(contributions)
     feature_trace = build_feature_trace(user_row, factor_points)
-    reason_codes = shap_to_reason_codes(shap_drivers)
+    reason_codes = shap_to_reason_codes(negative_drivers)
     gated_to_review = decision == "REVIEW" and champion_decision != "REVIEW" and not auto_reject
     conformal_gated = decision == "REVIEW" and pre_conformal_decision == "APPROVE" and conformal.get("abstain")
     if auto_reject and reject_reason:
@@ -328,7 +340,7 @@ def _build_payload(
     is_simulated = bool(safe_float(user_row.get("is_simulated", 0.0)) == 1.0)
     
     approval_likelihood = "High" if decision == "APPROVE" else "Moderate" if decision == "REVIEW" else "Needs Review"
-    actionable_insights = _generate_actionable_insights(shap_drivers)
+    actionable_insights = _generate_actionable_insights(negative_drivers)
 
     return _finalize_score_payload(
         {

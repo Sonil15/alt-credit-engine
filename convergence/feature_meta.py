@@ -105,7 +105,18 @@ def build_feature_trace(
         if feature in FEATURE_META
     ]
 
-    top_drivers = sorted(signals, key=lambda s: abs(s["points"]), reverse=True)[:TOP_DRIVERS_COUNT]
+    # Lead with what *hurt* the score (negative points), strongest first, then fill
+    # the remaining slots with the strongest positive drivers. This guarantees a
+    # rejected/marginal borrower sees the factors working against them at the top of
+    # "What Affected Your Score" rather than an all-green list produced by ranking on
+    # magnitude alone. When nothing is negative, the list is positives-only.
+    negatives = sorted(
+        (s for s in signals if s["points"] < 0), key=lambda s: abs(s["points"]), reverse=True
+    )
+    positives = sorted(
+        (s for s in signals if s["points"] >= 0), key=lambda s: abs(s["points"]), reverse=True
+    )
+    top_drivers = (negatives + positives)[:TOP_DRIVERS_COUNT]
 
     grouped: dict[str, list[dict[str, object]]] = {}
     for signal in signals:

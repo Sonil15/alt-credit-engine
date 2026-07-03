@@ -117,9 +117,16 @@ Copy this block for each feature:
   contribution on the population-average (the typical applicant) — a driver is positive
   only when the borrower genuinely beats a peer on that signal. All-positive cases fell
   from ~50% to ~14% (the remainder are genuinely strong borrowers — honest, not faked).
-- **Demo moment:** Open a mid-band borrower (~550) and read the mixed drivers — strong
-  cash-flow *and* an unstable-income flag — then note the score/PD/decision are
-  untouched: we fixed the *explanation baseline*, not the model.
+- **Negatives lead:** "What Affected Your Score" now orders the strongest *adverse*
+  drivers first, then fills the rest with positives — so a rejected or marginal borrower
+  can't be shown an all-green list produced by magnitude-only ranking. If nothing is
+  negative, it stays positives-only (honest, not manufactured). The adverse-action reason
+  codes and improvement tips are selected from those negative drivers directly rather than
+  sliced from the top-3-by-magnitude, so a reject always yields real reasons instead of
+  falling through to "No adverse factors identified."
+- **Demo moment:** Open a mid-band borrower (~550) and read the mixed drivers — the
+  unstable-income flag surfaces *first*, then the strong cash-flow — then note the
+  score/PD/decision are untouched: we fixed the *explanation baseline*, not the model.
 - **Honest caveat:** This re-centers the explanation only; the model, PD and decision are
   unchanged, and `base_points + Σ driver_points` still reconciles to the score exactly
   (base_points now reads as "the typical applicant's score").
