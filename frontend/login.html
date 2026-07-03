@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alt-Credit — Sign In</title>
+  <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/login.css?v=1.0.1">
+  <script src="/static/translations.js?v=1.0.2"></script>
+  <script src="/static/auth.js?v=1.0.0"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header-left">
+      <h1><a href="/" style="color: inherit; text-decoration: none;">Alt-Credit</a> <span class="sub" data-i18n="login-topbar-sub">Borrower Sign In</span></h1>
+    </div>
+    <div class="app-header-right">
+      <div id="language-selector-root"></div>
+      <a href="/" data-i18n="login-topbar-home">Home</a>
+    </div>
+  </header>
+
+  <div class="login-stage">
+    <div class="login-card">
+      <!-- Brand rail -->
+      <aside class="login-brand">
+        <span class="brand-badge" data-i18n="login-hero-badge">Secure Access</span>
+        <h2 class="brand-title" data-i18n="login-hero-title">Your Credit Profile</h2>
+        <p class="brand-sub" data-i18n="login-hero-sub">Sign in to apply, track your applications, and control who sees your data.</p>
+        <ul class="brand-benefits">
+          <li><span class="tick">✓</span><span data-i18n="login-benefit-1">Your data, your key — only you can open your assessments.</span></li>
+          <li><span class="tick">✓</span><span data-i18n="login-benefit-2">Track every application tied to your account.</span></li>
+          <li><span class="tick">✓</span><span data-i18n="login-benefit-3">Passwords stored as a secure one-way hash — never in plain text.</span></li>
+        </ul>
+      </aside>
+
+      <!-- Form panel -->
+      <main class="login-form">
+        <div class="auth-tabs" role="tablist">
+          <button id="tab-login" class="auth-tab active" onclick="switchMode('login')" data-i18n="login-tab-signin">Sign In</button>
+          <button id="tab-register" class="auth-tab" onclick="switchMode('register')" data-i18n="login-tab-create">Create Account</button>
+        </div>
+
+        <p id="intro" class="auth-intro" data-i18n="login-intro-signin">
+          Sign in with your login ID and password to view and protect your credit assessments.</p>
+
+        <div id="error-box" class="auth-error"></div>
+
+        <div class="form-group">
+          <label class="form-label" for="login-id" data-i18n="login-field-loginid">Login ID</label>
+          <input id="login-id" class="form-control" type="text" autocomplete="username" placeholder="e.g. ravi_kumar">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password" data-i18n="login-field-password">Password</label>
+          <input id="password" class="form-control" type="password" autocomplete="current-password" placeholder="••••••••">
+          <span id="pw-hint" class="field-hint" data-i18n="login-pw-hint">At least 6 characters.</span>
+        </div>
+
+        <button id="submit-btn" class="btn btn-primary auth-submit" onclick="submitForm()" data-i18n="login-submit-signin">Sign In</button>
+
+        <div class="auth-note">
+          <span class="lock">🔒</span>
+          <span data-i18n="login-privacy-note">Your assessments stay linked to your account and no one else can open them.</span>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    let mode = 'login';
+    const params = new URLSearchParams(window.location.search);
+    const nextUrl = params.get('next') || '/apply';
+
+    // Already logged in? Go straight to the destination.
+    if (Auth.isLoggedIn()) {
+      window.location.replace(nextUrl);
+    }
+
+    function t(key, fallback) {
+      try {
+        const lang = getCurrentLanguage();
+        const d = ALTCREDIT_DICTIONARY;
+        return (d[lang] && d[lang][key]) || (d['en'] && d['en'][key]) || fallback;
+      } catch (_) { return fallback; }
+    }
+
+    function switchMode(m) {
+      mode = m;
+      document.getElementById('tab-login').classList.toggle('active', m === 'login');
+      document.getElementById('tab-register').classList.toggle('active', m === 'register');
+
+      // Keep data-i18n in sync with the mode so language switching stays correct.
+      const intro = document.getElementById('intro');
+      const submit = document.getElementById('submit-btn');
+      const introKey = 'login-intro-' + (m === 'register' ? 'create' : 'signin');
+      const submitKey = 'login-submit-' + (m === 'register' ? 'create' : 'signin');
+      intro.setAttribute('data-i18n', introKey);
+      submit.setAttribute('data-i18n', submitKey);
+      intro.textContent = t(introKey, intro.textContent);
+      submit.textContent = t(submitKey, submit.textContent);
+
+      document.getElementById('password').setAttribute('autocomplete', m === 'register' ? 'new-password' : 'current-password');
+      hideError();
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('error-box');
+      box.textContent = msg;
+      box.style.display = 'block';
+    }
+    function hideError() {
+      document.getElementById('error-box').style.display = 'none';
+    }
+
+    async function submitForm() {
+      hideError();
+      const loginId = document.getElementById('login-id').value.trim();
+      const password = document.getElementById('password').value;
+      if (loginId.length < 3) { showError(t('login-err-loginid', 'Login ID must be at least 3 characters.')); return; }
+      if (password.length < 6) { showError(t('login-err-password', 'Password must be at least 6 characters.')); return; }
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = '…';
+      try {
+        if (mode === 'register') {
+          await Auth.register(loginId, password);
+        } else {
+          await Auth.login(loginId, password);
+        }
+        window.location.assign(nextUrl);
+      } catch (err) {
+        showError(err.message || 'Something went wrong.');
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    }
+
+    document.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitForm(); });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof setupLanguageSelector === 'function') setupLanguageSelector('language-selector-root');
+      switchMode(params.get('mode') === 'register' ? 'register' : 'login');
+    });
+  </script>
+</body>
+</html>

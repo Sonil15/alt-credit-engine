@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import assessment, consent, frontend, ingestion, scoring
+from api.routes import assessment, auth, consent, frontend, ingestion, scoring
 from core.bootstrap import ensure_seeded
 from core.config import get_settings
 from core.database import init_db
@@ -47,6 +47,7 @@ app.add_middleware(
 
 frontend.mount_static(app)
 
+app.include_router(auth.router)
 app.include_router(assessment.router)
 app.include_router(consent.router)
 app.include_router(consent.geo_router)

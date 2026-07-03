@@ -1,8 +1,10 @@
 """Authentication dependencies for protected endpoints."""
 
-from fastapi import Header, HTTPException
+from fastapi import Depends, Header, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import get_settings
+from core.database import get_db
 
 
 async def require_api_key(x_api_key: str | None = Header(default=None, alias="X-API-Key")) -> None:
@@ -38,11 +40,25 @@ async def require_own_session(
 
 
 async def get_session_user_id(
+    authorization: str | None = Header(default=None),
     x_session_id: str | None = Header(default=None, alias="X-Session-Id"),
+    db: AsyncSession = Depends(get_db),
 ) -> str:
-    """Resolve the user_id from a borrower session token. Used for /score/me."""
+    """Resolve the borrower's user_id for /score/me.
+
+    Prefers a persistent account bearer token (``Authorization: Bearer <token>``)
+    so a logged-in borrower sees their own data across sessions and devices, and
+    falls back to the ephemeral in-memory assessment session id for the anonymous
+    apply flow.
+    """
+    from core.borrower_auth import resolve_bearer_user_id
+
+    user_id = await resolve_bearer_user_id(db, authorization)
+    if user_id is not None:
+        return user_id
+
     if not x_session_id:
-        raise HTTPException(status_code=401, detail="X-Session-Id header required")
+        raise HTTPException(status_code=401, detail="Authentication required")
 
     from psychometric.session import get_session
     session = get_session(x_session_id)

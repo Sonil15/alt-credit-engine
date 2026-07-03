@@ -36,6 +36,12 @@ async def borrower_portal(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "apply.html", {"request": request})
 
 
+@router.get("/login", response_class=HTMLResponse)
+async def borrower_login(request: Request) -> HTMLResponse:
+    """Borrower sign-in / account-creation page."""
+    return templates.TemplateResponse(request, "login.html", {"request": request})
+
+
 @router.get("/borrower", response_class=HTMLResponse)
 async def borrower_result(request: Request) -> HTMLResponse:
     """Borrower-only score result page (session-authenticated)."""

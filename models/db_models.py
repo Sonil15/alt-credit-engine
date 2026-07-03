@@ -72,6 +72,46 @@ class ScoreDecision(Base):
     )
 
 
+class BorrowerAccount(Base):
+    """A borrower's login account.
+
+    The account's ``user_id`` is the borrower's stable identity across the whole
+    pipeline (vault, features, decisions), so once a borrower logs in every
+    application they submit ties back to the same account. Passwords are stored
+    only as a PBKDF2 hash + per-account salt — never in plaintext.
+    """
+
+    __tablename__ = "borrower_accounts"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), unique=True, index=True, nullable=False, default=uuid.uuid4
+    )
+    login_id: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    password_salt: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+
+class AuthToken(Base):
+    """An opaque bearer token issued to a logged-in borrower (server-side session)."""
+
+    __tablename__ = "auth_tokens"
+
+    token: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), index=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class AuditLog(Base):
     """Audit trail for manual decision overrides by loan officers."""
 

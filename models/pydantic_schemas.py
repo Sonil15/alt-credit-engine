@@ -356,3 +356,33 @@ PAYLOAD_MODELS: dict[DataType, type[BaseModel]] = {
 def validate_payload(data_type: DataType, payload: dict[str, Any]) -> BaseModel:
     model = PAYLOAD_MODELS[data_type]
     return model.model_validate(payload)
+
+
+class AuthCredentials(BaseModel):
+    """Registration / login payload."""
+
+    login_id: str = Field(min_length=3, max_length=100)
+    password: str = Field(min_length=6, max_length=200)
+
+    @field_validator("login_id")
+    @classmethod
+    def _strip_login(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("login_id cannot be blank")
+        return v
+
+
+class AuthResponse(BaseModel):
+    """Returned on successful register/login."""
+
+    token: str
+    user_id: str
+    login_id: str
+
+
+class BorrowerProfile(BaseModel):
+    """Current logged-in borrower (from GET /auth/me)."""
+
+    user_id: str
+    login_id: str

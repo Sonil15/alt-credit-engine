@@ -7,6 +7,14 @@
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/borrower.css?v=1.0.0">
   <script src="/static/translations.js?v=1.0.2"></script>
+  <script src="/static/auth.js?v=1.0.0"></script>
+  <script>
+    // Login is mandatory to view a borrower's assessment. Redirect to sign-in
+    // before any content renders if there's no session token.
+    if (!window.Auth || !Auth.isLoggedIn()) {
+      window.location.replace('/login?next=' + encodeURIComponent(location.pathname + location.search));
+    }
+  </script>
 </head>
 <body>
   <header class="app-header">
@@ -75,7 +83,7 @@
         <div id="rights-notice" class="reason-box" style="display:none; background: #f8fafc; border-color: #cbd5e1; color: #475569; font-size: 13px; margin-bottom: 24px;">
           <strong style="color:#0f172a;" data-i18n="borrower-rights-title">Your Rights & Fair Practice Rules:</strong><br>
           <span data-i18n="borrower-rights-text">Under Reserve Bank of India (RBI) guidelines, you have the right to know why a loan decision was made. Your score was calculated using alternative data like telecom bills and bank entries. You are also entitled to one free credit report every year from authorized credit bureaus (like CIBIL, Experian, or CRIF).</span><br><br>
-          <strong data-i18n="borrower-provider-label">Assessment Provided By:</strong> <span data-i18n="borrower-provider-name">Alt-Credit Engine, IIT Kharagpur</span>
+          <strong data-i18n="borrower-provider-label">Assessment Provided By:</strong> <span data-i18n="borrower-provider-name">Alt-Credit Engine</span>
         </div>
 
         <div id="grievance-box" class="reason-box" style="background: #f0fdf4; border-color: #bbf7d0; color: #166534; font-size: 13px; margin-bottom: 24px;">
@@ -130,7 +138,9 @@
       "Tip: Continue building a consistent digital transaction history across all your accounts.": "insight-default"
     };
 
-    if (!sessionId) {
+    // A logged-in borrower is authenticated by their bearer token, so they can
+    // open this page directly (e.g. on a new device) without a session param.
+    if (!sessionId && !Auth.isLoggedIn()) {
       showError(t('borrower-error-session'));
     } else {
       loadScore();
@@ -138,9 +148,9 @@
 
     async function loadScore() {
       try {
-        const resp = await fetch('/score/me', {
-          headers: { 'X-Session-Id': sessionId },
-        });
+        const headers = Auth.authHeaders();
+        if (sessionId) headers['X-Session-Id'] = sessionId;
+        const resp = await fetch('/score/me', { headers });
         if (!resp.ok) {
           const err = await resp.json().catch(() => ({}));
           throw new Error(err.detail || 'Unable to retrieve score.');
@@ -167,7 +177,7 @@
       badge.textContent = d.decision;
       badge.className = 'badge badge-' + d.decision;
       
-      document.getElementById('likelihood-val').textContent = d.approval_likelihood || 'Needs Review';
+      document.getElementById('likelihood-val').textContent = d.approval_likelihood || t('borrower-needs-review');
       
       const now = new Date();
       document.getElementById('assessment-date').textContent = now.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
@@ -227,8 +237,8 @@
     }
 
     function requestHumanReview() {
-      alert("Your request for a manual human review has been submitted. A loan officer will review your file.");
-      document.getElementById('human-review-btn').textContent = 'Review Requested';
+      alert(t('borrower-human-review-alert'));
+      document.getElementById('human-review-btn').textContent = t('borrower-review-requested');
       document.getElementById('human-review-btn').disabled = true;
     }
 
@@ -236,7 +246,11 @@
       const STORAGE_KEY = 'altcredit_applications';
       try {
         const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        const alreadySaved = existing.some(a => a.sessionId === app.sessionId);
+        // Dedup on session when present; otherwise (logged-in, token-only view)
+        // dedup on the borrower's user id so we don't stack duplicate cards.
+        const alreadySaved = app.sessionId
+          ? existing.some(a => a.sessionId === app.sessionId)
+          : existing.some(a => !a.sessionId && a.userId === app.userId);
         if (!alreadySaved) {
           existing.push({ ...app, date: new Date().toISOString() });
           localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));

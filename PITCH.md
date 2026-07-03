@@ -236,6 +236,24 @@ Copy this block for each feature:
   Data Fiduciary, with scoped, revocable consent tracked end to end."
 - **Demo moment:** The consent flow and revocation / scope-tracking screen.
 
+### Borrower accounts — own and protect your assessment
+- **Judge problem it answers:** "The borrower's credit assessment is sensitive personal
+  data — who can see it, and how does the borrower control access to their own file?"
+- **Pitch line:** "The borrower flow is login-gated end to end: no assessment, no
+  profile, no result exists without an authenticated account — the data principal
+  literally holds the key to their own file."
+- **Differentiator:** Most teams demo an anonymous, link-based result page anyone can
+  open; ours *requires* an authenticated borrower identity for the entire journey
+  (consent → assessment → result), so every profile is bound to an owner and persists
+  across devices, reinforcing the consent-first / data-principal story end to end.
+- **Demo moment:** Try to open the borrower portal signed out — it redirects to sign-in.
+  Log in, complete an application, then open the result on a "fresh" browser via **View
+  my latest assessment**, proving the file follows the borrower's login, not a shareable
+  URL. Sign out and show the file is no longer reachable.
+- **Honest caveat:** Local password auth built for the demo — PBKDF2-hashed passwords and
+  server-side revocable bearer tokens, but production would add reset/lockout flows and a
+  hardened secret store. No third-party auth service; runs fully offline.
+
 ---
 
 ## Cross-cutting narrative (the one-paragraph story)

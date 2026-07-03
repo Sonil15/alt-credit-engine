@@ -7,6 +7,14 @@
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/apply.css?v=1.0.0">
   <script src="/static/translations.js?v=1.0.2"></script>
+  <script src="/static/auth.js?v=1.0.0"></script>
+  <script>
+    // Login is mandatory for the borrower portal. Redirect to sign-in before any
+    // content renders if there's no session token.
+    if (!window.Auth || !Auth.isLoggedIn()) {
+      window.location.replace('/login?next=' + encodeURIComponent(location.pathname + location.search));
+    }
+  </script>
 </head>
 <body>
   <header class="app-header">
@@ -16,6 +24,11 @@
     <div class="app-header-right">
       <div id="language-selector-root"></div>
       <a id="privacy-link" href="/consent" data-i18n="apply-topbar-privacy">Privacy Rights</a>
+      <a id="login-link" href="/login" data-i18n="apply-topbar-signin" style="display:none;">Sign In</a>
+      <span id="account-chip" style="display:none; align-items:center; gap:10px;">
+        <span style="font-size:13px; color:#cbd5e1;">👤 <strong id="account-name"></strong></span>
+        <a href="#" id="logout-link" onclick="doLogout(event)" data-i18n="apply-topbar-signout" style="font-size:13px; color:#f87171;">Sign Out</a>
+      </span>
     </div>
   </header>
 
@@ -93,21 +106,72 @@
 
   <script>
     const STORAGE_KEY = 'altcredit_applications';
+    const account = Auth.currentUser();
 
-    function startApplication() {
-      const cohort = document.getElementById('cohort-select').value;
-      window.location.href = '/consent?cohort=' + encodeURIComponent(cohort);
+    function t(key, fallback) {
+      try {
+        const lang = getCurrentLanguage();
+        const d = ALTCREDIT_DICTIONARY;
+        return (d[lang] && d[lang][key]) || (d['en'] && d['en'][key]) || fallback;
+      } catch (_) { return fallback; }
     }
 
-    function loadApplications() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      } catch (_) {
-        return [];
+    function renderAccountState() {
+      const loginLink = document.getElementById('login-link');
+      const chip = document.getElementById('account-chip');
+      if (account) {
+        document.getElementById('account-name').textContent = account.login_id;
+        chip.style.display = 'inline-flex';
+        loginLink.style.display = 'none';
+      } else {
+        chip.style.display = 'none';
+        loginLink.style.display = 'inline-block';
       }
     }
 
+    async function doLogout(e) {
+      e.preventDefault();
+      await Auth.logout();
+      window.location.reload();
+    }
+
+    function startApplication() {
+      const cohort = document.getElementById('cohort-select').value;
+      let url = '/consent?cohort=' + encodeURIComponent(cohort);
+      // Logged-in borrower: tie the new application to their stable account id,
+      // while flow=new keeps them in the consent-grant flow (not the returning
+      // borrower's privacy dashboard).
+      if (account && account.user_id) {
+        url += '&user_id=' + encodeURIComponent(account.user_id) + '&flow=new';
+      }
+      window.location.href = url;
+    }
+
+    function loadApplications() {
+      let apps;
+      try {
+        apps = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      } catch (_) {
+        return [];
+      }
+      // When signed in, only show applications that belong to this account so a
+      // shared browser never leaks one borrower's results to another.
+      if (account && account.user_id) {
+        return apps.filter(a => a.userId === account.user_id);
+      }
+      return apps;
+    }
+
     function updatePrivacyLink() {
+      // A logged-in borrower's privacy dashboard is keyed to their account id.
+      if (account && account.user_id) {
+        const url = '/consent?user_id=' + encodeURIComponent(account.user_id);
+        const link = document.getElementById('privacy-link');
+        const btn = document.getElementById('manage-consent-btn');
+        if (link) link.href = url;
+        if (btn) { btn.href = url; btn.style.display = 'inline-block'; }
+        return;
+      }
       const apps = loadApplications();
       if (apps.length > 0) {
         const latest = apps[apps.length - 1];
@@ -125,10 +189,21 @@
     }
 
     function render() {
+      renderAccountState();
       const apps = loadApplications();
       document.getElementById('app-count').textContent = apps.length;
 
       updatePrivacyLink();
+
+      // Signed-in borrower on a fresh browser: offer a server-backed view of
+      // their latest assessment even when this device has no local history.
+      if (account && !apps.length) {
+        const empty = document.getElementById('empty-state');
+        empty.innerHTML = '<div class="icon">🔒</div>'
+          + '<span>' + t('apply-empty-signedin', 'No applications on this device yet. View your latest assessment or start a new one.') + '</span>'
+          + '<a href="/borrower" style="display:inline-block; margin-top:14px; background:#2563eb; color:white; padding:10px 18px; border-radius:8px; text-decoration:none; font-weight:600; font-size:13px;">'
+          + t('apply-view-latest', 'View my latest assessment') + '</a>';
+      }
 
       if (!apps.length) return;
 
@@ -140,7 +215,9 @@
       [...apps].reverse().forEach(app => {
         const card = document.createElement('a');
         card.className = 'app-card';
-        card.href = '/borrower?session=' + encodeURIComponent(app.sessionId);
+        card.href = app.sessionId
+          ? '/borrower?session=' + encodeURIComponent(app.sessionId)
+          : '/borrower';
 
         const date = new Date(app.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
         const shortId = app.userId ? app.userId.slice(0, 8) + '…' : 'Unknown';

@@ -7,6 +7,14 @@
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/consent.css?v=1.0.0">
   <script src="/static/translations.js?v=1.0.2"></script>
+  <script src="/static/auth.js?v=1.0.0"></script>
+  <script>
+    // Login is mandatory for the borrower flow. Redirect to sign-in before any
+    // content renders if there's no session token.
+    if (!window.Auth || !Auth.isLoggedIn()) {
+      window.location.replace('/login?next=' + encodeURIComponent(location.pathname + location.search));
+    }
+  </script>
 </head>
 <body>
   <div class="phone">
@@ -156,7 +164,10 @@
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    let userId = params.get('user_id') || crypto.randomUUID();
+    // Login is mandatory, so default to the signed-in account's stable id when the
+    // URL doesn't carry one — never mint an anonymous, unlinked identity.
+    const _acct = (window.Auth && Auth.currentUser()) || null;
+    let userId = params.get('user_id') || (_acct && _acct.user_id) || crypto.randomUUID();
     let consentId = localStorage.getItem('altcredit_consent_id_' + userId) || null;
 
     function goToStep(n) {
@@ -453,8 +464,10 @@
       document.getElementById('success-banner').style.display = 'none';
     }
 
-    // On load: if user_id is in URL (returning borrower), jump straight to privacy dashboard
-    if (params.get('user_id')) {
+    // On load: if user_id is in URL (returning borrower), jump straight to the
+    // privacy dashboard — UNLESS flow=new, which is a logged-in borrower starting
+    // a fresh application under their existing account (they still grant consent).
+    if (params.get('user_id') && params.get('flow') !== 'new') {
       goToStep(3);
       loadStatus();
     }
