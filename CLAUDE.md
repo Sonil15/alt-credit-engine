@@ -4,7 +4,6 @@ This is a hackathon project; the goal is to **win**. The full agent guide lives 
 [`AGENTS.md`](AGENTS.md) — read it. Key points repeated here so they aren't missed:
 
 ## Hard constraints
-- **Local only — never push to GitHub.**
 - **White-label: never name the sponsoring bank or university** anywhere in the repo.
   Use "the bank" / "a public-sector bank" / "Data Fiduciary".
 
