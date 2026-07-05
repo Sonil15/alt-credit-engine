@@ -94,7 +94,13 @@ def _empty_dimension(dimension: dict[str, Any]) -> dict[str, Any]:
 def _compute_dimension(
     score_df: pd.DataFrame, wide: pd.DataFrame, dimension: dict[str, Any]
 ) -> dict[str, Any]:
-    """Approval-rate parity for one grouping dimension."""
+    """Approval-rate parity for one grouping dimension.
+
+    Parity deliberately slices on the model's ``decision``, not the post-decision
+    affordability outcome (``final_outcome``): a borrower asking for more than
+    their income can service is borrower intent, not model bias, and folding it
+    in would let requested amounts distort the disparate-impact signal.
+    """
     column = dimension["column"]
     if column not in wide.columns:
         return _empty_dimension(dimension)

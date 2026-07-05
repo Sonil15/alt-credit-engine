@@ -251,6 +251,13 @@ async def _ingest_assessment(
         from models_econometric.ecm_model import run_ecm_pipeline
         await run_ecm_pipeline(db)
 
+        # Borrower-declared onboarding intake -> derived model features
+        # (business vintage + declared-vs-observed turnover consistency).
+        # Must run after the sim features so monthly_income_mean exists.
+        from core.business_profile import upsert_intake_features
+        await upsert_intake_features(db, str(user_id))
+        await db.commit()
+
     else:
         background_tasks.add_task(process_vault_record, vault_record.id)
 

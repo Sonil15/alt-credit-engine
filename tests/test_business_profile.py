@@ -1,0 +1,120 @@
+"""Deterministic fallback extraction + confidence routing for the business profiler."""
+
+import pytest
+
+from core.business_profile import (
+    EXTRACTION_CONFIDENCE_THRESHOLD,
+    PURPOSES_BY_COHORT,
+    _resolve_extraction,
+    extract_business_profile,
+    fallback_extract_business_profile,
+    turnover_income_consistency,
+)
+
+
+def test_fallback_extracts_english_description():
+    profile = fallback_extract_business_profile(
+        "I have run a vegetable stall in the market for 8 years, "
+        "earning about 40,000 rupees a month with 2 helpers."
+    )
+    assert profile["sector"] == "retail"
+    assert profile["years_in_business"] == 8.0
+    assert profile["monthly_turnover"] == 40000.0
+    assert profile["employees"] == 2
+
+
+def test_fallback_extracts_hindi_with_lakh():
+    profile = fallback_extract_business_profile(
+        "मैं 12 साल से किराना दुकान चलाता हूँ, महीने में करीब 1 लाख की बिक्री होती है"
+    )
+    assert profile["sector"] == "retail"
+    assert profile["years_in_business"] == 12.0
+    assert profile["monthly_turnover"] == 100000.0
+
+
+def test_fallback_extracts_bengali_farming():
+    profile = fallback_extract_business_profile(
+        "আমি ৫ বছর ধরে ধান চাষ করি, ফসল কাটার মৌসুমে আয় বেশি হয়"
+    )
+    assert profile["sector"] == "agriculture"
+    assert profile["years_in_business"] == 5.0
+    assert profile["seasonality"] == "high"
+
+
+def test_fallback_ignores_amount_without_income_context():
+    # A bare number with no earn/turnover context must not become turnover.
+    profile = fallback_extract_business_profile("I want a loan of 2 lakh for my shop")
+    assert profile["monthly_turnover"] is None
+
+
+def test_fallback_is_deterministic():
+    text = "chai stall for 3 years, kamai 15,000 per month"
+    assert fallback_extract_business_profile(text) == fallback_extract_business_profile(text)
+
+
+def test_low_confidence_routes_to_fallback():
+    parsed = {
+        "sector": "retail",
+        "years_in_business": 8,
+        "monthly_turnover": 40000,
+        "confidence": EXTRACTION_CONFIDENCE_THRESHOLD - 0.1,
+    }
+    profile, confidence, method = _resolve_extraction(parsed, "8 years vegetable stall, earn 40000")
+    assert method == "fallback"
+    assert profile["years_in_business"] == 8.0  # fallback re-reads the text
+
+
+def test_confident_llm_response_is_used_and_sanitized():
+    parsed = {
+        "sector": "Retail ",
+        "years_in_business": 8,
+        "monthly_turnover": 40000,
+        "seasonality": "HIGH",
+        "employees": 2,
+        "confidence": 0.9,
+    }
+    profile, confidence, method = _resolve_extraction(parsed, "whatever")
+    assert method == "llm"
+    assert confidence == 0.9
+    assert profile["sector"] == "retail"
+    assert profile["seasonality"] == "high"
+
+
+def test_garbage_llm_values_become_none():
+    parsed = {
+        "sector": 42,
+        "years_in_business": -5,
+        "monthly_turnover": "lots",
+        "seasonality": "sometimes",
+        "employees": 999999,
+        "confidence": 0.9,
+    }
+    profile, _, method = _resolve_extraction(parsed, "no signal here whatsoever xyz")
+    # Every field rejected -> falls back rather than returning an empty llm read.
+    assert method == "fallback"
+
+
+@pytest.mark.asyncio
+async def test_extract_without_api_key_uses_fallback(monkeypatch):
+    from core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "GROQ_API_KEY", "", raising=False)
+    profile, confidence, method = await extract_business_profile(
+        "tailoring shop for 4 years, income 20,000 monthly", "en"
+    )
+    assert method == "fallback"
+    assert profile["sector"] == "services"
+    assert profile["years_in_business"] == 4.0
+
+
+def test_turnover_income_consistency_bounds():
+    assert turnover_income_consistency(40000, 40000) == 1.0
+    assert turnover_income_consistency(80000, 40000) == 0.5
+    assert turnover_income_consistency(40000, 80000) == 0.5
+    assert turnover_income_consistency(0, 40000) == 0.0
+    assert turnover_income_consistency(40000, 0) == 0.0
+
+
+def test_purposes_map_covers_all_cohorts():
+    for cohort in ("Salaried", "GigWorker", "Student", "Vendor", "Farmer", "Homemaker"):
+        assert PURPOSES_BY_COHORT[cohort], cohort

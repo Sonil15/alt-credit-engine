@@ -12,6 +12,12 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": ["-c", "USE_SQLITE=true AUTO_SEED_ON_STARTUP=true .venv/bin/uvicorn api.main:app --port 8000"],
       "port": 8000
+    },
+    {
+      "name": "alt-credit-demo",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "USE_SQLITE=true AUTO_SEED_ON_STARTUP=true SIMULATE_ALL_FACETS=true .venv/bin/uvicorn api.main:app --port 8000"],
+      "port": 8000
     }
   ]
 }

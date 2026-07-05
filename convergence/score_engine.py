@@ -7,12 +7,14 @@ import logging
 from typing import Any
 from uuid import UUID
 
+import numpy as np
 import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence.fairness import compute_fairness_report
 from convergence.feature_meta import build_feature_trace
-from convergence.lending import recommend_terms
+from convergence.lending import evaluate_funding_gap, recommend_terms
+from convergence.letter_store import upsert_letter_for_decision
 from convergence.panel import APPROVE_SCORE, REVIEW_SCORE, compute_agreement, decision_thresholds
 from convergence.facets import BorrowerCohort, COHORT_CODE_MAP, compute_confidence, compute_norm_stats, compute_facet_scores
 from convergence.reason_codes import format_reason_codes, shap_to_reason_codes
@@ -20,6 +22,12 @@ from convergence.scorecard import (
     expected_value_to_base_points,
     pd_to_credit_score,
     shap_to_points,
+)
+from core.business_profile import (
+    PURPOSES_BY_COHORT,
+    fetch_all_latest_intakes,
+    fetch_latest_intake,
+    intake_to_dict,
 )
 from core.feature_store import fetch_features_wide
 from core.json_utils import safe_float, safe_round, sanitize_for_json
@@ -47,7 +55,14 @@ SCOPE_TO_FEATURES = {
     "telecom": ["avg_days_late", "missed_payments_count"],
     "ecommerce": ["necessity_ratio", "avg_merchant_rating", "monthly_spend_volatility"],
     "geo": ["spatial_variance_score", "anchor_count"],
-    "cashflow": ["monthly_income_mean", "cashflow_volatility", "resilience_coefficient", "trend_slope", "is_stationary"],
+    # Bank cash-flow, plus every econometric feature derived from the cash-flow series
+    # (ECM + ADF). Revoking cash-flow must gate all of them or expense/stationarity
+    # signals leak back into the model input and the driver explanation.
+    "cashflow": [
+        "monthly_income_mean", "monthly_expense_mean", "cashflow_volatility",
+        "resilience_coefficient", "trend_slope", "is_stationary",
+        "adf_statistic", "adf_pvalue",
+    ],
     "survey": [
         "conscientiousness", "locus_of_control", "financial_self_efficacy",
         "present_bias", "debt_attitude", "risk_tolerance",
@@ -240,8 +255,14 @@ async def _persist_decision(session: AsyncSession, payload: dict[str, Any]) -> N
             auto_reject=1 if payload.get("auto_reject") else 0,
             reject_reason=payload.get("reject_reason"),
             reason_codes_json=json.dumps(payload.get("reason_codes", [])),
+            requested_amount=payload.get("requested_amount"),
+            loan_purpose=payload.get("loan_purpose"),
+            final_outcome=payload.get("final_outcome"),
         )
     )
+    # Draft/refresh the borrower's decision letter alongside the audit row: approvals
+    # issue automatically; rejections/reviews queue for officer sign-off.
+    await upsert_letter_for_decision(session, payload)
     await session.commit()
 
 
@@ -256,6 +277,7 @@ def _build_payload(
     norm_stats: dict,
     baseline_contrib: dict[str, float] | None = None,
     revoked_scopes: list[str] | None = None,
+    intake: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble the full score payload for a single user (no DB I/O)."""
     auto_reject, reject_reason = check_red_flags(user_row)
@@ -304,9 +326,16 @@ def _build_payload(
     base_points = safe_round(expected_value_to_base_points(base_value), 1)
     factor_points = {item["feature"]: item["points"] for item in contributions}
 
-    shap_drivers = _top_drivers(contributions)
-    negative_drivers = _top_negative_drivers(contributions)
-    feature_trace = build_feature_trace(user_row, factor_points)
+    # Never explain the score with data the borrower didn't consent to: drop every
+    # feature belonging to a revoked scope from the driver lists and the lineage trace.
+    revoked_features: set[str] = set()
+    for scope in (revoked_scopes or []):
+        revoked_features.update(SCOPE_TO_FEATURES.get(scope, []))
+    visible_contributions = [c for c in contributions if c["feature"] not in revoked_features]
+
+    shap_drivers = _top_drivers(visible_contributions)
+    negative_drivers = _top_negative_drivers(visible_contributions)
+    feature_trace = build_feature_trace(user_row, factor_points, exclude_features=revoked_features)
     reason_codes = shap_to_reason_codes(negative_drivers)
     gated_to_review = decision == "REVIEW" and champion_decision != "REVIEW" and not auto_reject
     conformal_gated = decision == "REVIEW" and pre_conformal_decision == "APPROVE" and conformal.get("abstain")
@@ -337,6 +366,26 @@ def _build_payload(
         )
 
     lending = recommend_terms(probability_of_default, credit_score, decision, user_row)
+
+    # Affordability gate — lending-policy overlay AFTER the model decision.
+    # `decision` stays the model's call (fairness parity slices on it);
+    # `final_outcome` is what the borrower is told.
+    funding_gap = evaluate_funding_gap(decision, lending, intake)
+    final_outcome = "REVIEW" if funding_gap.get("gated") else decision
+    if funding_gap.get("gated"):
+        reason_codes.insert(
+            0,
+            f"Affordability gate: requested amount ₹{round(funding_gap['requested_amount']):,} "
+            f"exceeds maximum serviceable ₹{round(funding_gap['max_serviceable_amount']):,} — "
+            "not approved as requested; routed for counter-offer review",
+        )
+
+    loan_purpose = intake.get("loan_purpose") if intake else None
+    purpose_consistent = None
+    if intake and loan_purpose:
+        allowed = PURPOSES_BY_COHORT.get(str(intake.get("cohort", "")), [])
+        purpose_consistent = loan_purpose in allowed
+
     is_simulated = bool(safe_float(user_row.get("is_simulated", 0.0)) == 1.0)
     
     approval_likelihood = "High" if decision == "APPROVE" else "Moderate" if decision == "REVIEW" else "Needs Review"
@@ -363,6 +412,11 @@ def _build_payload(
             "confidence_pct": confidence["confidence_pct"],
             "thin_file": confidence["thin_file"],
             "lending": lending,
+            "requested_amount": safe_float(intake.get("requested_amount")) if intake else None,
+            "loan_purpose": loan_purpose,
+            "purpose_consistent": purpose_consistent,
+            "final_outcome": final_outcome,
+            "funding_gap": funding_gap,
             "panel": agreement,
             "conformal": conformal,
             "explanation_method": "ebm-additive-terms",
@@ -403,6 +457,7 @@ async def score_user(session: AsyncSession, user_id: str, *, persist: bool = Tru
     pd_df = champion_predict_pd(champion, user_wide)
     probability_of_default = safe_float(pd_df.iloc[0]["probability_of_default"])
     feature_row = get_feature_matrix_for_user(user_wide, user_id)
+    intake = intake_to_dict(await fetch_latest_intake(session, user_id))
 
     result = _build_payload(
         user_id=str(user_id),
@@ -414,6 +469,7 @@ async def score_user(session: AsyncSession, user_id: str, *, persist: bool = Tru
         norm_stats=norm_stats,
         baseline_contrib=baseline_contrib,
         revoked_scopes=revoked_scopes,
+        intake=intake,
     )
 
     if persist:
@@ -433,6 +489,7 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
     # Typical-applicant reference, computed once over the full population (see
     # _champion_contributions); shared across every borrower in the portfolio.
     baseline_contrib = ebm_mean_contributions(champion, wide)
+    intakes = await fetch_all_latest_intakes(session)
     from api.routes.consent import get_revoked_scopes
 
     results = []
@@ -462,6 +519,7 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
                 norm_stats=norm_stats,
                 baseline_contrib=baseline_contrib,
                 revoked_scopes=revoked_scopes,
+                intake=intakes.get(user_id),
             )
             await _persist_decision(session, result)
             results.append(result)

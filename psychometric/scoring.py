@@ -308,6 +308,8 @@ def traits_to_ml_features(traits: dict[str, float]) -> dict[str, float]:
         "input_purchase_consistency",
         "utility_payment_consistency",
         "grocery_spend_stability",
+        "business_vintage_years",
+        "turnover_income_consistency",
     ]:
         if key in traits:
             features[key] = float(traits[key])

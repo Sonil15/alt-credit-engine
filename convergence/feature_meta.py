@@ -58,6 +58,9 @@ FEATURE_META: dict[str, dict[str, str]] = {
     "adf_pvalue": {"label": "Stationarity p-value (ADF)", "source": SOURCE_ECONOMETRIC, "fmt": "number", "direction": "low", "engine": ENGINE_ECONOMETRIC},
     "is_stationary": {"label": "Stable income pattern", "source": SOURCE_ECONOMETRIC, "fmt": "bool", "direction": "high", "engine": ENGINE_ECONOMETRIC},
     "trend_slope": {"label": "Normalized trend slope", "source": SOURCE_ECONOMETRIC, "fmt": "number", "direction": "high", "engine": ENGINE_ECONOMETRIC},
+    # Borrower onboarding — self-declared, borrower-confirmed business profile.
+    "business_vintage_years": {"label": "Business vintage (years)", "source": "Borrower onboarding — business profile", "fmt": "count", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "turnover_income_consistency": {"label": "Declared vs observed turnover consistency", "source": "Borrower onboarding — business profile", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
 }
 
 # Order data sources appear in the grouped lineage view.
@@ -68,6 +71,7 @@ SOURCE_ORDER = [
     "E-commerce purchases",
     "Geolocation consistency",
     "Psychometric assessment",
+    "Borrower onboarding — business profile",
 ]
 
 TOP_DRIVERS_COUNT = 8
@@ -90,19 +94,25 @@ def _signal(feature: str, value: float, points: float) -> dict[str, object]:
 def build_feature_trace(
     user_row: "object",
     factor_points: dict[str, float],
+    exclude_features: "set[str] | None" = None,
 ) -> dict[str, object]:
     """Join each model feature's raw input value with its score contribution.
 
     Returns ``{"top_drivers": [...], "by_source": [...]}`` where ``top_drivers`` are
     the signals that moved the score most (by absolute points) and ``by_source``
     groups every signal under its plain-language data source for the full lineage.
+
+    ``exclude_features`` drops signals the borrower didn't consent to (revoked data
+    sources), so a survey-only applicant never sees telecom/e-commerce/etc. factors
+    in "What Affected Your Score" or the lineage view.
     """
     get = user_row.get if hasattr(user_row, "get") else (lambda key, default=0.0: default)
+    exclude_features = exclude_features or set()
 
     signals = [
         _signal(feature, get(feature, 0.0), factor_points.get(feature, 0.0))
         for feature in FEATURE_COLUMNS
-        if feature in FEATURE_META
+        if feature in FEATURE_META and feature not in exclude_features
     ]
 
     # Lead with what *hurt* the score (negative points), strongest first, then fill

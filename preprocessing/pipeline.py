@@ -78,6 +78,14 @@ async def process_vault_record(vault_id: UUID) -> None:
 
             await save_features(session, record.user_id, features)
 
+            if data_type == DataType.SURVEY:
+                # Onboarding intake (if any) contributes business-profile
+                # features once the survey lands and income features exist.
+                from core.business_profile import upsert_intake_features
+
+                await upsert_intake_features(session, str(record.user_id))
+                await session.commit()
+
             if series:
                 series_name = (
                     "monthly_net_cashflow"

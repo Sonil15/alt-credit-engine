@@ -26,6 +26,7 @@ from core.seeds import CATBOOST_RANDOM_SEED
 from models_ai.catboost_model import extract_labels, save_model as save_catboost, train_catboost
 from models_ai.conformal import DEFAULT_ALPHA, fit_calibration, save_calibration
 from models_ai.constants import FEATURE_COLUMNS, fill_missing_features
+from models_ai.imputation import build_imputation_stats, save_imputation_stats
 from models_ai.ebm_model import save_ebm, train_ebm
 from models_ai.ebm_model import MODEL_PATH as EBM_PATH
 from models_ai.logistic_model import save_logistic, train_logistic
@@ -69,6 +70,9 @@ async def train_all_from_db(session: AsyncSession) -> dict[str, Any]:
         raise ValueError("No ml_features available for training")
 
     labels = extract_labels(wide)
+    # Learn the cohort-aware typical-applicant profile from the raw (pre-fill) training
+    # population, so serve-time imputation of absent sources reflects this cohort mix.
+    save_imputation_stats(build_imputation_stats(wide))
     features = fill_missing_features(wide.copy())
     X_train, X_test, y_train, y_test = train_test_split_data(features, labels)
     y_train = y_train.reset_index(drop=True)

@@ -6,7 +6,7 @@
   <title>Alt-Credit — Borrower Portal</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/apply.css?v=1.0.0">
-  <script src="/static/translations.js?v=1.0.2"></script>
+  <script src="/static/translations.js?v=1.0.3"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
   <script>
     // Login is mandatory for the borrower portal. Redirect to sign-in before any
@@ -35,18 +35,7 @@
   <div class="hero">
     <div class="hero-badge" data-i18n="apply-hero-badge">Thin-File Credit</div>
     <h2 data-i18n="apply-hero-title">Apply for Alternate Credit Scoring</h2>
-    <div style="background: rgba(15,23,42,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 16px; border-radius: 16px; display: inline-block; text-align: left;">
-      <p style="font-size: 13px; color: #94a3b8; margin-bottom: 8px; font-weight: 600;" data-i18n="apply-cohort-label">Select your category:</p>
-      <select id="cohort-select" style="width: 100%; background: #1e293b; border: 1px solid #334155; color: white; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 16px; outline: none;">
-        <option value="Salaried" data-i18n="cohort-salaried">Salaried</option>
-        <option value="GigWorker" data-i18n="cohort-gigworker">Gig Worker</option>
-        <option value="Student" data-i18n="cohort-student">Student</option>
-        <option value="Vendor" data-i18n="cohort-vendor">Micro Enterprise / Vendor</option>
-        <option value="Farmer" data-i18n="cohort-farmer">Farmer / Agriculture</option>
-        <option value="Homemaker" data-i18n="cohort-homemaker">Homemaker</option>
-      </select>
-      <button class="hero-cta" onclick="startApplication()" data-i18n="apply-hero-cta" style="width: 100%; border: none; cursor: pointer; display: block; text-align: center;">Start New Application →</button>
-    </div>
+    <button class="hero-cta" onclick="startApplication()" data-i18n="apply-hero-cta" style="border: none; cursor: pointer;">Start New Application →</button>
   </div>
 
   <div class="container">
@@ -136,15 +125,9 @@
     }
 
     function startApplication() {
-      const cohort = document.getElementById('cohort-select').value;
-      let url = '/consent?cohort=' + encodeURIComponent(cohort);
-      // Logged-in borrower: tie the new application to their stable account id,
-      // while flow=new keeps them in the consent-grant flow (not the returning
-      // borrower's privacy dashboard).
-      if (account && account.user_id) {
-        url += '&user_id=' + encodeURIComponent(account.user_id) + '&flow=new';
-      }
-      window.location.href = url;
+      // Category, loan purpose and amount are collected on the onboarding page,
+      // which then hands off to the consent flow with the chosen cohort.
+      window.location.href = '/onboard';
     }
 
     function loadApplications() {

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alt-Credit — New Application</title>
+  <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/apply.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/onboard.css?v=1.0.0">
+  <script src="/static/translations.js?v=1.0.3"></script>
+  <script src="/static/auth.js?v=1.0.0"></script>
+  <script>
+    // Login is mandatory for the borrower portal. Redirect to sign-in before any
+    // content renders if there's no session token.
+    if (!window.Auth || !Auth.isLoggedIn()) {
+      window.location.replace('/login?next=' + encodeURIComponent(location.pathname + location.search));
+    }
+  </script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header-left">
+      <h1><a href="/" style="color: inherit; text-decoration: none;" data-i18n="apply-topbar-title">Alt-Credit</a> <span class="sub" data-i18n="apply-topbar-sub">Borrower Portal</span></h1>
+    </div>
+    <div class="app-header-right">
+      <div id="language-selector-root"></div>
+      <a href="/apply" data-i18n="onboard-back">← Back</a>
+      <span id="account-chip" style="display:none; align-items:center; gap:10px;">
+        <span style="font-size:13px; color:#cbd5e1;">👤 <strong id="account-name"></strong></span>
+      </span>
+    </div>
+  </header>
+
+  <div class="hero" style="padding-bottom: 24px;">
+    <div class="hero-badge" data-i18n="onboard-hero-badge">New Application</div>
+    <h2 data-i18n="onboard-hero-title">Tell us about your loan</h2>
+    <p data-i18n="onboard-hero-sub">A few details before you grant consent — what you need, and why.</p>
+  </div>
+
+  <div class="container">
+    <div class="onboard-card">
+      <div class="form-field">
+        <label for="cohort-select" data-i18n="onboard-category-label">Your category</label>
+        <select id="cohort-select" onchange="onCohortChange()">
+          <option value="Salaried" data-i18n="cohort-salaried">Salaried</option>
+          <option value="GigWorker" data-i18n="cohort-gigworker">Gig Worker</option>
+          <option value="Student" data-i18n="cohort-student">Student</option>
+          <option value="Vendor" data-i18n="cohort-vendor">Micro Enterprise / Vendor</option>
+          <option value="Farmer" data-i18n="cohort-farmer">Farmer / Agriculture</option>
+          <option value="Homemaker" data-i18n="cohort-homemaker">Homemaker</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="purpose-select" data-i18n="onboard-purpose-label">Purpose of the loan</label>
+        <select id="purpose-select"></select>
+      </div>
+
+      <div class="form-field">
+        <label for="amount-input" data-i18n="onboard-amount-label">Loan amount requested (₹)</label>
+        <input id="amount-input" type="number" min="1000" step="1000" inputmode="numeric" placeholder="e.g. 50000" data-i18n="onboard-amount-placeholder">
+      </div>
+
+      <div id="business-section" style="display:none;">
+        <div class="business-divider"></div>
+        <h3 data-i18n="onboard-business-title">About your business</h3>
+        <p class="business-hint" data-i18n="onboard-business-desc">Describe your business in your own words — what you do, for how long, and roughly what you earn each month. English, हिन्दी or বাংলা.</p>
+        <textarea id="business-text" rows="4"></textarea>
+        <button type="button" class="analyze-btn" id="analyze-btn" onclick="analyzeBusiness()">
+          <span data-i18n="onboard-analyze-btn">Analyze my business</span>
+        </button>
+
+        <div id="extracted-panel" style="display:none;">
+          <p class="extracted-title" data-i18n="onboard-extracted-title">We understood this — please confirm or correct:</p>
+          <p class="extracted-method" id="extracted-method"></p>
+          <div class="extracted-grid">
+            <div class="form-field">
+              <label for="field-sector" data-i18n="onboard-field-sector">Business type</label>
+              <select id="field-sector">
+                <option value="" data-i18n="onboard-sector-none">Not stated</option>
+                <option value="retail" data-i18n="onboard-sector-retail">Retail / Shop</option>
+                <option value="agriculture" data-i18n="onboard-sector-agriculture">Agriculture</option>
+                <option value="services" data-i18n="onboard-sector-services">Services</option>
+                <option value="food" data-i18n="onboard-sector-food">Food</option>
+                <option value="manufacturing" data-i18n="onboard-sector-manufacturing">Manufacturing / Craft</option>
+                <option value="other" data-i18n="onboard-sector-other">Other</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="field-years" data-i18n="onboard-field-years">Years in business</label>
+              <input id="field-years" type="number" min="0" max="80" step="1">
+            </div>
+            <div class="form-field">
+              <label for="field-turnover" data-i18n="onboard-field-turnover">Monthly sales / turnover (₹)</label>
+              <input id="field-turnover" type="number" min="0" step="1000">
+            </div>
+            <div class="form-field">
+              <label for="field-seasonality" data-i18n="onboard-field-seasonality">Income seasonality</label>
+              <select id="field-seasonality">
+                <option value="" data-i18n="onboard-season-none">Not stated</option>
+                <option value="low" data-i18n="onboard-season-low">Steady year-round</option>
+                <option value="medium" data-i18n="onboard-season-medium">Somewhat seasonal</option>
+                <option value="high" data-i18n="onboard-season-high">Highly seasonal</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="field-employees" data-i18n="onboard-field-employees">People working (incl. you)</label>
+              <input id="field-employees" type="number" min="0" max="10000" step="1">
+            </div>
+          </div>
+          <p class="extracted-note" data-i18n="onboard-extracted-note">Only what you confirm is used. Leave blank anything that doesn't apply.</p>
+        </div>
+      </div>
+
+      <div class="form-error" id="form-error" style="display:none;"></div>
+
+      <button type="button" class="hero-cta continue-btn" onclick="submitOnboarding()">
+        <span data-i18n="onboard-continue-btn">Continue to Consent →</span>
+      </button>
+    </div>
+
+    <div class="footer">
+      <a href="/consent/compliance" data-i18n="apply-footer-privacy">Privacy &amp; Compliance</a>
+      <a href="/health" data-i18n="apply-footer-status">System Status</a>
+    </div>
+  </div>
+
+  <script>
+    const account = Auth.currentUser();
+    // Purpose options per category — must mirror PURPOSES_BY_COHORT on the
+    // server (the server re-validates; this only drives the dropdown).
+    let purposesByCohort = {
+      Salaried: ['personal', 'medical', 'home_improvement', 'vehicle'],
+      GigWorker: ['personal', 'medical', 'home_improvement', 'vehicle'],
+      Student: ['education', 'skill_course'],
+      Vendor: ['working_capital', 'inventory', 'equipment'],
+      Farmer: ['crop_inputs', 'equipment', 'irrigation'],
+      Homemaker: ['household', 'small_home_business'],
+    };
+    let businessCohorts = ['Vendor', 'Farmer'];
+    let extraction = { method: 'none', confidence: null };
+
+    function t(key, fallback) {
+      try {
+        const lang = getCurrentLanguage();
+        const d = ALTCREDIT_DICTIONARY;
+        return (d[lang] && d[lang][key]) || (d['en'] && d['en'][key]) || fallback;
+      } catch (_) { return fallback; }
+    }
+
+    function renderPurposes() {
+      const cohort = document.getElementById('cohort-select').value;
+      const select = document.getElementById('purpose-select');
+      const current = select.value;
+      select.innerHTML = '';
+      (purposesByCohort[cohort] || []).forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.textContent = t('purpose-' + p, p.replace(/_/g, ' '));
+        select.appendChild(opt);
+      });
+      if (current && (purposesByCohort[cohort] || []).includes(current)) select.value = current;
+    }
+
+    function onCohortChange() {
+      renderPurposes();
+      const cohort = document.getElementById('cohort-select').value;
+      document.getElementById('business-section').style.display =
+        businessCohorts.includes(cohort) ? 'block' : 'none';
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('form-error');
+      box.textContent = msg;
+      box.style.display = 'block';
+    }
+
+    function clearError() {
+      document.getElementById('form-error').style.display = 'none';
+    }
+
+    async function analyzeBusiness() {
+      clearError();
+      const text = document.getElementById('business-text').value.trim();
+      if (!text) return;
+      const btn = document.getElementById('analyze-btn');
+      btn.disabled = true;
+      btn.querySelector('span').textContent = t('onboard-analyzing', 'Reading your description…');
+      try {
+        const resp = await fetch('/intake/business-profile', {
+          method: 'POST',
+          headers: Auth.authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ text, language: getCurrentLanguage() }),
+        });
+        if (!resp.ok) throw new Error('analyze failed');
+        const data = await resp.json();
+        const p = data.profile || {};
+        document.getElementById('field-sector').value = p.sector && ['retail','agriculture','services','food','manufacturing'].includes(p.sector) ? p.sector : (p.sector ? 'other' : '');
+        document.getElementById('field-years').value = p.years_in_business ?? '';
+        document.getElementById('field-turnover').value = p.monthly_turnover ?? '';
+        document.getElementById('field-seasonality').value = p.seasonality || '';
+        document.getElementById('field-employees').value = p.employees ?? '';
+        extraction = { method: data.method || 'fallback', confidence: data.confidence ?? null };
+        document.getElementById('extracted-method').textContent =
+          extraction.method === 'llm'
+            ? t('onboard-method-llm', 'Read by the AI assistant — please verify each field.')
+            : t('onboard-method-fallback', 'Read by the offline analyzer — please verify each field.');
+        document.getElementById('extracted-panel').style.display = 'block';
+      } catch (_) {
+        showError(t('onboard-error-analyze', 'Could not analyze the description. You can fill the fields yourself.'));
+        document.getElementById('extracted-panel').style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.querySelector('span').textContent = t('onboard-analyze-btn', 'Analyze my business');
+      }
+    }
+
+    function numOrNull(id) {
+      const raw = document.getElementById(id).value;
+      if (raw === '' || raw === null) return null;
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    async function submitOnboarding() {
+      clearError();
+      const cohort = document.getElementById('cohort-select').value;
+      const purpose = document.getElementById('purpose-select').value;
+      const amount = Number(document.getElementById('amount-input').value);
+      if (!amount || amount <= 0) {
+        showError(t('onboard-error-amount', 'Please enter the loan amount you need.'));
+        return;
+      }
+
+      const body = {
+        user_id: account.user_id,
+        cohort,
+        loan_purpose: purpose,
+        requested_amount: amount,
+        extraction_method: extraction.method,
+        extraction_confidence: extraction.confidence,
+      };
+
+      if (businessCohorts.includes(cohort)) {
+        const text = document.getElementById('business-text').value.trim();
+        if (text) body.business_description = text;
+        const profile = {
+          sector: document.getElementById('field-sector').value || null,
+          years_in_business: numOrNull('field-years'),
+          monthly_turnover: numOrNull('field-turnover'),
+          seasonality: document.getElementById('field-seasonality').value || null,
+          employees: numOrNull('field-employees'),
+        };
+        if (Object.values(profile).some(v => v !== null)) body.business_profile = profile;
+      }
+
+      try {
+        const resp = await fetch('/intake/submit', {
+          method: 'POST',
+          headers: Auth.authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify(body),
+        });
+        if (!resp.ok) {
+          const data = await resp.json().catch(() => ({}));
+          showError(data.detail || t('onboard-error-submit', 'Could not save your details. Please try again.'));
+          return;
+        }
+      } catch (_) {
+        showError(t('onboard-error-submit', 'Could not save your details. Please try again.'));
+        return;
+      }
+
+      let url = '/consent?cohort=' + encodeURIComponent(cohort) + '&flow=new';
+      if (account && account.user_id) url += '&user_id=' + encodeURIComponent(account.user_id);
+      window.location.href = url;
+    }
+
+    async function loadPurposeMap() {
+      // Server is the source of truth; fall back to the local mirror offline.
+      try {
+        const resp = await fetch('/intake/purposes');
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.purposes_by_cohort) purposesByCohort = data.purposes_by_cohort;
+          if (data.business_cohorts) businessCohorts = data.business_cohorts;
+        }
+      } catch (_) { /* keep local mirror */ }
+      onCohortChange();
+    }
+
+    if (account) {
+      document.getElementById('account-name').textContent = account.login_id;
+      document.getElementById('account-chip').style.display = 'inline-flex';
+    }
+
+    function applyLocalTexts() {
+      // translatePage() only handles data-i18n text/input-placeholder; the
+      // textarea placeholder and dynamic purpose options are re-applied here.
+      document.getElementById('business-text').placeholder =
+        t('onboard-business-placeholder', 'e.g. I have run a vegetable stall in the local market for 8 years…');
+      renderPurposes();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setupLanguageSelector('language-selector-root');
+      loadPurposeMap().then(applyLocalTexts);
+      // Language buttons trigger clicks, not change events.
+      const root = document.getElementById('language-selector-root');
+      if (root) root.addEventListener('click', () => setTimeout(applyLocalTexts, 0));
+    });
+  </script>
+  <script src="/static/session_timeout.js"></script>
+</body>
+</html>

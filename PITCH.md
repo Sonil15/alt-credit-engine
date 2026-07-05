@@ -69,7 +69,8 @@ Copy this block for each feature:
   function *is* the explanation. There's nothing left to narrate."
 - **Differentiator:** Most teams ship a gradient-boosting black box + a SHAP chart. We
   moved the *decider* to an intrinsically interpretable model at **zero measured accuracy
-  cost** (AUC 0.830 vs 0.828).
+  cost** (cross-validated AUC 0.753 vs 0.733 — statistically indistinguishable on
+  synthetic data).
 - **Demo moment:** Open a shape-function curve on the dashboard — "this line *is* the
   model; read the risk straight off the axis; a risk officer can hand-edit a wrong curve."
 - **Honest caveat:** On ~100 synthetic rows we show *equivalence*, not superiority — the
@@ -81,7 +82,8 @@ Copy this block for each feature:
 - **Pitch line:** "We run structurally different model families and *use their
   disagreement as a signal* — when they argue, a human decides."
 - **Differentiator:** This is real bank model-risk-management practice (champion/
-  challenger), not a single-model demo. Diversity is genuine (Spearman 0.87, not 0.99).
+  challenger), not a single-model demo. Diversity is genuine (PD rank-correlation
+  ~0.6 — different function families, nowhere near lockstep).
 - **Demo moment:** Find a borrower the black-box challenger would APPROVE but the panel
   routes to REVIEW — "the black box alone would have lent; the committee caught it."
 
@@ -190,6 +192,52 @@ Copy this block for each feature:
   population, with an explicit confidence flag when the file is thin."
 - **Demo moment:** The facet radar on the dashboard + the thin-file confidence badge.
 
+### Cohort-aware imputation (missing data ≠ bad data)
+- **Judge problem it answers:** "Your borrowers are thin-file by definition — what does
+  the model do when a whole data source is missing? Doesn't a blank field silently
+  penalise exactly the excluded people you claim to serve?"
+- **Pitch line:** "A missing source resolves to *typical-for-someone-like-you*, not to
+  zero — because zero isn't neutral, it's a verdict."
+- **Differentiator:** Most teams zero-fill missing features and never notice that zero is
+  directional — zero income reads as 'destitute', zero missed-payments reads as 'flawless
+  history', so the same blank both punishes *and* rewards depending on the field. We learn
+  a per-cohort typical-applicant profile at training time and impute an absent source with
+  the median of the borrower's *own* cohort. The system also tells apart "applicable but
+  not collected" (a genuine thin file → fill the cohort-typical value) from "structurally
+  not applicable" (business vintage for a salaried worker → correctly stays zero). It's
+  the same mechanism that makes consent-revocation fair: withdrawing a source makes you
+  look *average* on it, never worst-case.
+- **Demo moment:** Take an approved salaried applicant, blank their entire cashflow
+  source live, and re-score — the score barely moves and the confidence badge drops,
+  instead of the applicant cratering to a reject. "Missing data makes us less *confident*,
+  not more *punitive*."
+- **Honest caveat:** Imputing to the cohort typical is a deliberately conservative
+  central estimate — it can flatter a genuinely weak thin file, which is exactly why a
+  low-confidence thin file is routed to human review rather than auto-approved.
+
+### Auto-drafted adverse-action letter + officer sign-off (closing the accountability loop)
+- **Judge problem it answers:** "A model that rejects people has to answer *to* someone —
+  is this deployable under fair-lending rules, and who is accountable for a rejection?"
+- **Pitch line:** "We close the loop: a glass-box reason becomes a regulator-format
+  notice, in the borrower's own language, that a named officer signs — every rejection is
+  defensible and has a human on the hook."
+- **Differentiator:** This is not templating garnish — it's a capstone that assembles five
+  things we already built (glass-box reason codes, the audit trail, tri-lingual i18n, the
+  grievance/ombudsman path, and the REVIEW state) into one artifact. The letter is drafted
+  *deterministically* from the same reason codes the model produced — never by an LLM — so
+  it literally cannot hallucinate or disagree with the decision it explains. Approvals
+  issue automatically; only rejections and review cases queue for a loan officer, who can
+  edit the wording and sign — stamping their identity and a timestamp onto the record. The
+  borrower retrieves the signed notice from their own account, asynchronously, so no
+  officer needs to be online when they apply. In-app delivery keeps the whole flow local
+  and private (no SMS gateway, no data leaving the Data Fiduciary).
+- **Demo moment:** On the officer dashboard, open the review queue, pick a rejection,
+  switch the letter to Hindi or Bengali live, sign it — then show it appear in the
+  borrower's account as a downloadable notice. "The AI drafts; the human signs; the
+  borrower gets it in their language."
+- **Honest caveat:** Sign-off is a demo-grade control keyed on a stated officer ID; in
+  production it would sit behind authenticated officer accounts and role-based access.
+
 ### Multi-dimension Fairness Monitor
 - **Judge problem it answers:** "Alternate data can encode bias — how do you know you're
   not discriminating, and against which groups?"
@@ -235,6 +283,13 @@ Copy this block for each feature:
 - **Pitch line:** "Consent-first by design: the borrower is a data principal, we act as a
   Data Fiduciary, with scoped, revocable consent tracked end to end."
 - **Demo moment:** The consent flow and revocation / scope-tracking screen.
+- **Scope choice is enforced, not cosmetic:** Unchecking a data source on the consent
+  screen actually gates it — the unchecked scope is revoked at grant time, so that source
+  is never collected, never scored, and never appears in "What Affected Your Score." A
+  survey-only applicant is explained purely by their survey signals; the revoked sources
+  are masked out of the model input *and* the driver/lineage view, with a matching
+  "Consent withdrawn for data source(s)" reason code. (Demo: uncheck telecom + cash-flow,
+  finish the assessment, and show the drivers contain no telecom/cash-flow factors.)
 
 ### Borrower accounts — own and protect your assessment
 - **Judge problem it answers:** "The borrower's credit assessment is sensitive personal
@@ -253,6 +308,75 @@ Copy this block for each feature:
 - **Honest caveat:** Local password auth built for the demo — PBKDF2-hashed passwords and
   server-side revocable bearer tokens, but production would add reset/lockout flows and a
   hardened secret store. No third-party auth service; runs fully offline.
+
+### Borrower onboarding — intent captured before consent
+- **Judge problem it answers:** "You score people and even compute a loan offer —
+  but you never asked what they actually want. How is an offer meaningful without
+  the ask?"
+- **Pitch line:** "Before any data is shared, the borrower tells us what they need
+  and why — purpose, amount, category — so every decision downstream answers *their*
+  request, not a hypothetical one."
+- **Differentiator:** Purpose options are linked to the borrower's category (a
+  farmer picks crop inputs or irrigation, a street vendor picks inventory or working
+  capital) with server-side validation, and the category selection moved to a proper
+  onboarding step instead of a dropdown bolted onto a portal page.
+- **Demo moment:** Walk the onboarding page in Hindi or Bengali — switch category
+  and watch the purposes change — then show the same purpose and amount appearing on
+  the loan officer's dashboard next to the offer.
+
+### LLM business profiler — borrower-confirmed, with a deterministic fallback
+- **Judge problem it answers:** "MSME borrowers have business facts no data source
+  carries — but letting an LLM invent structured features for a credit model is
+  reckless. How do you get the data without the hallucinations?"
+- **Pitch line:** "The borrower describes their business in their own words — any of
+  our three languages — the LLM reads it into structured fields, and *the borrower
+  confirms every field before anything is used*. No confirmation, no data."
+- **Differentiator:** Same architecture judges already saw in our answer scorer:
+  confidence-aware routing to a deterministic multilingual extractor (lakh/hazaar
+  numerals, Devanagari and Bengali digits, sector keywords) when the LLM is unsure
+  or offline. Runs at ₹0 marginal cost, degrades gracefully with the API switched
+  off, and the raw description is AES-encrypted in the vault like every other raw
+  payload.
+- **Demo moment:** Type "मैं 8 साल से सब्ज़ी की दुकान चलाता हूँ, महीने में ₹40,000
+  कमाता हूँ" — watch sector/vintage/turnover fill in — edit one field to prove the
+  borrower owns the record, then kill the API key and show the offline extractor
+  reading the same sentence.
+- **Honest caveat:** The fallback is a curated regex/keyword extractor, not a
+  language model — it reads clearly stated facts well; the LLM remains the nuanced
+  primary path.
+
+### Affordability gate — no "approvals" the borrower can't actually get
+- **Judge problem it answers:** "Your model can approve a borrower who asked for
+  ₹10 lakh when their income services ₹1.2 lakh. Telling them 'approved' would be
+  mis-selling — what happens on that file?"
+- **Pitch line:** "An approval the bank can't fund at the requested amount is not an
+  approval. When the ask exceeds the serviceable maximum, the borrower gets an
+  explicit counter-offer message and the file routes to a loan officer — never a
+  silent yes."
+- **Differentiator:** The gate is a *lending-policy overlay*, deliberately separated
+  from the model: PD, score, the model's decision, and the fairness parity metrics
+  are untouched (a big ask is borrower intent, not model bias). The audit trail
+  stores both the model's call and the final outcome, so the two are never
+  conflated.
+- **Demo moment:** Apply as a vendor asking ₹10,00,000 on a modest cash-flow
+  profile: the model approves, the amber affordability gate fires, and the borrower
+  page reads "cannot be approved as requested — counter-offer up to ₹X". Re-apply
+  asking ₹50,000 and watch it clear.
+
+### Self-report honesty check as a model feature
+- **Judge problem it answers:** "Self-declared turnover is unverifiable and
+  gameable — you trained on something the borrower can just inflate?"
+- **Pitch line:** "We never score the claim — we score its *consistency* with the
+  observed cash-flow. Declaring ₹1 lakh while the bank sees ₹40,000 lowers the
+  signal; declaring what the data confirms raises it. Honesty is the feature."
+- **Differentiator:** Inflating the declared turnover strictly hurts the applicant,
+  so the feature is anti-gameable by construction. Business vintage and the
+  consistency ratio are the only two onboarding features in the model (23 total),
+  both bounded, both readable on the glass-box shape curves, and accuracy-neutral
+  on the benchmark (OOF AUC 0.6875 with vs 0.6861 without).
+- **Honest caveat:** On synthetic data the feature is demonstrative; its real value
+  is the *design pattern* — cross-checking self-reports against observed data
+  instead of trusting or discarding them.
 
 ---
 

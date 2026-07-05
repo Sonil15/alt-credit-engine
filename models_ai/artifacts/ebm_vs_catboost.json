@@ -1,41 +1,41 @@
 {
   "n_users": 100,
-  "default_rate": 0.09,
+  "default_rate": 0.08,
   "n_folds": 5,
   "catboost": {
-    "auc": 0.8278,
-    "gini": 0.6557,
-    "ks": 0.6264,
-    "cv_auc_mean": 0.8278,
-    "cv_auc_std": 0.1536
+    "auc": 0.7908,
+    "gini": 0.5815,
+    "ks": 0.6304,
+    "cv_auc_mean": 0.7333,
+    "cv_auc_std": 0.3443
   },
   "ebm": {
-    "auc": 0.8303,
-    "gini": 0.6606,
-    "ks": 0.6374,
-    "cv_auc_mean": 0.8333,
-    "cv_auc_std": 0.1571
+    "auc": 0.7106,
+    "gini": 0.4212,
+    "ks": 0.5054,
+    "cv_auc_mean": 0.7526,
+    "cv_auc_std": 0.2317
   },
   "agreement": {
-    "three_band_rate": 0.92,
-    "approve_vs_reject_rate": 0.95,
-    "pd_pearson": 0.8868,
-    "pd_spearman": 0.8715,
+    "three_band_rate": 0.7,
+    "approve_vs_reject_rate": 0.86,
+    "pd_pearson": 0.744,
+    "pd_spearman": 0.6098,
     "crosstab": {
       "APPROVE": {
-        "APPROVE": 82,
+        "APPROVE": 61,
         "REVIEW": 1,
-        "REJECT": 1
+        "REJECT": 0
       },
       "REVIEW": {
-        "APPROVE": 2,
-        "REVIEW": 5,
-        "REJECT": 1
+        "APPROVE": 15,
+        "REVIEW": 0,
+        "REJECT": 0
       },
       "REJECT": {
-        "APPROVE": 1,
-        "REVIEW": 2,
-        "REJECT": 5
+        "APPROVE": 9,
+        "REVIEW": 5,
+        "REJECT": 9
       }
     }
   }

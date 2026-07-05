@@ -342,6 +342,17 @@ def generate_user_profile(rng: random.Random | None = None) -> dict:
         extra_features["utility_payment_consistency"] = round(local_rng.uniform(0.8, 1.0) if theta > 0.4 else local_rng.uniform(0.4, 0.85), 2)
         extra_features["grocery_spend_stability"] = round(local_rng.uniform(0.7, 1.0) if theta > 0.4 else local_rng.uniform(0.3, 0.75), 2)
 
+    # Business cohorts also declare a business profile at onboarding: how long the
+    # business has run, and how well their self-reported turnover agrees with the
+    # observed cash-flow (the consistency, not the claim, tracks creditworthiness).
+    if cohort in ("Vendor", "Farmer"):
+        extra_features["business_vintage_years"] = float(
+            max(1, min(15, round(1 + theta * 11 + local_rng.uniform(-1.5, 1.5))))
+        )
+        extra_features["turnover_income_consistency"] = round(
+            max(0.0, min(1.0, 0.45 + 0.5 * theta + local_rng.gauss(0.0, 0.08))), 4
+        )
+
     profile = {
         "user_id": user_id,
         "telecom": {"user_id": user_id, "invoices": generate_telecom_invoices(user_id, theta)},

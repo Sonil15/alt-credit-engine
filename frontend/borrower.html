@@ -6,7 +6,7 @@
   <title>Alt-Credit — Your Assessment Result</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/borrower.css?v=1.0.0">
-  <script src="/static/translations.js?v=1.0.2"></script>
+  <script src="/static/translations.js?v=1.0.3"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
   <script>
     // Login is mandatory to view a borrower's assessment. Redirect to sign-in
@@ -65,6 +65,22 @@
           </div>
         </div>
 
+        <div class="meta-grid" id="intent-grid" style="display:none;">
+          <div class="meta-box">
+            <div class="k" data-i18n="borrower-purpose-label">Loan Purpose</div>
+            <div class="v" id="purpose-val" style="font-size: 18px;">—</div>
+          </div>
+          <div class="meta-box">
+            <div class="k" data-i18n="borrower-requested-label">Amount Requested</div>
+            <div class="v" id="requested-val" style="font-size: 18px;">—</div>
+          </div>
+        </div>
+
+        <div id="funding-gap-box" class="reason-box" style="display:none; background: #fffbeb; border-color: #fcd34d; color: #92400e;">
+          <strong data-i18n="borrower-funding-gap-title">About the amount you requested:</strong>
+          <span id="funding-gap-text"></span>
+        </div>
+
         <div id="adverse-action-box" class="reason-box" style="display:none; background: #fee2e2; border-color: #fca5a5; color: #991b1b;">
           <strong data-i18n="borrower-adverse-title">Adverse Action Notice:</strong> 
           <span id="adverse-action-text" data-i18n="borrower-adverse-text">Based on your credit assessment, we are unable to approve your application at this time.</span>
@@ -101,6 +117,18 @@
           <button id="human-review-btn" class="btn btn-secondary" style="display:none" onclick="requestHumanReview()" data-i18n="borrower-btn-human">Request Human Review</button>
           <button class="btn btn-secondary" onclick="window.print()" data-i18n="borrower-btn-print">Print Record</button>
           <a href="/apply" class="btn btn-primary" data-i18n="borrower-btn-home">Home</a>
+        </div>
+      </div>
+
+      <div id="letter-card" class="card" style="display:none; margin-top:20px;">
+        <h2 data-i18n="borrower-letter-title">Your Decision Letter</h2>
+        <div id="letter-pending" style="display:none; background:#fffbeb; border:1px solid #fcd34d; color:#92400e; padding:14px; border-radius:12px; font-size:14px; line-height:1.6;"
+             data-i18n="borrower-letter-pending">
+          Your formal decision letter is being reviewed and signed by a loan officer. It will appear here once ready — please check back after signing in later.
+        </div>
+        <div id="letter-body" style="display:none;"></div>
+        <div class="actions" id="letter-actions" style="display:none;">
+          <button class="btn btn-secondary" onclick="downloadLetter()" data-i18n="borrower-letter-download">Download Letter</button>
         </div>
       </div>
     </div>
@@ -157,9 +185,67 @@
         }
         const data = await resp.json();
         renderScore(data);
+        loadLetter();
       } catch (err) {
         showError(err.message);
       }
+    }
+
+    let currentLetter = null;
+
+    async function loadLetter() {
+      try {
+        const headers = Auth.authHeaders();
+        if (sessionId) headers['X-Session-Id'] = sessionId;
+        const resp = await fetch('/letters/me?lang=' + encodeURIComponent(lang), { headers });
+        if (!resp.ok) return; // no letter yet — leave the section hidden
+        const data = await resp.json();
+        currentLetter = data;
+        document.getElementById('letter-card').style.display = 'block';
+        if (!data.available) {
+          document.getElementById('letter-pending').style.display = 'block';
+          return;
+        }
+        renderLetter(data.letter);
+      } catch (_) {}
+    }
+
+    function renderLetter(L) {
+      const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+      const rows = [
+        [L.ref_label, L.ref],
+        [L.date_label, L.date],
+        [L.applicant_label, L.applicant_id],
+        [L.outcome_label, L.outcome_text],
+        [L.model_label, L.model_version],
+      ].map(([k, v]) => `<tr><td style="color:#64748b; padding:3px 12px 3px 0;">${esc(k)}</td><td style="text-align:right; font-family:ui-monospace,monospace;">${esc(v)}</td></tr>`).join('');
+      const reasons = (L.reasons || []).map(r => `<li style="margin-bottom:6px;">${esc(r)}</li>`).join('');
+      const signoff = L.officer && L.signed_on
+        ? `<div style="margin-top:14px; border-top:1px solid #e2e8f0; padding-top:10px; font-size:13px; color:#475569;">${esc(L.signed_by_label)}: <strong>${esc(L.officer)}</strong> · ${esc(L.signed_on_label)} ${esc(L.signed_on)}</div>`
+        : '';
+      document.getElementById('letter-body').style.display = 'block';
+      document.getElementById('letter-body').innerHTML =
+        `<div style="border:1px solid #e2e8f0; border-radius:12px; padding:18px 20px;">
+          <div style="font-weight:700; font-size:16px; color:#0f172a;">${esc(L.title)}</div>
+          <div style="font-size:12px; color:#94a3b8; margin-bottom:12px;">${esc(L.subtitle)}</div>
+          <table style="width:100%; font-size:13px; margin-bottom:12px;">${rows}</table>
+          <div style="font-size:13px; color:#334155; line-height:1.6; margin-bottom:10px;">${esc(L.body_text)}</div>
+          <div style="font-size:13px; color:#64748b; margin-bottom:4px;">${esc(L.reasons_heading)}</div>
+          <ol style="margin:0 0 10px; padding-left:18px; font-size:13px; color:#334155;">${reasons}</ol>
+          <div style="font-size:12px; color:#64748b; line-height:1.5;">${esc(L.grievance)}</div>
+          ${signoff}
+        </div>`;
+      document.getElementById('letter-actions').style.display = 'flex';
+    }
+
+    function downloadLetter() {
+      if (!currentLetter || !currentLetter.plain_text) return;
+      const blob = new Blob([currentLetter.plain_text], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'decision-letter.txt';
+      a.click();
+      URL.revokeObjectURL(a.href);
     }
 
     function renderScore(d) {
@@ -173,9 +259,31 @@
       }
 
       document.getElementById('score-num').textContent = d.credit_score;
+      // The lending outcome the borrower is told (post affordability gate);
+      // falls back to the model decision for older payloads.
+      const outcome = d.final_outcome || d.decision;
       const badge = document.getElementById('decision-badge');
-      badge.textContent = d.decision;
-      badge.className = 'badge badge-' + d.decision;
+      badge.textContent = outcome;
+      badge.className = 'badge badge-' + outcome;
+
+      if (d.loan_purpose || d.requested_amount) {
+        document.getElementById('intent-grid').style.display = '';
+        document.getElementById('purpose-val').textContent =
+          d.loan_purpose ? (t('purpose-' + d.loan_purpose) || d.loan_purpose.replace(/_/g, ' ')) : '—';
+        document.getElementById('requested-val').textContent =
+          d.requested_amount ? '₹' + Math.round(d.requested_amount).toLocaleString('en-IN') : '—';
+      }
+
+      if (d.funding_gap && d.funding_gap.gated) {
+        const box = document.getElementById('funding-gap-box');
+        const requested = '₹' + Math.round(d.funding_gap.requested_amount).toLocaleString('en-IN');
+        const maxAmt = '₹' + Math.round(d.funding_gap.max_serviceable_amount).toLocaleString('en-IN');
+        document.getElementById('funding-gap-text').textContent = ' ' +
+          (t('borrower-funding-gap-msg') || 'The requested amount of {requested} exceeds the maximum serviceable amount of {max} for your income profile. Your application cannot be approved as requested — it has been routed to a loan officer for a counter-offer of up to {max}.')
+            .replace(/\{requested\}/g, requested)
+            .replace(/\{max\}/g, maxAmt);
+        box.style.display = 'block';
+      }
       
       document.getElementById('likelihood-val').textContent = d.approval_likelihood || t('borrower-needs-review');
       
@@ -233,7 +341,7 @@
       document.getElementById('privacy-link').href = '/consent?user_id=' + encodeURIComponent(d.user_id);
       document.getElementById('privacy-action').href = '/consent?user_id=' + encodeURIComponent(d.user_id);
 
-      saveApplication({ sessionId, userId: d.user_id, score: d.credit_score, decision: d.decision });
+      saveApplication({ sessionId, userId: d.user_id, score: d.credit_score, decision: outcome });
     }
 
     function requestHumanReview() {

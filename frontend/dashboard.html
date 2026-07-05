@@ -62,6 +62,17 @@
       </div>
     </div>
 
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+      <h2 class="section-title" style="margin:0;">Decision Letters — Review Queue
+        <span id="letter-queue-count" style="display:none; background:#fef3c7; color:#92400e; border:1px solid #fcd34d; border-radius:20px; padding:2px 10px; font-size:13px; font-weight:700; margin-left:8px;">0</span>
+      </h2>
+      <button class="secondary" onclick="loadPendingLetters()" style="font-size:13px;">Refresh</button>
+    </div>
+    <p style="font-size:13px; color:#64748b; margin:6px 0 12px;">Rejection and review decisions wait here for a loan officer to review and sign. Approvals are issued automatically. Sign-off stamps your identity and timestamp, then releases the letter to the borrower's account.</p>
+    <div id="letter-queue" style="margin-bottom:8px;">
+      <p style="color:#94a3b8; font-size:13px;">Loading queue…</p>
+    </div>
+
     <h2 class="section-title">Individual Borrower Assessment</h2>
     <div class="search-bar">
       <input type="text" id="user-id-input" placeholder="Enter Borrower ID (UUID)" value="{{ user_id }}">
@@ -89,8 +100,9 @@
             <div>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
                 <span class="badge" id="decision-badge">—</span>
+                <span class="badge" id="gate-flag" style="display:none; background:#fef3c7; color:#92400e; border:1px solid #fcd34d; padding:7px 16px; border-radius:24px; font-size:13px; font-weight:700;" title="Model approved, but the requested amount exceeds the serviceable maximum — outcome is REVIEW for a counter-offer.">⚖ AFFORDABILITY GATE → REVIEW</span>
                 <span class="badge" id="cohort-badge" style="display:none; background:#334155; color:#cbd5e1; padding: 7px 16px; border-radius: 24px; font-size: 14px; font-weight: 700;">—</span>
-                <button onclick="openOverrideModal()" title="View AI Reasoning (SHAP) below to justify override" style="margin-left: 16px; padding: 6px 12px; background: #fef08a; border: 1px solid #ca8a04; color: #a16207; font-weight: bold; border-radius: 6px; cursor: pointer;">Change Decision</button>
+                <button onclick="openOverrideModal()" title="View AI Reasoning (glass-box) below to justify override" style="margin-left: 16px; padding: 6px 12px; background: #fef08a; border: 1px solid #ca8a04; color: #a16207; font-weight: bold; border-radius: 6px; cursor: pointer;">Change Decision</button>
               </div>
               <span class="thin-flag" id="thin-flag" style="display:none;">THIN FILE</span>
               <span class="thin-flag" id="simulated-badge" style="display:none; background:#fee2e2; color:#991b1b; border: 1px solid #fca5a5; text-transform: uppercase;">SIMULATED</span>
@@ -337,7 +349,11 @@
       document.getElementById('pd-value').textContent = (d.probability_of_default*100).toFixed(1)+'%';
       currentUserId = d.user_id;
       document.getElementById('display-user-id').textContent = d.user_id+' · '+(d.model_version||'');
+      // Badge keeps the MODEL's decision (override flow + fairness reason about it);
+      // the amber flag marks when the lending outcome diverges via the gate.
       const badge = document.getElementById('decision-badge'); badge.textContent=d.decision; badge.className='badge badge-'+d.decision;
+      const gateFlag = document.getElementById('gate-flag');
+      if (gateFlag) gateFlag.style.display = (d.funding_gap && d.funding_gap.gated) ? 'inline-block' : 'none';
       const cohortBadge = document.getElementById('cohort-badge');
       if (cohortBadge && d.confidence && d.confidence.cohort) {
         cohortBadge.textContent = d.confidence.cohort.replace(/([A-Z])/g, ' $1').trim();
@@ -357,7 +373,7 @@
       cf.style.background = conf>=80?'#16a34a':conf>=60?'#eab308':'#dc2626';
 
       renderGauge(d.credit_score);
-      renderLending(d.lending||{});
+      renderLending(d.lending||{}, d);
       renderFacets(d.facet_scores||[]);
       renderShap(d.shap_drivers||[]);
       renderPipeline(d);
@@ -390,21 +406,39 @@
       });
     }
 
-    function renderLending(l) {
+    function renderLending(l, d) {
       const area = document.getElementById('lending-area');
       const rat = document.getElementById('lending-rationale');
+      d = d || {};
+      // Borrower intent captured at onboarding (purpose + requested amount).
+      let intentHtml = '';
+      if (d.loan_purpose || d.requested_amount) {
+        const purposeLabel = d.loan_purpose ? d.loan_purpose.replace(/_/g, ' ') : '—';
+        const consistChip = d.purpose_consistent === null || d.purpose_consistent === undefined ? '' :
+          d.purpose_consistent
+            ? ' <span style="color:#16a34a; font-weight:700;" title="Purpose is valid for this borrower category">✓</span>'
+            : ' <span style="color:#dc2626; font-weight:700;" title="Purpose does not match this borrower category">✗</span>';
+        const gated = d.funding_gap && d.funding_gap.gated;
+        intentHtml = `<div class="offer" style="margin-bottom:10px;">
+          <div class="o"><div class="k">Requested</div><div class="v" ${gated ? 'style="color:#dc2626;"' : ''}>${d.requested_amount ? fmtINR(d.requested_amount) : '—'}</div></div>
+          <div class="o"><div class="k">Purpose</div><div class="v" style="text-transform:capitalize; font-size:15px;">${purposeLabel}${consistChip}</div></div>
+        </div>`;
+      }
       if (!l.eligible) {
-        area.innerHTML = `<div class="offer ineligible">No offer extended — ${l.rationale || 'does not meet criteria'}.</div>`;
+        area.innerHTML = intentHtml + `<div class="offer ineligible">No offer extended — ${l.rationale || 'does not meet criteria'}.</div>`;
         rat.textContent = '';
         return;
       }
-      area.innerHTML = `<div class="offer">
+      area.innerHTML = intentHtml + `<div class="offer">
         <div class="o"><div class="k">Max Loan</div><div class="v">${fmtINR(l.max_loan_amount)}</div></div>
         <div class="o"><div class="k">Interest p.a.</div><div class="v">${l.interest_rate_pct}%</div></div>
         <div class="o"><div class="k">Tenure</div><div class="v">${l.tenure_months} mo</div></div>
         <div class="o"><div class="k">Est. EMI</div><div class="v">${fmtINR(l.monthly_emi)}</div></div>
       </div>`;
       rat.textContent = l.rationale || '';
+      if (d.funding_gap && d.funding_gap.gated) {
+        rat.textContent = (d.funding_gap.message || '') + (rat.textContent ? ' ' + rat.textContent : '');
+      }
     }
 
     function renderFacets(facets) {
@@ -563,6 +597,88 @@
       }
     }
 
+    let letterModalUserId = null;
+
+    async function loadPendingLetters() {
+      const box = document.getElementById('letter-queue');
+      try {
+        const resp = await fetch('/letters/pending');
+        if (!resp.ok) { box.innerHTML = '<p style="color:#94a3b8;font-size:13px;">Queue unavailable.</p>'; return; }
+        const rows = await resp.json();
+        const countBadge = document.getElementById('letter-queue-count');
+        countBadge.textContent = rows.length;
+        countBadge.style.display = rows.length ? 'inline-block' : 'none';
+        if (!rows.length) {
+          box.innerHTML = '<p style="color:#16a34a;font-size:13px;">No letters awaiting sign-off — the queue is clear.</p>';
+          return;
+        }
+        box.innerHTML = rows.map(r => `
+          <div style="display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:8px;">
+            <span class="badge badge-${r.outcome}" style="min-width:74px; text-align:center;">${r.outcome}</span>
+            <span style="font-family:ui-monospace,monospace; font-size:13px; color:#334155;">${r.user_id.slice(0,8)}…</span>
+            <span style="font-size:12px; color:#94a3b8;">score ${r.credit_score}</span>
+            <button onclick="openLetterModal('${r.user_id}')" style="margin-left:auto; padding:6px 14px; background:#16a34a; color:white; border:none; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer;">Review &amp; Sign</button>
+          </div>`).join('');
+      } catch (_) {
+        box.innerHTML = '<p style="color:#94a3b8;font-size:13px;">Queue unavailable.</p>';
+      }
+    }
+
+    function openLetterModal(userId) {
+      letterModalUserId = userId;
+      document.getElementById('letter-lang').value = 'en';
+      document.getElementById('letter-modal').style.display = 'flex';
+      reloadLetterPreview();
+    }
+    function closeLetterModal() {
+      document.getElementById('letter-modal').style.display = 'none';
+      letterModalUserId = null;
+    }
+    async function reloadLetterPreview() {
+      if (!letterModalUserId) return;
+      const lang = document.getElementById('letter-lang').value;
+      const box = document.getElementById('letter-preview');
+      box.textContent = 'Loading…';
+      try {
+        const resp = await fetch('/letters/' + letterModalUserId + '?lang=' + lang);
+        if (!resp.ok) { box.textContent = 'Unable to load letter.'; return; }
+        const d = await resp.json();
+        box.innerHTML = renderLetterPreview(d.letter);
+      } catch (_) { box.textContent = 'Unable to load letter.'; }
+    }
+    function renderLetterPreview(L) {
+      const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+      const reasons = (L.reasons || []).map(r => `<li>${esc(r)}</li>`).join('');
+      return `<div style="font-weight:700; color:#0f172a;">${esc(L.title)}</div>
+        <div style="font-size:11px; color:#94a3b8; margin-bottom:8px;">${esc(L.subtitle)}</div>
+        <div style="font-size:12px; color:#64748b;">${esc(L.ref_label)}: ${esc(L.ref)} · ${esc(L.date_label)}: ${esc(L.date)}</div>
+        <div style="font-size:12px; margin:4px 0;"><strong>${esc(L.outcome_label)}:</strong> ${esc(L.outcome_text)} · ${esc(L.model_label)} ${esc(L.model_version)}</div>
+        <div style="margin:8px 0; line-height:1.5;">${esc(L.body_text)}</div>
+        <div style="font-size:12px; color:#64748b;">${esc(L.reasons_heading)}:</div>
+        <ol style="margin:4px 0; padding-left:18px;">${reasons}</ol>`;
+    }
+    async function signLetter() {
+      if (!letterModalUserId) return;
+      const officerId = document.getElementById('letter-officer-id').value.trim();
+      if (!officerId) { alert('Officer ID is required to sign.'); return; }
+      try {
+        const resp = await fetch('/letters/' + letterModalUserId + '/sign', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ officer_id: officerId })
+        });
+        if (resp.ok) {
+          alert('Letter signed and released to the borrower.');
+          closeLetterModal();
+          loadPendingLetters();
+        } else {
+          let detail = resp.statusText;
+          try { detail = (await resp.json()).detail || detail; } catch(_) {}
+          alert('Failed to sign: ' + detail);
+        }
+      } catch (e) { alert('Error signing letter: ' + e); }
+    }
+
     function updateLoader(percent, statusText) {
       const bar = document.getElementById('loader-progress');
       const text = document.getElementById('loader-status');
@@ -586,7 +702,9 @@
       
       const p1 = loadModelCard().then(() => taskDone('Loaded model parameters.'));
       const p2 = loadPortfolio().then(() => taskDone('Loaded portfolio summaries.'));
-      const p3 = (initialId ? loadScore() : loadAll()).then(() => taskDone('Scored active borrower profiles.'));
+      const p3 = (initialId ? loadScore() : loadAll())
+        .then(() => loadPendingLetters())
+        .then(() => taskDone('Scored active borrower profiles.'));
       
       try {
         await Promise.all([p1, p2, p3]);
@@ -625,6 +743,29 @@
       <div style="display:flex; justify-content:flex-end; gap:12px;">
         <button onclick="closeOverrideModal()" class="secondary" style="padding:10px 16px; background:#f1f5f9; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Cancel</button>
         <button onclick="submitOverride()" style="padding:10px 16px; background:#2563eb; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Submit Audit Log</button>
+      </div>
+    </div>
+  </div>
+  <div id="letter-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:24px; border-radius:12px; max-width:560px; width:100%; max-height:88vh; overflow:auto; box-shadow:0 4px 20px rgba(0,0,0,0.15);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0; color:#334155;">Review &amp; sign decision letter</h3>
+        <label style="font-size:12px; color:#64748b;">Language
+          <select id="letter-lang" onchange="reloadLetterPreview()" style="margin-left:6px; font-size:12px; padding:3px 6px; border:1px solid #cbd5e1; border-radius:6px;">
+            <option value="en">English</option>
+            <option value="hi">हिन्दी</option>
+            <option value="bn">বাংলা</option>
+          </select>
+        </label>
+      </div>
+      <div id="letter-preview" style="border:1px solid #e2e8f0; border-radius:10px; padding:16px; font-size:13px; color:#334155; background:#f8fafc;">Loading…</div>
+      <div style="margin-top:16px;">
+        <label style="font-size:13px; font-weight:600; color:#64748b;">Officer ID (stamped onto the record):</label>
+        <input id="letter-officer-id" value="officer-dashboard" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1; margin-top:6px;">
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:18px;">
+        <button onclick="closeLetterModal()" class="secondary" style="padding:10px 16px; background:#f1f5f9; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Cancel</button>
+        <button onclick="signLetter()" style="padding:10px 16px; background:#16a34a; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Review &amp; Sign</button>
       </div>
     </div>
   </div>

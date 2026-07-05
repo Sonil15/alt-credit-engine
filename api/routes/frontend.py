@@ -36,6 +36,12 @@ async def borrower_portal(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "apply.html", {"request": request})
 
 
+@router.get("/onboard", response_class=HTMLResponse)
+async def borrower_onboarding(request: Request) -> HTMLResponse:
+    """Borrower onboarding — loan intent, category, and business profile."""
+    return templates.TemplateResponse(request, "onboard.html", {"request": request})
+
+
 @router.get("/login", response_class=HTMLResponse)
 async def borrower_login(request: Request) -> HTMLResponse:
     """Borrower sign-in / account-creation page."""

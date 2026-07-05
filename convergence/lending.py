@@ -119,3 +119,36 @@ def recommend_terms(
             f"{round(foir * 100)}% of assessed monthly income (₹{round(monthly_income):,})."
         ),
     }
+
+
+def evaluate_funding_gap(decision: str, lending: dict, intake: dict | None) -> dict:
+    """Affordability gate: does the model's approval actually cover the ask?
+
+    Pure post-decision overlay — never touches PD, score, or the model's
+    ``decision``. When the model APPROVEs but the requested amount exceeds the
+    maximum serviceable principal, the application must NOT go out as an
+    approval: the outcome becomes REVIEW (counter-offer at the serviceable
+    amount), with an explicit borrower-facing message.
+    """
+    if not intake:
+        return {"gated": False}
+
+    requested = safe_float(intake.get("requested_amount", 0.0))
+    if requested <= 0:
+        return {"gated": False}
+
+    max_amount = safe_float(lending.get("max_loan_amount", 0.0))
+    if decision != "APPROVE" or not lending.get("eligible") or requested <= max_amount:
+        return {"gated": False, "requested_amount": requested}
+
+    return {
+        "gated": True,
+        "requested_amount": requested,
+        "max_serviceable_amount": max_amount,
+        "message": (
+            f"The requested amount of ₹{round(requested):,} exceeds the maximum "
+            f"serviceable amount of ₹{round(max_amount):,} for this income profile. "
+            "The application cannot be approved as requested; it is routed for a "
+            f"counter-offer review at up to ₹{round(max_amount):,}."
+        ),
+    }

@@ -78,40 +78,47 @@ Script: [`scripts/benchmark_ebm_vs_catboost.py`](scripts/benchmark_ebm_vs_catboo
 · Artifact: [`models_ai/artifacts/ebm_vs_catboost.json`](models_ai/artifacts/ebm_vs_catboost.json)
 Run: `.venv/bin/python -m scripts.benchmark_ebm_vs_catboost`
 
-### Results (100 users, 9% default rate, 5-fold OOF)
+### Results (100 users, 8% default rate, 5-fold OOF — 2026-07 refreshed dataset)
+
+> The synthetic cohort was regenerated in July 2026 when the borrower-onboarding
+> business-profile features were added to the training data (see §8). All figures
+> below are from the current committed dataset and artifact
+> (`models_ai/artifacts/ebm_vs_catboost.json`).
 
 | Metric (out-of-fold) | CatBoost | EBM (glass-box) |
 |---|---|---|
-| **AUC** | 0.828 | **0.830** |
-| Gini | 0.656 | 0.661 |
-| KS | 0.626 | 0.637 |
-| CV AUC mean ± std | 0.828 ± 0.154 | 0.833 ± 0.157 |
+| **AUC** | 0.791 | 0.711 |
+| Gini | 0.582 | 0.421 |
+| KS | 0.630 | 0.505 |
+| CV AUC mean ± std | 0.733 ± 0.344 | **0.753 ± 0.232** |
 
-**Agreement:** lend/no-lend match **95%** · APPROVE/REVIEW/REJECT match **92%** ·
-PD rank-correlation (Spearman) **0.87** · Pearson **0.89**
+**Agreement:** lend/no-lend match **86%** · APPROVE/REVIEW/REJECT match **70%** ·
+PD rank-correlation (Spearman) **0.61** · Pearson **0.74**
 
 **Decision cross-tab** (rows = CatBoost, cols = EBM):
 
 ```
               EBM:  APPROVE  REVIEW  REJECT
-CatBoost APPROVE        82       2       1
-         REVIEW          1       5       2
-         REJECT          1       1       5
+CatBoost APPROVE        61      15       9
+         REVIEW          1       0       5
+         REJECT          0       0       9
 ```
 
 ### What the numbers mean
 
-1. **No accuracy cost.** EBM edges CatBoost (0.830 vs 0.828), but the ±0.15 std
-   means the gap is noise → the models are **statistically indistinguishable**.
-   Transparency is free; there is no accuracy argument for keeping the black box as
-   decider.
-2. **Agreement is a credible confidence signal.** 95% lend/no-lend agreement →
-   consensus = confidence. The 5% disagreements cluster *next to the diagonal*
-   (APPROVE↔REVIEW, REVIEW↔REJECT) — borderline thin-file cases that should go to a
-   human. Only **2 of 100** are violent disagreements (APPROVE↔REJECT); catching
-   those is the NPA-protection story.
-3. **Diversity is real.** Spearman 0.87 (not 0.99) → EBM and CatBoost are genuinely
-   different function families, so their agreement carries information.
+1. **No accuracy cost.** The two models trade places depending on the metric
+   (CatBoost leads single-split OOF AUC, EBM leads the cross-validated mean),
+   and both gaps sit far inside the ±0.23–0.34 CV std → the models are
+   **statistically indistinguishable** on 8 defaults in 100 rows. Transparency is
+   free; there is no accuracy argument for keeping the black box as decider.
+2. **Agreement is a credible confidence signal.** 86% lend/no-lend agreement →
+   consensus = confidence. Most disagreements sit *next to the diagonal*
+   (APPROVE↔REVIEW) — borderline thin-file cases that should go to a human. The
+   APPROVE↔REJECT conflicts are exactly what the panel gate routes to REVIEW;
+   catching those is the NPA-protection story.
+3. **Diversity is real.** Spearman 0.61 (nowhere near lockstep) → EBM and CatBoost
+   are genuinely different function families, so their agreement carries
+   information — and their disagreement is a usable signal, not noise.
 
 ### Honest caveats (state these before a reviewer finds them)
 - Accuracy on synthetic labels is not a real metric — we show **equivalence**, not
@@ -164,7 +171,7 @@ or explain anything.
 - `models/pydantic_schemas.py` — `CreditScoreResponse` gains `panel`, `conformal`, `explanation_method`.
 - `models_ai/conformal.py` — split conformal calibration + prediction-set abstention.
 - `tests/test_panel.py` — locks the gate behavior.
-- `tests/test_conformal.py` — locks conformal prediction-set and abstention gate behavior. Full suite: **62 passed**.
+- `tests/test_conformal.py` — locks conformal prediction-set and abstention gate behavior. Full suite: **95 passed** (as of 2026-07).
 
 **Explanation reconciliation.** EBM's terms are exact: `intercept + Σ terms ==
 logit(PD)`, so `base_points + Σ feature_points == credit_score` (pre-clamp) holds
@@ -194,18 +201,18 @@ a calibration issue: CatBoost was *over-confident* (median PD ≈ 0.5%), so the 
 scorecard's APPROVE bar (PD ≤ 0.25%) was only clearable by an over-confident model.
 The honestly-calibrated EBM (median PD ≈ base rate) produced **0% approvals** under
 the old anchor. Fix: `convergence/scorecard.py` `BASE_ODDS` 50 → 10, anchoring the
-band to the population's real ~9% base rate. Result on the 113-user portfolio:
+band to the population's real ~8-9% base rate. Result on the current 100-user
+portfolio (2026-07 dataset):
 
 | Decision | Share |
 |---|---|
-| APPROVE | 17% |
-| REVIEW | 58% |
-| REJECT | 26% |
+| APPROVE | 26% |
+| REVIEW | 68% |
+| REJECT | 6% |
 
-Median score 667, full 300–900 range. Panel non-unanimous 61% (mostly adjacent
-scatter), 5 hard conflicts, 3 routed to REVIEW by the gate. This is a deliberate,
-defensible recalibration — say so to judges: *"our honest model needed an honest
-scorecard; the old cutoffs were propped up by an over-confident black box."*
+Average score ~610, full 300–900 range. This is a deliberate, defensible
+recalibration — say so to judges: *"our honest model needed an honest scorecard;
+the old cutoffs were propped up by an over-confident black box."*
 
 **Training:** `python -m models_ai.train` (or `POST /score/train`) now trains all
 three and writes artifacts `ebm_champion.pkl`, `catboost_model.cbm`,
@@ -260,5 +267,65 @@ honesty standard as the benchmark caveats in §4.
 
 > Dependency note: `interpret-core>=0.6` added to `requirements.txt`. Installing it
 > bumped scikit-learn 1.5.2 → 1.9.0 (within the `>=1.5.2` spec); the full test suite
-> passes on it. `shap` is no longer used in the decision path (left in requirements
-> for the offline benchmark only).
+> passes on it. `shap` is no longer used anywhere in the codebase (no offline
+> benchmark script imports it either) and has been dropped from `requirements.txt`
+> (2026-07-05). The `shap_*` names retained in the scoring payload (`shap_value`,
+> `shap_drivers`, `ShapDriver`) are legacy naming only — they carry EBM term
+> contributions, not Shapley values; see §7 UI notes. Remaining user-facing "SHAP"
+> copy on the landing page, dashboard tooltip, and translations was corrected to
+> "glass-box" wording in the same pass.
+
+## 8. Onboarding business-profile features (2026-07)
+
+The borrower onboarding flow (loan purpose, requested amount, and — for Vendor/
+Farmer categories — an LLM-extracted, borrower-confirmed business profile) added
+**two model features**, bringing `FEATURE_COLUMNS` to 23:
+
+- `business_vintage_years` — years the business has operated (0 = no business).
+- `turnover_income_consistency` — agreement in [0,1] between the borrower's
+  *declared* monthly turnover and the *observed* cash-flow income
+  (`min/max` ratio). The consistency earns points, never the claimed amount —
+  a self-report honesty check, not a self-report reward.
+
+Individuals simply lack the rows; `fill_missing_features` resolves absent business
+features to 0.0 for these cohorts (see §9 — a salaried cohort has no observed
+business vintage, so it is treated as structurally not applicable rather than
+imputed). On the current dataset the features are accuracy-neutral (5-fold OOF AUC
+0.6875 with vs 0.6861 without), i.e. they add auditability and an anti-gaming
+cross-check at no measured cost.
+
+Separately, the **requested amount** never enters the model: it drives a
+post-decision *affordability gate* in `convergence/lending.py::evaluate_funding_gap`
+(model APPROVE + ask > serviceable maximum → outcome REVIEW with an explicit
+counter-offer message). PD, score, the model's `decision`, and the fairness
+parity slices are all untouched by it.
+
+## 9. Missing-data robustness — cohort-aware imputation (2026-07)
+
+Previously `fill_missing_features` imputed every absent feature to `0.0`. Zero is not
+neutral — the model reads it as fact: `monthly_income_mean = 0` reads as "no income"
+(unfairly punishing a thin file), while `missed_payments_count = 0` reads as "flawless
+history" (unfairly rewarding). The same blank thus biased the decision in whichever
+direction zero happened to point — a real fairness flaw for a thin-file lender.
+
+`models_ai/imputation.py` now learns a **per-cohort typical-applicant profile** (median
+per feature) at training time, persisted as `artifacts/imputation_stats.json`, and
+`fill_missing_features` fills an absent feature with the median of the borrower's *own*
+cohort — auto-detected from the `cohort_code` in the row, **per row**, so a mixed-cohort
+batch never leaks one cohort's typical value onto another. Two kinds of absence are
+distinguished automatically by the per-cohort median:
+
+- **Applicable but not collected** (a genuine thin file missing cashflow) → the cohort
+  has observed values → fill the cohort median.
+- **Structurally not applicable** (business vintage for a salaried cohort) → the cohort
+  is all-NaN for that feature → median undefined → fall back to `0.0` (the correct
+  real-world meaning), never the global median.
+
+Because the training population is dense, the fill branch is exercised only at serve
+time for genuinely absent data — so the committed EBM/CatBoost/logistic artifacts and
+every current score are **byte-identical** (verified: 0 cells change on the 100-user
+matrix); a retrain regenerates the profile from `train_all_from_db`. The same mechanism
+makes **consent revocation** fair: a withdrawn source is masked to NaN and imputed to
+the cohort-typical value, so revoking a source makes a borrower look *average* on it,
+not worst-case. Genuinely thin files still lose *confidence* (routed to REVIEW), not
+points — "less confident, not more punitive."

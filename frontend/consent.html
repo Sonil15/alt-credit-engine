@@ -189,6 +189,24 @@
         consentId = data.consent_id;
         localStorage.setItem('altcredit_consent_id_' + userId, consentId);
         document.getElementById('consent-id-display').textContent = consentId;
+
+        // Enforce the borrower's actual choices: authorize grants every scope, so we
+        // immediately revoke any optional source they left unchecked. Without this the
+        // selection is cosmetic — unchecked sources would still be collected, scored,
+        // and shown as drivers. Survey is mandatory (checkbox disabled) and never revoked;
+        // hidden cohort-specific boxes (offsetParent === null) are skipped.
+        const optionalScopes = ['telecom', 'ecommerce', 'geo', 'cashflow', 'campus', 'vendor', 'farmer', 'household'];
+        const declined = optionalScopes.filter(scope => {
+          const box = document.getElementById('scope-' + scope);
+          return box && !box.disabled && box.offsetParent !== null && !box.checked;
+        });
+        if (declined.length) {
+          await fetch('/consent/revoke', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ consent_id: consentId, user_id: userId, scopes: declined }),
+          });
+        }
       } catch (_) {
         // Non-fatal — assessment still works without a registered consent_id
         document.getElementById('consent-id-display').textContent = '(offline — not registered)';

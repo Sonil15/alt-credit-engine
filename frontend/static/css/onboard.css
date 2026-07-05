@@ -1,0 +1,137 @@
+/* Onboarding page — loan intent + business profile */
+
+.onboard-card {
+  background: var(--white, #fff);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+.onboard-card .form-field {
+  margin-bottom: 18px;
+}
+
+.onboard-card label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.onboard-card select,
+.onboard-card input,
+.onboard-card textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #0f172a;
+  background: #f8fafc;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.onboard-card select:focus,
+.onboard-card input:focus,
+.onboard-card textarea:focus {
+  border-color: #2563eb;
+  background: #fff;
+}
+
+.business-divider {
+  border-top: 1px dashed #cbd5e1;
+  margin: 22px 0 18px;
+}
+
+#business-section h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.business-hint {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.analyze-btn {
+  margin-top: 10px;
+  background: #0f172a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.analyze-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+#extracted-panel {
+  margin-top: 16px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.extracted-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1d4ed8;
+  margin-bottom: 4px;
+}
+
+.extracted-method {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+.extracted-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.extracted-note {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.form-error {
+  margin: 14px 0 0;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.continue-btn {
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  margin-top: 20px;
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .extracted-grid {
+    grid-template-columns: 1fr;
+  }
+}

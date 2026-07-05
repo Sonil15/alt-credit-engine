@@ -144,6 +144,59 @@ class AssessmentAnswerResponse(BaseModel):
     survey_payload: dict[str, Any] | None = None
 
 
+class BusinessProfile(BaseModel):
+    """Structured business facts extracted from the borrower's own description.
+
+    Every field is optional — the borrower confirms/edits each one before submit,
+    so absent means "not stated", never "guessed".
+    """
+
+    sector: str | None = None
+    years_in_business: float | None = Field(default=None, ge=0, le=80)
+    monthly_turnover: float | None = Field(default=None, ge=0)
+    seasonality: str | None = None  # low | medium | high
+    employees: int | None = Field(default=None, ge=0, le=10000)
+
+    @field_validator("seasonality")
+    @classmethod
+    def _normalize_seasonality(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = v.strip().lower()
+        return v if v in {"low", "medium", "high"} else None
+
+
+class BusinessExtractRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+    language: str = "en"
+
+
+class BusinessExtractResponse(BaseModel):
+    profile: BusinessProfile
+    confidence: float = 0.0
+    method: str = "fallback"  # llm | fallback
+
+
+class IntakeSubmitRequest(BaseModel):
+    user_id: str
+    cohort: str
+    loan_purpose: str
+    requested_amount: float = Field(gt=0, le=100_000_000)
+    business_description: str | None = Field(default=None, max_length=2000)
+    business_profile: BusinessProfile | None = None
+    extraction_method: str = "none"  # llm | fallback | none
+    extraction_confidence: float | None = None
+
+
+class IntakeSubmitResponse(BaseModel):
+    intake_id: str
+    user_id: str
+    cohort: str
+    loan_purpose: str
+    requested_amount: float
+    message: str = "Application details recorded."
+
+
 class GroundTruthPayload(BaseModel):
     user_id: UUID
     default_label: int = Field(ge=0, le=1)
@@ -263,6 +316,11 @@ class CreditScoreResponse(BaseModel):
     confidence_pct: float = 100.0
     thin_file: bool = False
     lending: dict[str, Any] = {}
+    requested_amount: float | None = None
+    loan_purpose: str | None = None
+    purpose_consistent: bool | None = None
+    final_outcome: str | None = None
+    funding_gap: dict[str, Any] = {}
     panel: dict[str, Any] = {}
     conformal: dict[str, Any] = {}
     explanation_method: str = "ebm-additive-terms"
