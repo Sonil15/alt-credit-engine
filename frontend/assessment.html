@@ -107,6 +107,7 @@
     <div class="input-bar hidden" id="input-bar">
       <button class="keyboard-btn" id="keyboard-btn" type="button" title="Toggle on-screen keyboard">⌨️</button>
       <input type="text" id="answer-input" data-i18n="assessment-input-placeholder" placeholder="Type your answer...">
+      <button class="icon-btn" id="mic-btn" type="button" title="Speak your answer">🎤</button>
       <button class="icon-btn primary" id="send-btn">➤</button>
     </div>
     <div id="keyboard-panel" class="keyboard-panel hidden"></div>
@@ -486,6 +487,60 @@
 
     document.getElementById('send-btn').onclick = () => submitAnswer(input.value);
     input.addEventListener('keydown', e => { if (e.key === 'Enter') submitAnswer(input.value); });
+
+    // ── Voice answers (open-ended items only) ───────────────────────────────
+    // Prefers server-side STT (Sarvam, tuned for Indian languages, with Gemini as
+    // fallback — see speech/ on the backend); falls back to the browser's own
+    // Web Speech API when no server provider is configured. Transcript lands in
+    // the answer box for the borrower to review/edit, same as typed text.
+    const serverRecorder = new VoiceProvider.ServerSpeechRecorder();
+    let sttMode = 'browser';
+    serverRecorder.isAvailable().then(available => { sttMode = available ? 'server' : 'browser'; });
+
+    const micBtn = document.getElementById('mic-btn');
+    let micRecording = false;
+
+    async function toggleMic() {
+      if (sttMode === 'server') {
+        if (!micRecording) {
+          try {
+            await serverRecorder.start();
+            micRecording = true;
+            micBtn.classList.add('primary');
+            micBtn.textContent = '⏹';
+          } catch (e) {
+            alert('Microphone access failed: ' + e.message);
+          }
+          return;
+        }
+        micRecording = false;
+        micBtn.classList.remove('primary');
+        micBtn.textContent = '🎤';
+        try {
+          const text = await serverRecorder.stop(language);
+          if (text) input.value = text;
+        } catch (e) {
+          alert('Could not transcribe: ' + e.message);
+        }
+        return;
+      }
+
+      if (!voice.recognition) {
+        alert('Voice input is not supported in this browser.');
+        return;
+      }
+      micBtn.classList.add('primary');
+      try {
+        const text = await voice.listen(language);
+        if (text) input.value = text;
+      } catch (e) {
+        alert(e.message);
+      } finally {
+        micBtn.classList.remove('primary');
+      }
+    }
+
+    micBtn.onclick = toggleMic;
 
     // ── Privacy rights ──────────────────────────────────────────────────────
     document.getElementById('privacy-link').href = '/consent?user_id=' + userId;

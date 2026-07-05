@@ -125,6 +125,70 @@ class BhashiniVoiceProvider {
   }
 }
 
+/**
+ * Records mic audio and sends it to the backend's /speech/transcribe endpoint
+ * (Sarvam, tuned for Indian languages, with Gemini as fallback — see speech/
+ * on the backend). Used instead of the browser's built-in recognition when a
+ * server provider is configured, since it handles Hindi/Bengali accents more
+ * reliably than the browser's own speech engine.
+ */
+class ServerSpeechRecorder {
+  constructor() {
+    this._recorder = null;
+    this._chunks = [];
+  }
+
+  async isAvailable() {
+    if (!navigator.mediaDevices || !window.MediaRecorder) return false;
+    try {
+      const resp = await fetch("/speech/config");
+      if (!resp.ok) return false;
+      const data = await resp.json();
+      return !!data.stt_available;
+    } catch {
+      return false;
+    }
+  }
+
+  async start() {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    this._chunks = [];
+    this._recorder = new MediaRecorder(stream);
+    this._recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) this._chunks.push(e.data);
+    };
+    this._recorder.start();
+  }
+
+  /** Stops recording and returns the transcribed text. */
+  stop(lang = "en") {
+    return new Promise((resolve, reject) => {
+      if (!this._recorder) return reject(new Error("Recording was never started"));
+      const recorder = this._recorder;
+      const tracks = recorder.stream.getTracks();
+      recorder.onstop = async () => {
+        tracks.forEach((t) => t.stop());
+        const blob = new Blob(this._chunks, { type: recorder.mimeType || "audio/webm" });
+        try {
+          const form = new FormData();
+          form.append("language", lang);
+          form.append("audio", blob, "audio.webm");
+          const resp = await fetch("/speech/transcribe", { method: "POST", body: form });
+          if (!resp.ok) {
+            const detail = (await resp.json().catch(() => ({}))).detail || "transcription failed";
+            return reject(new Error(detail));
+          }
+          const data = await resp.json();
+          resolve((data.text || "").trim());
+        } catch (e) {
+          reject(e);
+        }
+      };
+      recorder.stop();
+    });
+  }
+}
+
 function createVoiceProvider() {
   const provider = new BrowserVoiceProvider();
   if (provider.isSupported()) return provider;
@@ -134,6 +198,7 @@ function createVoiceProvider() {
 window.VoiceProvider = {
   BrowserVoiceProvider,
   BhashiniVoiceProvider,
+  ServerSpeechRecorder,
   createVoiceProvider,
   LANG_MAP,
 };

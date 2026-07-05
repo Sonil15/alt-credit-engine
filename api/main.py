@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import assessment, auth, consent, frontend, ingestion, intake, letters, scoring
+from api.routes import assessment, auth, consent, frontend, ingestion, intake, letters, scoring, speech
 from core.bootstrap import ensure_seeded
 from core.config import get_settings
 from core.database import init_db
@@ -55,6 +55,7 @@ app.include_router(ingestion.router)
 app.include_router(intake.router)
 app.include_router(scoring.router)
 app.include_router(letters.router)
+app.include_router(speech.router)
 app.include_router(frontend.router)
 
 

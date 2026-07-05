@@ -142,12 +142,21 @@ Copy this block for each feature:
 
 ### Multilingual psychometric assessment (English / Hindi / Bengali)
 - **Judge problem it answers:** "How do you assess thin-file borrowers who don't speak
-  English and have no credit history?"
+  English, may not read comfortably, and have no credit history?"
 - **Pitch line:** "We score financial character through a conversational assessment in
-  the borrower's own language — text and voice."
-- **Differentiator:** True vernacular inclusion (Devanagari + Bengali rendering, voice),
-  aimed squarely at the financially-excluded thin-file segment.
-- **Demo moment:** Take the assessment live in Hindi or Bengali.
+  the borrower's own language — typed or *spoken*."
+- **Differentiator:** True vernacular inclusion (Devanagari + Bengali rendering, plus a
+  mic on every open-ended question). Speech-to-text runs through a vendor-agnostic
+  provider layer — Sarvam (tuned for Indian-language accents) as primary, Gemini as
+  fallback — behind a single env var, with the browser's own Web Speech API as a
+  zero-config, zero-cost path when no server key is set. A dictated answer lands in the
+  text box for the borrower to review and edit before it's submitted, so a misheard
+  word never silently becomes a wrong answer.
+- **Demo moment:** Take the assessment live in Hindi or Bengali, tap the mic on an
+  open-ended question, and speak the answer — show it land as editable text, not an
+  auto-submitted guess.
+- **Honest caveat:** No audio is stored — only the transcribed text — so the demo can't
+  show an audio trail, by design (nothing to leak, nothing to secure).
 
 ### Open-ended answer scoring — LLM with confidence routing + deterministic fallback
 - **Judge problem it answers:** "Free-text is messy — is your scoring of it robust and
@@ -160,13 +169,23 @@ Copy this block for each feature:
   sentiment (a stressed-but-responsible answer still scores high). The fallback is
   *genuinely multilingual*: a curated Hindi/Bengali lexicon with negation handling, so
   an offline Hindi or Bengali borrower gets a real score — not a neutral default that
-  an English-only fallback (or an English-only tool like VADER) would hand them.
+  an English-only fallback (or an English-only tool like VADER) would hand them. It
+  also handles voice input: a Sarvam-transcribed Hindi answer often transliterates
+  spoken English terms *into Devanagari* (e.g. "रेंट", "इंटरेस्ट रीपेमेंट"), which the
+  keyword lexicon can't recognise (it expects either script's native vocabulary) — the
+  LLM reads code-mixed transliteration natively, so the graceful-degradation story
+  extends cleanly from typed to spoken answers.
 - **Demo moment:** Show the same answer scoring identically twice (deterministic), the
   system deferring to the safe fallback on a low-confidence read, and a Hindi/Bengali
   answer scoring as responsible-vs-avoidant even with the LLM switched off.
 - **Honest caveat:** The offline fallback is a curated keyword+negation heuristic, not a
   language model — it reads clear stances well; the LLM remains the primary, nuanced
-  path when available.
+  path when available. We also caught and fixed a real instance of exactly this risk:
+  the configured Groq model (`llama3-8b-8192`) had been silently decommissioned
+  upstream, so the LLM path was quietly falling back on *every* open-ended answer with
+  zero trace. Fixed by pinning a current model (`llama-3.1-8b-instant`) and adding a
+  warning log on any future Groq failure — the fallback should be a rare safety net,
+  not an invisible default.
 
 ### Application throttle (anti-gaming the psychometric assessment)
 - **Judge problem it answers:** "A psychometric questionnaire is only predictive the

@@ -18,7 +18,14 @@ class Settings:
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
     )
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
-    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama3-8b-8192")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+
+    # Server-side speech-to-text for voice answers in the psychometric assessment.
+    # "sarvam" (Indian-language tuned, primary) | "gemini" (fallback) | "none"
+    # (browser Web Speech API only, no server key needed).
+    SPEECH_STT_PROVIDER: str = os.getenv("SPEECH_STT_PROVIDER", "none")
+    SARVAM_API_KEY: str = os.getenv("SARVAM_API_KEY", "")
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 
     API_KEY: str = os.getenv("API_KEY", "")
     CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import re
 import time
 import uuid
@@ -15,6 +16,8 @@ from groq import Groq
 from core.config import get_settings
 from psychometric.bank import SUPPORTED_LANGUAGES, Item, load_item_bank, load_items
 from psychometric.scoring import compute_trait_scores, format_assessment_payload, score_open_ended_answer
+
+logger = logging.getLogger(__name__)
 
 GREETINGS = {
     "en": "Hello! As a {cohort}, we have tailored this assessment for you. I'll ask you a few short questions about your financial habits. Please answer honestly.",
@@ -164,6 +167,10 @@ async def extract_open_ended_score(text: str, language: str) -> float:
         parsed = await asyncio.to_thread(_call)
         score = _resolve_open_ended_score(parsed, text)
     except Exception:
+        # Falling back is the correct behaviour, but a silent fallback is how a
+        # dead model name (or any other Groq outage) goes unnoticed indefinitely
+        # — log it so a persistent failure is visible in the server logs.
+        logger.warning("Groq open-ended scoring failed; using deterministic fallback", exc_info=True)
         score = score_open_ended_answer(text)
 
     _open_ended_cache[cache_key] = score
