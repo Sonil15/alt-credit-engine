@@ -19,7 +19,7 @@ This document summarizes how the Alt-Credit Engine prototype aligns with Indian 
 
 - **Key Fact Statement (KFS)**: Score API returns PD, decision, and plain-language reason codes suitable for KFS disclosure.
 - **Cooling-off period**: Decision tiers (APPROVE / REVIEW / REJECT) support manual review before disbursement.
-- **Fair practices**: SHAP explainability + adverse-action reason codes on every decision.
+- **Fair practices**: Glass-box EBM (Explainable Boosting Machine) native additive-term explainability + adverse-action reason codes on every decision. Each feature's contribution is the model's own exact points term (`base_points + Σ feature_points == credit_score`), not a post-hoc approximation, so the same global curve is stable and publishable for every borrower.
 
 ## Data Localization
 
@@ -43,5 +43,5 @@ This document summarizes how the Alt-Credit Engine prototype aligns with Indian 
 - **Agent does not decide**: An agentic conversational UI (`/assessment`) guides onboarding in English, Hindi, or Bengali, but scoring uses a **fixed, pre-translated item bank** with deterministic keyed scoring.
 - **Construct-based traits**: conscientiousness, locus of control, financial self-efficacy, present bias, debt attitude, plus a response-validity signal from consistency-check pairs.
 - **Transcript encryption**: Full assessment transcript (PII) is encrypted in `secure_vault`; only numeric trait features enter `ml_features`.
-- **Voice inclusion**: Browser Web Speech API (free) supports voice input/output for low-literacy users; provider is abstracted for future Bhashini/AI4Bharat integration.
-- **Explainability**: Psychometric traits appear in SHAP drivers and adverse-action reason codes alongside behavioral/alternative data features.
+- **Voice & keyboard inclusion**: Voice input (speech-to-text) and output (text-to-speech) run through a vendor-agnostic provider layer, Sarvam (Indian-language-tuned) primary, Gemini fallback, with the browser's own Web Speech API as a zero-config, zero-cost default when neither is configured. An in-page on-screen Hindi/Bengali keyboard covers borrowers whose device has no Indic system keyboard installed, on the assessment's open-ended questions and the onboarding free-text fields (business description, "Other" purpose).
+- **Explainability**: Psychometric traits appear in the EBM's native additive drivers and adverse-action reason codes alongside behavioral/alternative data features, no SHAP or other post-hoc approximation in the decision or explanation path.

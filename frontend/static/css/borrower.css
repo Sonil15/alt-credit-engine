@@ -1,7 +1,56 @@
+body {
+  font-family: var(--font-family);
+  background: #0f172a;
+  color: #e2e8f0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+}
+
+.phone {
+  width: 100%;
+  max-width: 100%;
+  height: 100vh;
+  background: #1e293b;
+  border-radius: 0;
+  overflow-y: auto;
+  box-shadow: none;
+}
+
+@media (min-width: 600px) {
+  .phone {
+    max-width: 420px;
+    height: 90vh;
+    border-radius: var(--border-radius-3xl);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+  }
+}
+
+.status-bar {
+  background: #0f172a;
+  padding: var(--space-md) var(--space-lg);
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-light);
+}
+
+.status-bar a:hover {
+  color: var(--white);
+}
+
+.content {
+  padding: var(--space-md);
+}
+
 .container {
-  max-width: 680px;
-  margin: var(--space-md) auto;
-  padding: 0 var(--space-md) var(--space-xxl);
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 0 var(--space-xxl);
 }
 
 .card {
@@ -192,34 +241,7 @@
   }
 }
 
-/* Tablet & Desktop Layouts */
-@media (min-width: 768px) {
-  .container {
-    margin: var(--space-xl) auto;
-    padding: 0 var(--space-lg) var(--space-xxl);
-  }
-
-  .card {
-    padding: var(--space-xl);
-  }
-  
-  .card h2 {
-    font-size: 20px;
-  }
-  
-  .score-num {
-    font-size: 72px;
-  }
-  
-  .meta-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  
-  .meta-box .v {
-    font-size: 22px;
-  }
-  
-  .actions {
-    flex-direction: row;
-  }
-}
+/* The borrower report lives inside a fixed ~420px "phone" shell, so it always
+ * renders in the mobile layout — viewport-width media queries (which fire on the
+ * desktop window even though the frame stays narrow) would otherwise cram the
+ * meta-grid into two columns and wrap the labels. Keep it single-column. */

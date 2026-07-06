@@ -6,9 +6,10 @@
   <title>Alt-Credit: New Application</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/apply.css?v=1.0.0">
-  <link rel="stylesheet" href="/static/css/onboard.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/onboard.css?v=1.2.0">
   <script src="/static/translations.js?v=1.0.4"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
+  <script src="/static/vkeyboard.js?v=1.0.0"></script>
   <script>
     // Login is mandatory for the borrower portal. Redirect to sign-in before any
     // content renders if there's no session token.
@@ -18,26 +19,27 @@
   </script>
 </head>
 <body>
-  <header class="app-header">
-    <div class="app-header-left">
-      <h1><a href="/" style="color: inherit; text-decoration: none;" data-i18n="apply-topbar-title">Alt-Credit</a> <span class="sub" data-i18n="apply-topbar-sub">Borrower Portal</span></h1>
-    </div>
-    <div class="app-header-right">
+  <div class="phone">
+    <div class="status-bar" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <a href="/apply" style="color: var(--text-muted); text-decoration: none; font-weight: 500;">← <span data-i18n="onboard-back">Back</span></a>
+      </div>
       <div id="language-selector-root"></div>
-      <a href="/apply" data-i18n="onboard-back">← Back</a>
-      <span id="account-chip" style="display:none; align-items:center; gap:10px;">
-        <span style="font-size:13px; color:#cbd5e1;">👤 <strong id="account-name"></strong></span>
-      </span>
     </div>
-  </header>
+    <div class="content">
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 15px; gap: 10px; font-size: 13px;">
+        <span id="account-chip" style="display:none; align-items:center; gap:10px;">
+          <span style="color:#cbd5e1;">👤 <strong id="account-name"></strong></span>
+        </span>
+      </div>
 
-  <div class="hero" style="padding-bottom: 24px;">
-    <div class="hero-badge" data-i18n="onboard-hero-badge">New Application</div>
-    <h2 data-i18n="onboard-hero-title">Tell us about your loan</h2>
-    <p data-i18n="onboard-hero-sub">A few details before you grant consent: what you need, and why.</p>
-  </div>
+      <div class="hero" style="padding-bottom: 24px;">
+        <div class="hero-badge" data-i18n="onboard-hero-badge">New Application</div>
+        <h2 data-i18n="onboard-hero-title">Tell us about your loan</h2>
+        <p data-i18n="onboard-hero-sub">A few details before you grant consent: what you need, and why.</p>
+      </div>
 
-  <div class="container">
+      <div class="container">
     <div class="onboard-card">
       <div class="form-field">
         <label for="cohort-select" data-i18n="onboard-category-label">Your category</label>
@@ -58,7 +60,11 @@
 
       <div class="form-field" id="purpose-other-field" style="display:none;">
         <label for="purpose-other-input" data-i18n="onboard-purpose-other-label">Tell us what it's for</label>
-        <input id="purpose-other-input" type="text" maxlength="300" data-i18n="onboard-purpose-other-placeholder" placeholder="e.g. laptop repair, family function, relocation">
+        <div class="text-input-row">
+          <input id="purpose-other-input" type="text" maxlength="300" data-i18n="onboard-purpose-other-placeholder" placeholder="e.g. laptop repair, family function, relocation">
+          <button type="button" class="keyboard-toggle-btn" id="purpose-other-kb-btn" title="Toggle on-screen keyboard">⌨️</button>
+        </div>
+        <div id="purpose-other-kb-panel" class="keyboard-panel hidden"></div>
       </div>
 
       <div class="form-field">
@@ -69,11 +75,15 @@
       <div id="business-section" style="display:none;">
         <div class="business-divider"></div>
         <h3 data-i18n="onboard-business-title">About your business</h3>
-        <p class="business-hint" data-i18n="onboard-business-desc">Describe your business in your own words: what you do, for how long, and roughly what you earn each month. English, हिन्दी or বাংলা.</p>
+        <p class="business-hint" data-i18n="onboard-business-desc">Describe your business: what you do, for how long, and roughly what you earn each month.</p>
         <textarea id="business-text" rows="4"></textarea>
-        <button type="button" class="analyze-btn" id="analyze-btn" onclick="analyzeBusiness()">
-          <span data-i18n="onboard-analyze-btn">Analyze my business</span>
-        </button>
+        <div class="business-actions">
+          <button type="button" class="analyze-btn" id="analyze-btn" onclick="analyzeBusiness()">
+            <span data-i18n="onboard-analyze-btn">Analyze my business</span>
+          </button>
+          <button type="button" class="keyboard-toggle-btn" id="business-kb-btn" title="Toggle on-screen keyboard">⌨️</button>
+        </div>
+        <div id="business-kb-panel" class="keyboard-panel hidden"></div>
 
         <div id="extracted-panel" style="display:none;">
           <p class="extracted-title" data-i18n="onboard-extracted-title">We understood this. Please confirm or correct:</p>
@@ -129,6 +139,8 @@
       <a href="/health" data-i18n="apply-footer-status">System Status</a>
     </div>
   </div>
+</div>
+</div>
 
   <script>
     const account = Auth.currentUser();
@@ -344,6 +356,19 @@
       // Language buttons trigger clicks, not change events.
       const root = document.getElementById('language-selector-root');
       if (root) root.addEventListener('click', () => setTimeout(applyLocalTexts, 0));
+
+      // Free-text fields get an on-screen Hindi/Bengali keyboard so a borrower can
+      // answer in their language even without a system Indic keyboard installed.
+      attachVirtualKeyboard({
+        toggleBtn: 'purpose-other-kb-btn',
+        panel: 'purpose-other-kb-panel',
+        input: 'purpose-other-input'
+      });
+      attachVirtualKeyboard({
+        toggleBtn: 'business-kb-btn',
+        panel: 'business-kb-panel',
+        input: 'business-text'
+      });
     });
   </script>
   <script src="/static/session_timeout.js"></script>

@@ -112,7 +112,7 @@ const ALTCREDIT_DICTIONARY = {
     "cohort-homemaker": "Homemaker",
 
     // onboard.html
-    "onboard-back": "← Back",
+    "onboard-back": "Back",
     "onboard-hero-badge": "New Application",
     "onboard-hero-title": "Tell us about your loan",
     "onboard-hero-sub": "A few details before you grant consent: what you need, and why.",
@@ -121,7 +121,7 @@ const ALTCREDIT_DICTIONARY = {
     "onboard-amount-label": "Loan amount requested (₹)",
     "onboard-amount-placeholder": "e.g. 50000",
     "onboard-business-title": "About your business",
-    "onboard-business-desc": "Describe your business in your own words: what you do, for how long, and roughly what you earn each month. English, हिन्दी or বাংলা.",
+    "onboard-business-desc": "Describe your business: what you do, for how long, and roughly what you earn each month.",
     "onboard-business-placeholder": "e.g. I have run a vegetable stall in the local market for 8 years, earning about ₹40,000 a month…",
     "onboard-analyze-btn": "Analyze my business",
     "onboard-analyzing": "Reading your description…",
@@ -434,7 +434,7 @@ const ALTCREDIT_DICTIONARY = {
     "cohort-homemaker": "गृहिणी",
 
     // onboard.html
-    "onboard-back": "← वापस",
+    "onboard-back": "वापस",
     "onboard-hero-badge": "नया आवेदन",
     "onboard-hero-title": "अपने ऋण के बारे में बताएं",
     "onboard-hero-sub": "सहमति देने से पहले कुछ जानकारी: आपको कितनी राशि चाहिए, और क्यों।",
@@ -443,7 +443,7 @@ const ALTCREDIT_DICTIONARY = {
     "onboard-amount-label": "अनुरोधित ऋण राशि (₹)",
     "onboard-amount-placeholder": "जैसे 50000",
     "onboard-business-title": "अपने व्यवसाय के बारे में",
-    "onboard-business-desc": "अपने व्यवसाय के बारे में अपने शब्दों में बताएं, आप क्या करते हैं, कितने समय से, और हर महीने लगभग कितना कमाते हैं। English, हिन्दी या বাংলা।",
+    "onboard-business-desc": "अपने व्यवसाय के बारे में बताएं: आप क्या करते हैं, कितने समय से, और हर महीने लगभग कितना कमाते हैं।",
     "onboard-business-placeholder": "जैसे: मैं 8 साल से स्थानीय बाज़ार में सब्ज़ी की दुकान चलाता हूँ, महीने में लगभग ₹40,000 कमाता हूँ…",
     "onboard-analyze-btn": "मेरा व्यवसाय समझें",
     "onboard-analyzing": "आपका विवरण पढ़ा जा रहा है…",
@@ -752,7 +752,7 @@ const ALTCREDIT_DICTIONARY = {
     "cohort-gigworker": "গিগ কর্মী",
     "cohort-student": "শিক্ষার্থী",
     "cohort-vendor": "ক্ষুদ্র উদ্যোগ / বিক্রেতা",
-    "onboard-back": "← ফিরে যান",
+    "onboard-back": "ফিরে যান",
     "onboard-hero-badge": "নতুন আবেদন",
     "onboard-hero-title": "আপনার ঋণ সম্পর্কে বলুন",
     "onboard-hero-sub": "সম্মতি দেওয়ার আগে কিছু তথ্য: আপনার কত টাকা দরকার, এবং কেন।",
@@ -761,7 +761,7 @@ const ALTCREDIT_DICTIONARY = {
     "onboard-amount-label": "অনুরোধকৃত ঋণের পরিমাণ (₹)",
     "onboard-amount-placeholder": "যেমন 50000",
     "onboard-business-title": "আপনার ব্যবসা সম্পর্কে",
-    "onboard-business-desc": "নিজের ভাষায় আপনার ব্যবসার কথা বলুন, আপনি কী করেন, কত দিন ধরে, এবং মাসে আনুমানিক কত আয় করেন। English, हिन्दी বা বাংলা।",
+    "onboard-business-desc": "আপনার ব্যবসার কথা বলুন: আপনি কী করেন, কত দিন ধরে, এবং মাসে আনুমানিক কত আয় করেন।",
     "onboard-business-placeholder": "যেমন: আমি ৮ বছর ধরে স্থানীয় বাজারে সবজির দোকান চালাই, মাসে প্রায় ₹৪০,০০০ আয় করি…",
     "onboard-analyze-btn": "আমার ব্যবসা বিশ্লেষণ করুন",
     "onboard-analyzing": "আপনার বিবরণ পড়া হচ্ছে…",

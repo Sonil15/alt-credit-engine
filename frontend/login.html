@@ -10,60 +10,60 @@
   <script src="/static/auth.js?v=1.0.0"></script>
 </head>
 <body>
-  <header class="app-header">
-    <div class="app-header-left">
-      <h1><a href="/" style="color: inherit; text-decoration: none;">Alt-Credit</a> <span class="sub" data-i18n="login-topbar-sub">Borrower Sign In</span></h1>
-    </div>
-    <div class="app-header-right">
+  <div class="phone">
+    <div class="status-bar" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <a href="/" style="color: var(--text-muted); text-decoration: none; font-weight: 500;">← <span data-i18n="login-topbar-home">Home</span></a>
+        <span style="margin-left: 10px;" data-i18n="login-topbar-sub">Borrower Sign In</span>
+      </div>
       <div id="language-selector-root"></div>
-      <a href="/" data-i18n="login-topbar-home">Home</a>
     </div>
-  </header>
 
-  <div class="login-stage">
-    <div class="login-card">
-      <!-- Brand rail -->
-      <aside class="login-brand">
-        <span class="brand-badge" data-i18n="login-hero-badge">Secure Access</span>
-        <h2 class="brand-title" data-i18n="login-hero-title">Your Credit Profile</h2>
-        <p class="brand-sub" data-i18n="login-hero-sub">Sign in to apply, track your applications, and control who sees your data.</p>
-        <ul class="brand-benefits">
-          <li><span class="tick">✓</span><span data-i18n="login-benefit-1">Your data, your key: only you can open your assessments.</span></li>
-          <li><span class="tick">✓</span><span data-i18n="login-benefit-2">Track every application tied to your account.</span></li>
-          <li><span class="tick">✓</span><span data-i18n="login-benefit-3">Passwords stored as a secure one-way hash, never in plain text.</span></li>
-        </ul>
-      </aside>
+    <div class="login-stage">
+      <div class="login-card">
+        <!-- Brand rail -->
+        <aside class="login-brand">
+          <span class="brand-badge" data-i18n="login-hero-badge">Secure Access</span>
+          <h2 class="brand-title" data-i18n="login-hero-title">Your Credit Profile</h2>
+          <p class="brand-sub" data-i18n="login-hero-sub">Sign in to apply, track your applications, and control who sees your data.</p>
+          <ul class="brand-benefits">
+            <li><span class="tick">✓</span><span data-i18n="login-benefit-1">Your data, your key: only you can open your assessments.</span></li>
+            <li><span class="tick">✓</span><span data-i18n="login-benefit-2">Track every application tied to your account.</span></li>
+            <li><span class="tick">✓</span><span data-i18n="login-benefit-3">Passwords stored as a secure one-way hash, never in plain text.</span></li>
+          </ul>
+        </aside>
 
-      <!-- Form panel -->
-      <main class="login-form">
-        <div class="auth-tabs" role="tablist">
-          <button id="tab-login" class="auth-tab active" onclick="switchMode('login')" data-i18n="login-tab-signin">Sign In</button>
-          <button id="tab-register" class="auth-tab" onclick="switchMode('register')" data-i18n="login-tab-create">Create Account</button>
-        </div>
+        <!-- Form panel -->
+        <main class="login-form">
+          <div class="auth-tabs" role="tablist">
+            <button id="tab-login" class="auth-tab active" onclick="switchMode('login')" data-i18n="login-tab-signin">Sign In</button>
+            <button id="tab-register" class="auth-tab" onclick="switchMode('register')" data-i18n="login-tab-create">Create Account</button>
+          </div>
 
-        <p id="intro" class="auth-intro" data-i18n="login-intro-signin">
-          Sign in with your login ID and password to view and protect your credit assessments.</p>
+          <p id="intro" class="auth-intro" data-i18n="login-intro-signin">
+            Sign in with your login ID and password to view and protect your credit assessments.</p>
 
-        <div id="error-box" class="auth-error"></div>
+          <div id="error-box" class="auth-error"></div>
 
-        <div class="form-group">
-          <label class="form-label" for="login-id" data-i18n="login-field-loginid">Login ID</label>
-          <input id="login-id" class="form-control" type="text" autocomplete="username" placeholder="e.g. ravi_kumar">
-        </div>
+          <div class="form-group">
+            <label class="form-label" for="login-id" data-i18n="login-field-loginid">Login ID</label>
+            <input id="login-id" class="form-control" type="text" autocomplete="username" placeholder="e.g. ravi_kumar">
+          </div>
 
-        <div class="form-group">
-          <label class="form-label" for="password" data-i18n="login-field-password">Password</label>
-          <input id="password" class="form-control" type="password" autocomplete="current-password" placeholder="••••••••">
-          <span id="pw-hint" class="field-hint" data-i18n="login-pw-hint">At least 6 characters.</span>
-        </div>
+          <div class="form-group">
+            <label class="form-label" for="password" data-i18n="login-field-password">Password</label>
+            <input id="password" class="form-control" type="password" autocomplete="current-password" placeholder="••••••••">
+            <span id="pw-hint" class="field-hint" data-i18n="login-pw-hint">At least 6 characters.</span>
+          </div>
 
-        <button id="submit-btn" class="btn btn-primary auth-submit" onclick="submitForm()" data-i18n="login-submit-signin">Sign In</button>
+          <button id="submit-btn" class="btn btn-primary auth-submit" onclick="submitForm()" data-i18n="login-submit-signin">Sign In</button>
 
-        <div class="auth-note">
-          <span class="lock">🔒</span>
-          <span data-i18n="login-privacy-note">Your assessments stay linked to your account and no one else can open them.</span>
-        </div>
-      </main>
+          <div class="auth-note">
+            <span class="lock">🔒</span>
+            <span data-i18n="login-privacy-note">Your assessments stay linked to your account and no one else can open them.</span>
+          </div>
+        </main>
+      </div>
     </div>
   </div>
 

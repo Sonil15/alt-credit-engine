@@ -34,11 +34,11 @@ AA Consent Gateway → Ingest API → AES-256 Vault → Preprocessing → ml_fea
 | **Risk-based lending** | Recommends max loan, risk-priced rate, tenure, and EMI per applicant |
 | **Confidence / thin-file** | Data-sufficiency score from how many facets are backed by real data; low-confidence files routed to review, never silent auto-approve |
 | **Audit trail** | Every decision logged to `score_decisions` table |
-| **Self-seeding startup** | Demo cohort auto-loads into the DB on first boot (idempotent), no manual seed/load/train; optional SQLite mode for offline laptop demos |
-| **Deployment** | Docker + docker-compose; live demo on Render |
-| **Multilingual psychometrics** | Agent-guided assessment in EN/HI/BN with deterministic trait scoring; language is chosen once (at login/consent) and carried through the whole flow (the in-chat language picker stays hidden on `/assessment` so it can't be changed mid-session; Likert questions use tap-to-select buttons (text input hidden); open-ended questions show a text input box *and a mic button* for voice answers (Sarvam STT primary, Gemini fallback, browser Web Speech API default); transcribed text lands in the input box for borrower review/edit before submit; agent prompts can be **read aloud in real Hindi/Bengali voices** (Sarvam `bulbul` TTS) via a live "AI voice" toggle) closing the gap where most devices have no `hi-IN`/`bn-IN` system voice and stay silent; toggling off reverts to the browser's built-in speech synthesis; animated processing screen shown while scoring runs. Enforces time limits with partial submission handling. |
-| **Borrower onboarding** | Pre-consent intent capture: borrower selects category (Salaried, Vendor, Farmer, Student, etc.), purpose (linked to category), and requested loan amount, all in EN/HI/BN. Moves category selection off the portal page to a dedicated onboarding flow. |
-| **LLM business profiler** | MSME borrowers (Vendor/Farmer) describe their business in free text (any language); Groq LLM extracts sector, vintage, turnover, seasonality, employees with confidence routing; deterministic multilingual fallback (lakh/hazaar numerals, keyword sector maps) when unsure or offline; borrower confirms every field before submit; raw description encrypted to vault. |
+| **Self-seeding startup** | Demo cohort auto-loads into the DB on first boot (idempotent), no manual seed/load/train; SQLite mode is the primary path for live demos |
+| **Deployment** | Local SQLite run for demos today; Docker + docker-compose (Postgres) is the intended production path, currently broken, fix planned before the finale |
+| **Multilingual psychometrics** | Agent-guided assessment in EN/HI/BN with deterministic trait scoring; language is chosen once (at login/consent) and carried through the whole flow (the in-chat language picker stays hidden on `/assessment` so it can't be changed mid-session; Likert questions use tap-to-select buttons (text input hidden); open-ended questions show a text input box, an on-screen Hindi/Bengali keyboard toggle (Devanagari/Bengali layouts with matras, translated Space/Backspace/Clear, so typing native script never depends on the device having an Indic system keyboard installed), *and a mic button* for voice answers (Sarvam STT primary, Gemini fallback, browser Web Speech API default); transcribed text lands in the input box for borrower review/edit before submit; agent prompts can be **read aloud in real Hindi/Bengali voices** (Sarvam `bulbul` TTS) via a live "AI voice" toggle) closing the gap where most devices have no `hi-IN`/`bn-IN` system voice and stay silent; toggling off reverts to the browser's built-in speech synthesis; animated processing screen shown while scoring runs. Enforces time limits with partial submission handling. |
+| **Borrower onboarding** | Pre-consent intent capture: borrower selects category (Salaried, Vendor, Farmer, Student, etc.), purpose (linked to category), and requested loan amount, all in EN/HI/BN; free-text fields (business description, "Other" purpose) carry the same on-screen Hindi/Bengali keyboard as the assessment page. Moves category selection off the portal page to a dedicated onboarding flow. |
+| **LLM business profiler** | MSME borrowers (Vendor/Farmer) describe their business in free text (any language, typed via the on-screen Indic keyboard or a system keyboard); Groq LLM extracts sector, vintage, turnover, seasonality, employees with confidence routing; deterministic multilingual fallback (lakh/hazaar numerals, keyword sector maps) when unsure or offline; borrower confirms every field before submit; raw description encrypted to vault. |
 | **Affordability gate** | Post-decision lending-policy overlay: if model APPROVEs but requested amount exceeds max serviceable amount, outcome is REVIEW with an explicit counter-offer message (not a silent "approved as requested"). Model decision, PD, score, and fairness parity untouched, only borrower-facing outcome changes. |
 | **Self-report honesty check** | Two new model features added via onboarding: `business_vintage_years` (0 for individuals) and `turnover_income_consistency` (declared vs observed monthly income ratio, clipped [0,1]). Inflating turnover strictly hurts the applicant (anti-gameable); consistency scores, not the claim itself. |
 | **Cohort-aware imputation** | A missing/consent-revoked data source is filled with the borrower's *own cohort* median (typical-applicant), not a biased `0.0`; structurally-N/A features (e.g. business vintage for a salaried worker) correctly stay `0.0`. Learned at training time (`models_ai/imputation.py`, `artifacts/imputation_stats.json`); committed scores unchanged. |
@@ -47,25 +47,9 @@ AA Consent Gateway → Ingest API → AES-256 Vault → Preprocessing → ml_fea
 ## Prerequisites
 
 - Python 3.11+
-- Docker & Docker Compose (for the primary Postgres stack)
 - Groq API key (optional; survey NLP falls back to keyword heuristics)
 
-## Quick Start (Docker + Postgres: primary / deployed configuration)
-
-This is the configuration used for managed Postgres hosts (e.g. Render). On first startup the app **self-seeds** the 100-borrower demo cohort (encrypt → vault → preprocess → ECM) and loads the bundled pre-trained ensemble artifacts (EBM Champion + CatBoost/Logistic Challengers) from `models_ai/artifacts/`, no manual seed/load/train steps needed:
-
-```bash
-cp .env.example .env
-docker compose up --build
-```
-
-Open http://localhost:8000/dashboard, populated automatically.
-
-Seeding is idempotent (it skips if the database already has data), so restarts are safe. Training stays an explicit action (`POST /score/train` or `python -m models_ai.train`) so you can demo the full ECM + EBM ensemble pipeline live.
-
-`SEED_ON_STARTUP` defaults to `true` in `.env.example`. Set it to `false` if you want an empty database on boot.
-
-## Quick Start (optional: zero-dependency local laptop demo)
+## Quick Start (zero-dependency local laptop demo — this is how we demo)
 
 For a quick offline run with **no Docker and no Postgres**, set `USE_SQLITE=true`. The engine uses a local SQLite file and self-seeds on first boot:
 
@@ -75,7 +59,20 @@ pip install -r requirements.txt
 USE_SQLITE=true uvicorn api.main:app --port 8000
 ```
 
-This is only a convenience for local demos (Postgres remains the default and the deployed backend. (A provided `DATABASE_URL`, e.g. on Render, always takes precedence.)
+Open http://localhost:8000/dashboard, populated automatically.
+
+Seeding is idempotent (it skips if the database already has data), so restarts are safe. Training stays an explicit action (`POST /score/train` or `python -m models_ai.train`) so you can demo the full ECM + EBM ensemble pipeline live. `SEED_ON_STARTUP` defaults to `true`; set it to `false` if you want an empty database on boot.
+
+## Docker + Postgres (production-shaped configuration — currently broken, fix planned)
+
+This is the configuration meant for managed Postgres hosts (e.g. Render): same self-seeding behaviour, but against Postgres instead of SQLite. It's currently not working locally; SQLite is the path actually used for demos until this is fixed.
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+Postgres remains the intended production/deployed backend once fixed (a provided `DATABASE_URL`, e.g. on Render, always takes precedence over `USE_SQLITE`).
 
 ## Demo UI
 
@@ -203,7 +200,7 @@ To improve reliability and address explainability concerns, the system implement
 
 ## Deployment
 
-The live demo runs on **Render** (Web Service + managed Postgres). In the Render dashboard:
+The intended production target is **Render** (Web Service + managed Postgres), via the Docker + docker-compose path above; this is currently broken and not what we're demoing (see Quick Start). Once fixed, deploy in the Render dashboard:
 
 1. Connect this GitHub repo and set **Dockerfile** as the build method
 2. Add a Postgres instance and set `DATABASE_URL` on the web service

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Alt-Credit: Your Assessment Result</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
-  <link rel="stylesheet" href="/static/css/borrower.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/borrower.css?v=1.1.0">
   <script src="/static/translations.js?v=1.0.4"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
   <script>
@@ -17,18 +17,20 @@
   </script>
 </head>
 <body>
-  <header class="app-header">
-    <div class="app-header-left">
-      <h1><a href="/" style="color: inherit; text-decoration: none;" data-i18n="borrower-topbar-title">Alt-Credit</a> <span class="sub" data-i18n="borrower-topbar-sub">Your Credit Assessment</span></h1>
-    </div>
-    <div class="app-header-right">
+  <div class="phone">
+    <div class="status-bar" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <a href="/" style="color: var(--text-muted); text-decoration: none; font-weight: 500;">← <span data-i18n="borrower-topbar-home">Home</span></a>
+        <span style="margin-left: 10px;" data-i18n="borrower-topbar-sub">Your Credit Assessment</span>
+      </div>
       <div id="language-selector-root"></div>
-      <a href="/" data-i18n="borrower-topbar-home">Home</a>
-      <a id="privacy-link" href="/consent" data-i18n="borrower-topbar-privacy">Privacy Rights</a>
     </div>
-  </header>
+    <div class="content">
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 15px; gap: 10px; font-size: 13px;">
+        <a id="privacy-link" href="/consent" data-i18n="borrower-topbar-privacy" style="color: #60a5fa; text-decoration: none;">Privacy Rights</a>
+      </div>
 
-  <div class="container">
+      <div class="container">
     <div id="loading" class="loading">
       <div class="spinner"></div>
       <span data-i18n="borrower-loading">Retrieving your assessment…</span>
@@ -133,6 +135,8 @@
       </div>
     </div>
   </div>
+</div>
+</div>
 
   <script>
     const params = new URLSearchParams(window.location.search);

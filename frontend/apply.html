@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Alt-Credit: Borrower Portal</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
-  <link rel="stylesheet" href="/static/css/apply.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/apply.css?v=1.1.0">
   <script src="/static/translations.js?v=1.0.4"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
   <script>
@@ -17,79 +17,84 @@
   </script>
 </head>
 <body>
-  <header class="app-header">
-    <div class="app-header-left">
-      <h1><a href="/" style="color: inherit; text-decoration: none;" data-i18n="apply-topbar-title">Alt-Credit</a> <span class="sub" data-i18n="apply-topbar-sub">Borrower Portal</span></h1>
-    </div>
-    <div class="app-header-right">
+  <div class="phone">
+    <div class="status-bar" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <a href="/" style="color: var(--text-muted); text-decoration: none; font-weight: 500;">← <span data-i18n="apply-topbar-title">Home</span></a>
+        <span style="margin-left: 10px;" data-i18n="apply-topbar-sub">Borrower Portal</span>
+      </div>
       <div id="language-selector-root"></div>
-      <a id="privacy-link" href="/consent" data-i18n="apply-topbar-privacy">Privacy Rights</a>
-      <a id="login-link" href="/login" data-i18n="apply-topbar-signin" style="display:none;">Sign In</a>
-      <span id="account-chip" style="display:none; align-items:center; gap:10px;">
-        <span style="font-size:13px; color:#cbd5e1;">👤 <strong id="account-name"></strong></span>
-        <a href="#" id="logout-link" onclick="doLogout(event)" data-i18n="apply-topbar-signout" style="font-size:13px; color:#f87171;">Sign Out</a>
-      </span>
     </div>
-  </header>
-
-  <div class="hero">
-    <div class="hero-badge" data-i18n="apply-hero-badge">Thin-File Credit</div>
-    <h2 data-i18n="apply-hero-title">Apply for Alternate Credit Scoring</h2>
-    <button class="hero-cta" onclick="startApplication()" data-i18n="apply-hero-cta" style="border: none; cursor: pointer;">Start New Application →</button>
-  </div>
-
-  <div class="container">
-
-    <div class="section-title" style="justify-content: space-between;">
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <span data-i18n="apply-prev-title">Previous Applications</span>
-        <span class="count" id="app-count">0</span>
+    <div class="content">
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 15px; gap: 10px; font-size: 13px;">
+        <a id="privacy-link" href="/consent" data-i18n="apply-topbar-privacy" style="color: #60a5fa; text-decoration: none;">Privacy Rights</a>
+        <a id="login-link" href="/login" data-i18n="apply-topbar-signin" style="display:none; color: #60a5fa; text-decoration: none;">Sign In</a>
+        <span id="account-chip" style="display:none; align-items:center; gap:10px;">
+          <span style="color:#cbd5e1;">👤 <strong id="account-name"></strong></span>
+          <a href="#" id="logout-link" onclick="doLogout(event)" data-i18n="apply-topbar-signout" style="color:#f87171; text-decoration: none;">Sign Out</a>
+        </span>
       </div>
-      <a id="manage-consent-btn" href="/consent" style="display: none; font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 600;" data-i18n="apply-manage-consent">Manage Consent</a>
-    </div>
 
-    <div id="empty-state" class="empty-state">
-      <div class="icon">📋</div>
-      <span data-i18n="apply-empty-text">No applications yet. Start one above to see your results here.</span>
-    </div>
+      <div class="hero">
+        <div class="hero-badge" data-i18n="apply-hero-badge">Thin-File Credit</div>
+        <h2 data-i18n="apply-hero-title">Apply for Alternate Credit Scoring</h2>
+        <p data-i18n="apply-hero-desc">No credit history? No problem. We assess your financial behaviour through consent-based alternative data and a short psychometric assessment.</p>
+        <button class="hero-cta" onclick="startApplication()" data-i18n="apply-hero-cta" style="border: none; cursor: pointer;">Start New Application →</button>
+      </div>
 
-    <div id="app-list" class="app-list" style="display:none"></div>
+      <div class="container">
+        <div class="section-title" style="justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span data-i18n="apply-prev-title">Previous Applications</span>
+            <span class="count" id="app-count">0</span>
+          </div>
+          <a id="manage-consent-btn" href="/consent" style="display: none; font-size: 13px; color: #60a5fa; text-decoration: none; font-weight: 600;" data-i18n="apply-manage-consent">Manage Consent</a>
+        </div>
 
-    <div class="steps-card">
-      <h3 data-i18n="steps-title">How it works</h3>
-      <div class="step-row">
-        <div class="step-num">1</div>
-        <div>
-          <strong data-i18n="apply-step1-title">Grant consent</strong>
-          <span data-i18n="apply-step1-desc">Choose which data sources to share, telecom, e-commerce, location, cash flow. You stay in control.</span>
+        <div id="empty-state" class="empty-state">
+          <div class="icon">📋</div>
+          <span data-i18n="apply-empty-text">No applications yet. Start one above to see your results here.</span>
+        </div>
+
+        <div id="app-list" class="app-list" style="display:none"></div>
+
+        <div class="steps-card">
+          <h3 data-i18n="steps-title">How it works</h3>
+          <div class="step-row">
+            <div class="step-num">1</div>
+            <div>
+              <strong data-i18n="apply-step1-title">Grant consent</strong>
+              <span data-i18n="apply-step1-desc">Choose which data sources to share, telecom, e-commerce, location, cash flow. You stay in control.</span>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">2</div>
+            <div>
+              <strong data-i18n="apply-step2-title">Complete the assessment</strong>
+              <span data-i18n="apply-step2-desc">A short multilingual chat (English, Hindi, Bengali) that measures financial behaviour through psychometric questions.</span>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">3</div>
+            <div>
+              <strong data-i18n="apply-step3-title">Get your score</strong>
+              <span data-i18n="apply-step3-desc">Receive a 300–900 alternate credit score, your loan eligibility decision, and the key factors behind it.</span>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">4</div>
+            <div>
+              <strong data-i18n="apply-step4-title">Bank reviews your application</strong>
+              <span data-i18n="apply-step4-desc">A loan officer reviews your result and contacts you with the final lending decision.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <a href="/consent/compliance" data-i18n="apply-footer-privacy">Privacy &amp; Compliance</a>
+          <a href="/health" data-i18n="apply-footer-status">System Status</a>
         </div>
       </div>
-      <div class="step-row">
-        <div class="step-num">2</div>
-        <div>
-          <strong data-i18n="apply-step2-title">Complete the assessment</strong>
-          <span data-i18n="apply-step2-desc">A short multilingual chat (English, Hindi, Bengali) that measures financial behaviour through psychometric questions.</span>
-        </div>
-      </div>
-      <div class="step-row">
-        <div class="step-num">3</div>
-        <div>
-          <strong data-i18n="apply-step3-title">Get your score</strong>
-          <span data-i18n="apply-step3-desc">Receive a 300–900 alternate credit score, your loan eligibility decision, and the key factors behind it.</span>
-        </div>
-      </div>
-      <div class="step-row">
-        <div class="step-num">4</div>
-        <div>
-          <strong data-i18n="apply-step4-title">Bank reviews your application</strong>
-          <span data-i18n="apply-step4-desc">A loan officer reviews your result and contacts you with the final lending decision.</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer">
-      <a href="/consent/compliance" data-i18n="apply-footer-privacy">Privacy &amp; Compliance</a>
-      <a href="/health" data-i18n="apply-footer-status">System Status</a>
     </div>
   </div>
 
@@ -183,8 +188,8 @@
       if (account && !apps.length) {
         const empty = document.getElementById('empty-state');
         empty.innerHTML = '<div class="icon">🔒</div>'
-          + '<span>' + t('apply-empty-signedin', 'No applications on this device yet. View your latest assessment or start a new one.') + '</span>'
-          + '<a href="/borrower" style="display:inline-block; margin-top:14px; background:#2563eb; color:white; padding:10px 18px; border-radius:8px; text-decoration:none; font-weight:600; font-size:13px;">'
+          + '<div>' + t('apply-empty-signedin', 'No applications on this device yet. View your latest assessment or start a new one.') + '</div>'
+          + '<a href="/borrower" class="empty-cta">'
           + t('apply-view-latest', 'View my latest assessment') + '</a>';
       }
 

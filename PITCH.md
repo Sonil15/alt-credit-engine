@@ -157,10 +157,16 @@ Copy this block for each feature:
   synthesis is *silent* for exactly the low-literacy vernacular borrowers who most need
   audio; the server voice makes the assessment truly usable by someone who can't read
   the screen. Toggling the voice off cleanly reverts to the device's own synthesis.
+  A third path covers the borrower who wants to type but whose phone has no Hindi/
+  Bengali system keyboard installed (common on budget Android devices): an in-page
+  on-screen keyboard (Devanagari/Bengali layouts, including matras, with translated
+  Space/Backspace/Clear keys) sits next to the open-ended answer box, so typing in
+  the borrower's own script never depends on OS-level input support.
 - **Demo moment:** Take the assessment live in Hindi. The question is *read aloud in a
   natural Hindi voice*, then tap the mic and speak the answer, and show it land as
   editable text. Then toggle "AI voice" off and note the device falls silent on Hindi:
-  "that silence is the inclusion gap; our voice layer closes it."
+  "that silence is the inclusion gap; our voice layer closes it." Then open the
+  on-screen keyboard and type an answer directly in Devanagari.
 - **Honest caveat:** No audio (spoken answers or synthesised prompts) is stored, only
   transcribed text, so there's no audio trail to show, by design. Server voices need a
   network round-trip (~0.6s per prompt); if a call fails it falls back to the device
@@ -359,14 +365,31 @@ Copy this block for each feature:
   of a hard rejection at the form. The free-text business-profile capture (see
   below) now also reaches Gig Workers by default and Homemakers whenever they
   declare a home-business purpose, not just Vendor/Farmer, so more thin-file
-  borrowers get the chance to self-report vintage and turnover.
+  borrowers get the chance to self-report vintage and turnover. This category-aware
+  design came directly out of user feedback: we walked a gig worker and a
+  homemaker through an earlier version of the flow that had no category-specific
+  onboarding at all, just one generic form. The gig worker's income didn't fit
+  either "salaried" or "business owner", so a Gig Worker category with its own
+  purpose list was added and routed into the business-profile capture despite gig
+  work not being a registered business. The homemaker pointed out that unpaid
+  domestic status was being assumed even when she actually ran income-generating
+  work from home (tailoring, tiffin service, etc.), which is why "Small home
+  business" exists as a Homemaker purpose that unlocks the same business-profile
+  section Vendors get, instead of silently treating every homemaker as having no
+  economic activity to declare.
 - **Demo moment:** Walk the onboarding page in Hindi or Bengali, switch category
   and watch the recommended purposes change; pick "Other" and type a reason; then
   show the same purpose (and the officer-facing consistency chip) on the loan
-  officer's dashboard next to the offer.
+  officer's dashboard next to the offer. If asked "did you test this with real
+  users?", this is the answer: name the gig worker and homemaker sessions and
+  point at the Gig Worker category and "Small home business" purpose as the
+  direct, traceable result.
 - **Honest caveat:** Broadening categories to a fully open text purpose would lose
   the consistency signal entirely; the recommended-list-plus-Other design is a
-  deliberate middle ground between rigid enums and unstructured free text.
+  deliberate middle ground between rigid enums and unstructured free text. This
+  was informal user feedback (two individuals), not a structured usability study,
+  so it's directional validation of the design approach, not a statistically
+  representative sample.
 
 ### LLM business profiler: borrower-confirmed, with a deterministic fallback
 - **Judge problem it answers:** "MSME borrowers have business facts no data source
@@ -381,10 +404,14 @@ Copy this block for each feature:
   or offline. Runs at ₹0 marginal cost, degrades gracefully with the API switched
   off, and the raw description is AES-encrypted in the vault like every other raw
   payload.
-- **Demo moment:** Type "मैं 8 साल से सब्ज़ी की दुकान चलाता हूँ, महीने में ₹40,000
-  कमाता हूँ", watch sector/vintage/turnover fill in, edit one field to prove the
-  borrower owns the record, then kill the API key and show the offline extractor
-  reading the same sentence.
+  The business-description box and the "Other, please specify" purpose field both
+  carry the same on-screen Hindi/Bengali keyboard used on the assessment page, so a
+  borrower without an Indic system keyboard can still type the description natively
+  instead of being pushed back to English.
+- **Demo moment:** Open the on-screen keyboard and type "मैं 8 साल से सब्ज़ी की दुकान
+  चलाता हूँ, महीने में ₹40,000 कमाता हूँ" directly in Devanagari, watch sector/
+  vintage/turnover fill in, edit one field to prove the borrower owns the record,
+  then kill the API key and show the offline extractor reading the same sentence.
 - **Honest caveat:** The fallback is a curated regex/keyword extractor, not a
   language model, it reads clearly stated facts well; the LLM remains the nuanced
   primary path.
