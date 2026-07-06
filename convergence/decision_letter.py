@@ -18,6 +18,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from core.date_i18n import format_human_date
+
 SUPPORTED_LANGUAGES = ("en", "hi", "bn")
 
 # Letter scaffold — every field label + boilerplate, per language.
@@ -164,9 +166,9 @@ def render_letter(letter: dict[str, Any], lang: str | None = "en") -> dict[str, 
     reasons = [_translate_reason(r, lang) for r in (letter.get("reason_codes") or [])]
 
     created = letter.get("created_at")
-    date_str = created.date().isoformat() if isinstance(created, datetime) else str(created or "")
+    date_str = format_human_date(created.date(), lang) if isinstance(created, datetime) else str(created or "")
     signed = letter.get("signed_at")
-    signed_str = signed.date().isoformat() if isinstance(signed, datetime) else (str(signed) if signed else None)
+    signed_str = format_human_date(signed.date(), lang) if isinstance(signed, datetime) else (str(signed) if signed else None)
 
     user_id = str(letter.get("user_id", ""))
     ref = "AC-" + datetime.now(timezone.utc).strftime("%Y") + "-" + user_id.replace("-", "")[:8].upper()

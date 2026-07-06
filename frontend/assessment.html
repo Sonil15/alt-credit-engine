@@ -21,9 +21,12 @@
     <div class="header">
       <h1 data-i18n="assessment-header-title">Psychometric Assessment</h1>
       <p data-i18n="assessment-header-sub">RBI AA Consent · Trait-based · Agent-guided</p>
-      <!-- Language is chosen upstream (login/consent) and carried via localStorage;
-           this in-page picker stays hidden so it can't be changed mid-flow. -->
-      <div class="lang-bar hidden" id="lang-bar">
+      <!-- Language defaults to whatever was chosen upstream (login/consent), carried
+           via localStorage, but the borrower can still confirm/change it here before
+           starting — the intro message explicitly points at this picker. It locks
+           (buttons disabled) the moment the assessment actually begins, so it can't be
+           changed mid-flow. -->
+      <div class="lang-bar" id="lang-bar">
         <button class="lang-btn active" data-lang="en">English</button>
         <button class="lang-btn" data-lang="hi">हिन्दी</button>
         <button class="lang-btn" data-lang="bn">বাংলা</button>
@@ -31,8 +34,13 @@
     </div>
     <div class="info-bar">
       <div class="progress" id="progress"></div>
-      <div class="timer hidden" id="timer-display">
-        ⏱️ <span id="timer-text">07:00</span>
+      <div class="info-right">
+        <button class="tts-toggle hidden" id="tts-toggle" type="button" aria-pressed="false">
+          <span class="tts-icon">🔊</span><span class="tts-label">AI voice</span>
+        </button>
+        <div class="timer hidden" id="timer-display">
+          ⏱️ <span id="timer-text">07:00</span>
+        </div>
       </div>
     </div>
     <div class="chat" id="chat"></div>
@@ -113,7 +121,7 @@
     <div id="keyboard-panel" class="keyboard-panel hidden"></div>
   </div>
 
-  <script src="/static/voice.js?v=2"></script>
+  <script src="/static/voice.js?v=3"></script>
   <script>
     function checkBackToApply() {
       if (window.location.pathname === '/apply' || window.location.pathname.endsWith('/apply')) {
@@ -141,6 +149,35 @@
     let started = false;
     let currentItem = null;
     let voice = VoiceProvider.createVoiceProvider();
+
+    // Unified narration router. When the AI-voice toggle is on (and Sarvam TTS is
+    // configured on the backend) the agent's prompts are spoken with real
+    // Indian-language voices via /speech/synthesize; otherwise it uses the
+    // browser's built-in speech synthesis — which is exactly the "current TTS
+    // system" and is what toggling off reverts to. Every existing speak/stop call
+    // site goes through here so the switch is seamless.
+    const speaker = {
+      server: new VoiceProvider.ServerTTS(),
+      available: false,   // server TTS configured on the backend
+      useServer: false,   // live per-session toggle state
+      speak(text, lang) {
+        this.stop();
+        if (this.useServer && this.available) {
+          this.server.speak(text, lang).catch(() => {
+            // Network/synth failure → fall back to the browser voice so a prompt
+            // is never silently dropped.
+            if (voice.synth) voice.speak(text, lang);
+          });
+        } else if (voice.synth) {
+          voice.speak(text, lang);
+        }
+      },
+      stop() {
+        this.server.stop();
+        if (voice.synth) voice.synth.cancel();
+      },
+    };
+
     const chat = document.getElementById('chat');
     const input = document.getElementById('answer-input');
 
@@ -177,6 +214,14 @@
       en: 'The timer will begin now when you click "Start Timer".',
       hi: 'जब आप "टाइमर शुरू करें" पर क्लिक करेंगे तो टाइमर शुरू हो जाएगा।',
       bn: 'আপনি "টাইমার শুরু করুন" এ ক্লিক করলে টাইমার শুরু হবে।'
+    };
+    // Shown when /assessment/start is refused without a specific server message
+    // (e.g. a network error). The 429 application-limit reply carries its own
+    // `detail`, which is preferred over this generic fallback.
+    const START_ERROR_FALLBACK = {
+      en: "We couldn't start the assessment right now. Please try again later.",
+      hi: 'हम अभी मूल्यांकन शुरू नहीं कर सके। कृपया बाद में पुनः प्रयास करें।',
+      bn: 'আমরা এখন মূল্যায়ন শুরু করতে পারিনি। অনুগ্রহ করে পরে আবার চেষ্টা করুন।',
     };
     const PROCESSING_TITLE = {
       en: 'Analysing your responses…',
@@ -279,28 +324,50 @@
     }
 
     async function startSession() {
-      const resp = await fetch('/assessment/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, language, cohort }),
-      });
-      const data = await resp.json();
+      let resp, data;
+      try {
+        resp = await fetch('/assessment/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, language, cohort }),
+        });
+        data = await resp.json();
+      } catch (e) {
+        data = null;
+      }
+
+      // The server can legitimately refuse to start — most commonly the
+      // one-application-per-30-days limit (429), which returns {detail: "..."}.
+      // Surface that message instead of rendering "undefined" / "NaN%".
+      if (!resp || !resp.ok || !data || !data.session_id) {
+        const detail = (data && data.detail) || START_ERROR_FALLBACK[language] || START_ERROR_FALLBACK.en;
+        addBubble(detail, 'agent');
+        speaker.speak(detail, language);
+        // Re-arm the flow so the borrower isn't dead-ended: a transient error can
+        // be retried, and the application-limit case simply re-shows this same
+        // clear message rather than trapping them on a blank screen.
+        started = false;
+        document.querySelectorAll('.lang-btn').forEach(b => { b.disabled = false; });
+        document.getElementById('start-bar').classList.remove('hidden');
+        return;
+      }
+
       sessionId = data.session_id;
       userId = data.user_id;
       window.timeLimitSeconds = data.time_limit_seconds || 420;
       window.extensionSeconds = data.extension_seconds || 120;
       window.firstItem = data.item;
-      
+
       let msg = data.message;
       const instruction = TIMER_INSTRUCTION[language] || TIMER_INSTRUCTION.en;
       msg += "\n\n" + instruction;
-      
+
       addBubble(msg, 'agent');
-      
+
       document.getElementById('begin-btn').textContent = START_TIMER_LABEL[language] || START_TIMER_LABEL.en;
       document.getElementById('begin-bar').classList.remove('hidden');
 
-      if (voice.synth) voice.speak(msg, language);
+      speaker.speak(msg, language);
     }
 
     async function beginQuestions() {
@@ -324,7 +391,7 @@
       if (!item) return;
       currentItem = item;
       addBubble(item.prompt + (item.hint ? '\n\n' + item.hint : ''), 'agent');
-      if (voice.synth) voice.speak(item.prompt, language);
+      speaker.speak(item.prompt, language);
       renderOptions(item);
       const is_open_ended = item.type === 'open_ended';
       document.getElementById('input-bar').classList.toggle('hidden', !is_open_ended);
@@ -341,7 +408,7 @@
 
     async function submitAnswer(answer) {
       if (!sessionId || !currentItem || !answer.trim()) return;
-      if (voice.synth) voice.synth.cancel(); // Stop speaking immediately on answer submission
+      speaker.stop(); // Stop speaking immediately on answer submission
       
       // Auto-hide keyboard on submission
       const kbPanel = document.getElementById('keyboard-panel');
@@ -364,7 +431,7 @@
 
       if (data.needs_clarification) {
         addBubble(data.message, 'agent');
-        if (voice.synth) voice.speak(data.message, language);
+        speaker.speak(data.message, language);
         handleItem(data.item);
         return;
       }
@@ -384,7 +451,7 @@
     }
 
     async function finishAndScore() {
-      if (voice.synth) voice.synth.cancel(); // Stop speaking immediately on finish
+      speaker.stop(); // Stop speaking immediately on finish
       showProcessingPanel();
       await new Promise(r => setTimeout(r, 3500));
       localStorage.setItem('altcredit_last_session', sessionId);
@@ -487,6 +554,33 @@
 
     document.getElementById('send-btn').onclick = () => submitAnswer(input.value);
     input.addEventListener('keydown', e => { if (e.key === 'Enter') submitAnswer(input.value); });
+
+    // ── AI-voice (server TTS) toggle ────────────────────────────────────────
+    // Shown only when Sarvam TTS is configured on the backend. On = real
+    // Indian-language voices via /speech/synthesize; off = the browser's built-in
+    // speech synthesis (the previous behaviour). Choice persists across reloads.
+    const ttsBtn = document.getElementById('tts-toggle');
+    function updateTTSToggleUI() {
+      ttsBtn.classList.toggle('active', speaker.useServer);
+      ttsBtn.setAttribute('aria-pressed', speaker.useServer ? 'true' : 'false');
+      ttsBtn.title = speaker.useServer
+        ? 'AI voice on (Sarvam) — tap to use your device voice'
+        : 'AI voice off — using your device voice';
+    }
+    (async () => {
+      speaker.available = await speaker.server.isAvailable();
+      if (!speaker.available) { speaker.useServer = false; return; }
+      const stored = localStorage.getItem('altcredit_tts_server');
+      speaker.useServer = stored === null ? true : stored === '1'; // default on when available
+      ttsBtn.classList.remove('hidden');
+      updateTTSToggleUI();
+    })();
+    ttsBtn.onclick = () => {
+      speaker.useServer = !speaker.useServer;
+      localStorage.setItem('altcredit_tts_server', speaker.useServer ? '1' : '0');
+      updateTTSToggleUI();
+      speaker.stop(); // cut any in-progress narration when switching modes
+    };
 
     // ── Voice answers (open-ended items only) ───────────────────────────────
     // Prefers server-side STT (Sarvam, tuned for Indian languages, with Gemini as
@@ -704,7 +798,7 @@
       timerInterval = null;
       document.getElementById('timer-display').classList.add('hidden');
       
-      if (voice.synth) voice.synth.cancel(); // Stop speaking immediately on timeout
+      speaker.stop(); // Stop speaking immediately on timeout
       
       // Auto-hide keyboard on timeout
       const kbPanel = document.getElementById('keyboard-panel');

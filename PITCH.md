@@ -144,19 +144,27 @@ Copy this block for each feature:
 - **Judge problem it answers:** "How do you assess thin-file borrowers who don't speak
   English, may not read comfortably, and have no credit history?"
 - **Pitch line:** "We score financial character through a conversational assessment in
-  the borrower's own language — typed or *spoken*."
-- **Differentiator:** True vernacular inclusion (Devanagari + Bengali rendering, plus a
-  mic on every open-ended question). Speech-to-text runs through a vendor-agnostic
-  provider layer — Sarvam (tuned for Indian-language accents) as primary, Gemini as
-  fallback — behind a single env var, with the browser's own Web Speech API as a
-  zero-config, zero-cost path when no server key is set. A dictated answer lands in the
-  text box for the borrower to review and edit before it's submitted, so a misheard
-  word never silently becomes a wrong answer.
-- **Demo moment:** Take the assessment live in Hindi or Bengali, tap the mic on an
-  open-ended question, and speak the answer — show it land as editable text, not an
-  auto-submitted guess.
-- **Honest caveat:** No audio is stored — only the transcribed text — so the demo can't
-  show an audio trail, by design (nothing to leak, nothing to secure).
+  the borrower's own language — spoken *to* them and spoken *by* them."
+- **Differentiator:** True vernacular inclusion, both directions. **Input:** a mic on
+  every open-ended question; speech-to-text runs through a vendor-agnostic provider
+  layer — Sarvam (tuned for Indian-language accents) as primary, Gemini as fallback —
+  behind a single env var, with the browser's own Web Speech API as a zero-config,
+  zero-cost path. A dictated answer lands in the text box for the borrower to review
+  and edit before submitting, so a misheard word never silently becomes a wrong answer.
+  **Output:** the agent's prompts are read aloud with real Sarvam Hindi/Bengali voices
+  (`bulbul`), toggled live on the assessment page. This fixes a genuine inclusion gap —
+  most laptops/phones ship no `hi-IN`/`bn-IN` system voice, so the browser's built-in
+  synthesis is *silent* for exactly the low-literacy vernacular borrowers who most need
+  audio; the server voice makes the assessment truly usable by someone who can't read
+  the screen. Toggling the voice off cleanly reverts to the device's own synthesis.
+- **Demo moment:** Take the assessment live in Hindi — the question is *read aloud in a
+  natural Hindi voice*, then tap the mic and speak the answer, and show it land as
+  editable text. Then toggle "AI voice" off and note the device falls silent on Hindi —
+  "that silence is the inclusion gap; our voice layer closes it."
+- **Honest caveat:** No audio (spoken answers or synthesised prompts) is stored — only
+  transcribed text — so there's no audio trail to show, by design. Server voices need a
+  network round-trip (~0.6s per prompt); if a call fails it falls back to the device
+  voice rather than blocking the flow.
 
 ### Open-ended answer scoring — LLM with confidence routing + deterministic fallback
 - **Judge problem it answers:** "Free-text is messy — is your scoring of it robust and
@@ -197,9 +205,13 @@ Copy this block for each feature:
 - **Differentiator:** Most teams treat the assessment as replayable; we recognise the
   psychometric items as a *finite, learnable* instrument and protect their validity with
   a server-side limit (default 1 per 30 days, keyed on borrower identity, configurable).
-  The refusal is explicit — a 429 with the date they can re-apply — not a silent failure.
+  The refusal is explicit — a 429 with the date they can re-apply — not a silent failure,
+  and it's fully localised (EN/HI/BN) with a human-readable date ("5 August 2026", not a
+  raw "2026-08-05"), since this message is read aloud by the assessment's TTS — a spoken
+  ISO date reads as disconnected digits, not a date.
 - **Demo moment:** Complete an assessment, immediately try to start another for the same
-  borrower, and show the block with the concrete "apply again on or after <date>" message.
+  borrower, and show the block with the concrete "apply again on or after 5 August 2026"
+  message, spoken correctly by the AI voice in Hindi or Bengali.
 - **Honest caveat:** The limit is keyed on the borrower's identifier; a determined actor
   forging fresh identities is an identity/KYC problem upstream, not one this control
   claims to solve.
@@ -249,7 +261,10 @@ Copy this block for each feature:
   edit the wording and sign — stamping their identity and a timestamp onto the record. The
   borrower retrieves the signed notice from their own account, asynchronously, so no
   officer needs to be online when they apply. In-app delivery keeps the whole flow local
-  and private (no SMS gateway, no data leaving the Data Fiduciary).
+  and private (no SMS gateway, no data leaving the Data Fiduciary). Every date on the
+  letter — decision date, signature date — renders in the borrower's own language ("5
+  अगस्त 2026" / "5 আগস্ট 2026"), not a raw ISO string dropped into an otherwise fully
+  translated notice.
 - **Demo moment:** On the officer dashboard, open the review queue, pick a rejection,
   switch the letter to Hindi or Bengali live, sign it — then show it appear in the
   borrower's account as a downloadable notice. "The AI drafts; the human signs; the

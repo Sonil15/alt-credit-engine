@@ -189,6 +189,64 @@ class ServerSpeechRecorder {
   }
 }
 
+/**
+ * Plays agent prompts through the backend's /speech/synthesize endpoint (Sarvam
+ * bulbul — real Hindi/Bengali/English voices). Used when the borrower turns the
+ * TTS toggle on, instead of the browser's speechSynthesis, which on most laptops
+ * has no hi-IN/bn-IN voice installed and therefore stays silent for those
+ * languages. One in-flight request and one <audio> element at a time; stop()
+ * aborts both so a new prompt (or an answer submission) cuts speech immediately.
+ */
+class ServerTTS {
+  constructor() {
+    this._audio = null;
+    this._controller = null;
+  }
+
+  async isAvailable() {
+    try {
+      const resp = await fetch("/speech/config");
+      if (!resp.ok) return false;
+      const data = await resp.json();
+      return !!data.tts_available;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Synthesise and play `text`. Resolves when playback finishes (or on error,
+   * so callers can fall back to browser TTS). */
+  async speak(text, lang = "en") {
+    this.stop();
+    this._controller = new AbortController();
+    const resp = await fetch("/speech/synthesize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, language: lang }),
+      signal: this._controller.signal,
+    });
+    if (!resp.ok) {
+      const detail = (await resp.json().catch(() => ({}))).detail || "synthesis failed";
+      throw new Error(detail);
+    }
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    return new Promise((resolve) => {
+      const audio = new Audio(url);
+      this._audio = audio;
+      const done = () => { URL.revokeObjectURL(url); resolve(); };
+      audio.onended = done;
+      audio.onerror = done;
+      audio.play().catch(done);
+    });
+  }
+
+  stop() {
+    if (this._controller) { this._controller.abort(); this._controller = null; }
+    if (this._audio) { this._audio.pause(); this._audio = null; }
+  }
+}
+
 function createVoiceProvider() {
   const provider = new BrowserVoiceProvider();
   if (provider.isSupported()) return provider;
@@ -197,6 +255,7 @@ function createVoiceProvider() {
 
 window.VoiceProvider = {
   BrowserVoiceProvider,
+  ServerTTS,
   BhashiniVoiceProvider,
   ServerSpeechRecorder,
   createVoiceProvider,

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import get_settings
 from core.database import get_db
+from core.date_i18n import format_human_date
 from core.security import get_encryptor
 from models.db_models import SecureVault
 from models.pydantic_schemas import (
@@ -45,7 +46,26 @@ def _to_naive_utc(dt: datetime) -> datetime:
     return dt
 
 
-async def _enforce_application_limit(db: AsyncSession, user_id: str | None) -> None:
+# Application-limit refusal, per session language. {count}/{window_days} are ints,
+# {retry_on} is a pre-formatted human date (see core.date_i18n) — never a raw ISO
+# string, since this message is also read aloud by the assessment's TTS.
+_LIMIT_MESSAGE = {
+    "en": (
+        "Application limit reached: at most {count} application(s) per {window_days} "
+        "days per borrower. You can apply again on or after {retry_on}."
+    ),
+    "hi": (
+        "आवेदन सीमा पूरी हो गई है: प्रति आवेदक {window_days} दिनों में अधिकतम {count} आवेदन। "
+        "आप {retry_on} को या उसके बाद फिर से आवेदन कर सकते हैं।"
+    ),
+    "bn": (
+        "আবেদনের সীমা পূর্ণ হয়েছে: প্রতি আবেদনকারী {window_days} দিনে সর্বোচ্চ {count}টি আবেদন। "
+        "আপনি {retry_on} বা তার পরে আবার আবেদন করতে পারেন।"
+    ),
+}
+
+
+async def _enforce_application_limit(db: AsyncSession, user_id: str | None, language: str = "en") -> None:
     """Reject a new application if the borrower has applied too recently.
 
     A repeat applicant already knows the questionnaire and could rehearse answers,
@@ -78,13 +98,15 @@ async def _enforce_application_limit(db: AsyncSession, user_id: str | None) -> N
     if len(recent) < settings.APPLICATION_LIMIT_COUNT:
         return
 
-    retry_on = (recent[0] + timedelta(days=window_days)).date().isoformat()
+    retry_date = (recent[0] + timedelta(days=window_days)).date()
+    retry_on = format_human_date(retry_date, language)
+    template = _LIMIT_MESSAGE.get(language, _LIMIT_MESSAGE["en"])
     raise HTTPException(
         status_code=429,
-        detail=(
-            f"Application limit reached: at most {settings.APPLICATION_LIMIT_COUNT} "
-            f"application(s) per {window_days} days per borrower. You can apply "
-            f"again on or after {retry_on}."
+        detail=template.format(
+            count=settings.APPLICATION_LIMIT_COUNT,
+            window_days=window_days,
+            retry_on=retry_on,
         ),
     )
 
@@ -95,7 +117,7 @@ async def start_assessment(
     db: AsyncSession = Depends(get_db),
 ) -> AssessmentStartResponse:
     """Start a multilingual agentic psychometric session."""
-    await _enforce_application_limit(db, request.user_id)
+    await _enforce_application_limit(db, request.user_id, request.language)
     session = create_session(user_id=request.user_id, language=request.language, cohort=request.cohort)
     payload = start_response(session)
     settings = get_settings()

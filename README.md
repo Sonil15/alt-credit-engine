@@ -36,7 +36,7 @@ AA Consent Gateway → Ingest API → AES-256 Vault → Preprocessing → ml_fea
 | **Audit trail** | Every decision logged to `score_decisions` table |
 | **Self-seeding startup** | Demo cohort auto-loads into the DB on first boot (idempotent) — no manual seed/load/train; optional SQLite mode for offline laptop demos |
 | **Deployment** | Docker + docker-compose; live demo on Render |
-| **Multilingual psychometrics** | Agent-guided assessment in EN/HI/BN with deterministic trait scoring; language is chosen once (at login/consent) and carried through the whole flow — the in-chat language picker stays hidden on `/assessment` so it can't be changed mid-session; Likert questions use tap-to-select buttons (text input hidden); open-ended questions show a text input box *and a mic button* for voice answers (Sarvam STT primary, Gemini fallback, browser Web Speech API default); transcribed text lands in the input box for borrower review/edit before submit; animated processing screen shown while scoring runs. Enforces time limits with partial submission handling. |
+| **Multilingual psychometrics** | Agent-guided assessment in EN/HI/BN with deterministic trait scoring; language is chosen once (at login/consent) and carried through the whole flow — the in-chat language picker stays hidden on `/assessment` so it can't be changed mid-session; Likert questions use tap-to-select buttons (text input hidden); open-ended questions show a text input box *and a mic button* for voice answers (Sarvam STT primary, Gemini fallback, browser Web Speech API default); transcribed text lands in the input box for borrower review/edit before submit; agent prompts can be **read aloud in real Hindi/Bengali voices** (Sarvam `bulbul` TTS) via a live "AI voice" toggle — closing the gap where most devices have no `hi-IN`/`bn-IN` system voice and stay silent; toggling off reverts to the browser's built-in speech synthesis; animated processing screen shown while scoring runs. Enforces time limits with partial submission handling. |
 | **Borrower onboarding** | Pre-consent intent capture: borrower selects category (Salaried, Vendor, Farmer, Student, etc.), purpose (linked to category), and requested loan amount — all in EN/HI/BN. Moves category selection off the portal page to a dedicated onboarding flow. |
 | **LLM business profiler** | MSME borrowers (Vendor/Farmer) describe their business in free text (any language); Groq LLM extracts sector, vintage, turnover, seasonality, employees with confidence routing; deterministic multilingual fallback (lakh/hazaar numerals, keyword sector maps) when unsure or offline; borrower confirms every field before submit; raw description encrypted to vault. |
 | **Affordability gate** | Post-decision lending-policy overlay: if model APPROVEs but requested amount exceeds max serviceable amount, outcome is REVIEW with an explicit counter-offer message (not a silent "approved as requested"). Model decision, PD, score, and fairness parity untouched — only borrower-facing outcome changes. |
@@ -131,8 +131,9 @@ This is only a convenience for local demos — Postgres remains the default and 
 | POST | `/assessment/start` | — | Start agentic assessment session |
 | POST | `/assessment/answer` | — | Submit answer to current item (tracks time elapsed and enforces limits) |
 | GET | `/assessment/session/{session_id}` | — | Session progress and trait snapshot |
-| GET | `/speech/config` | — | Check if server-side STT is available (boolean); client falls back to browser Web Speech API if false |
+| GET | `/speech/config` | — | Report which server-side voice features are available (`stt_available`, `tts_available`); client falls back to the browser's Web Speech API / speech synthesis when false |
 | POST | `/speech/transcribe` | — | Transcribe audio from mic (multipart; audio file + language code); returns text transcript |
+| POST | `/speech/synthesize` | — | Synthesize agent prompt text to speech (JSON: text + language); returns WAV audio (Sarvam `bulbul` Indian-language voices) |
 | POST | `/api/verify-live-location` | — | Compare live GPS check-in to e-commerce delivery pin history |
 
 ## Authentication & Access Control
@@ -175,7 +176,7 @@ This is only a convenience for local demos — Postgres remains the default and 
 | `AES_SECRET_KEY` | dev default | 64-char hex key for AES-256-GCM vault encryption |
 | `GROQ_API_KEY` | — | Optional LLM for psychometric agent (heuristic fallback); uses `llama-3.1-8b-instant` by default |
 | `SPEECH_STT_PROVIDER` | `none` | Server-side speech-to-text: `sarvam` (primary, Indian-language tuned), `gemini` (fallback), or `none` (browser Web Speech API only) |
-| `SARVAM_API_KEY` | — | Sarvam AI speech-to-text API key; required if `SPEECH_STT_PROVIDER=sarvam` |
+| `SARVAM_API_KEY` | — | Sarvam AI key; powers STT when `SPEECH_STT_PROVIDER=sarvam`, and also enables the assessment's "AI voice" (server TTS) toggle whenever set |
 | `GEMINI_API_KEY` | — | Google Gemini API key; required if `SPEECH_STT_PROVIDER=gemini` |
 
 See `.env.example` for the full list.

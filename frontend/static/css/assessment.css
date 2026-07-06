@@ -231,6 +231,47 @@ body {
   padding: 0;
 }
 
+.info-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.tts-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--border-radius-sm);
+  background: #0f172a;
+  border: 1px solid #334155;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tts-toggle:hover {
+  border-color: #475569;
+}
+
+.tts-toggle.active {
+  color: #bfdbfe;
+  background: rgba(37, 99, 235, 0.15);
+  border-color: rgba(37, 99, 235, 0.45);
+}
+
+/* Dim the icon when off, so the on/off state reads at a glance. */
+.tts-toggle .tts-icon {
+  opacity: 0.45;
+  transition: opacity 0.2s ease;
+}
+
+.tts-toggle.active .tts-icon {
+  opacity: 1;
+}
+
 .timer {
   font-size: 13px;
   font-weight: 700;
