@@ -45,7 +45,7 @@ def letter_to_dict(row: DecisionLetter) -> dict[str, Any]:
 async def upsert_letter_for_decision(session: AsyncSession, payload: dict[str, Any]) -> None:
     """Create or refresh the borrower's letter from a scoring payload.
 
-    Does not commit — the caller commits alongside the ScoreDecision write so the
+    Does not commit. The caller commits alongside the ScoreDecision write so the
     audit row and the letter persist together.
     """
     user_id = UUID(str(payload["user_id"]))
@@ -70,7 +70,7 @@ async def upsert_letter_for_decision(session: AsyncSession, payload: dict[str, A
         )
         return
 
-    # Already finalised for this same outcome — leave the signed/auto-issued letter alone.
+    # Already finalised for this same outcome (leave the signed/auto-issued letter alone.
     if existing.status == ISSUED and existing.outcome == outcome:
         return
 

@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.borrower_auth import resolve_bearer_user_id
 from core.business_profile import (
+    ALL_PURPOSES,
     BUSINESS_COHORTS,
     PURPOSES_BY_COHORT,
     extract_business_profile,
@@ -76,16 +77,15 @@ async def submit_intake(
     if session_user_id != request.user_id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    allowed = PURPOSES_BY_COHORT.get(request.cohort)
-    if allowed is None:
+    if request.cohort not in PURPOSES_BY_COHORT:
         raise HTTPException(status_code=422, detail=f"Unknown borrower category: {request.cohort}")
-    if request.loan_purpose not in allowed:
+    # Purpose only needs to be a known code, not one recommended for this
+    # cohort — cross-cohort picks are allowed and surface downstream as a soft
+    # `purpose_consistent=False` signal for the officer, not a hard block.
+    if request.loan_purpose not in ALL_PURPOSES:
         raise HTTPException(
             status_code=422,
-            detail=(
-                f"Loan purpose '{request.loan_purpose}' is not available for the "
-                f"{request.cohort} category. Allowed: {', '.join(allowed)}."
-            ),
+            detail=f"Unknown loan purpose: {request.loan_purpose}",
         )
 
     # Raw description is personal data: encrypted vault only, never plaintext.
@@ -116,6 +116,9 @@ async def submit_intake(
         user_id=UUID(request.user_id),
         cohort=request.cohort,
         loan_purpose=request.loan_purpose,
+        loan_purpose_other_text=request.loan_purpose_other_text.strip()
+        if request.loan_purpose == "other" and request.loan_purpose_other_text
+        else None,
         requested_amount=float(request.requested_amount),
         business_profile_json=profile_json,
         extraction_method=request.extraction_method
@@ -143,7 +146,7 @@ async def get_latest_intake(
     x_api_key: str | None = Header(default=None, alias="X-API-Key"),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Latest intake for a borrower — the borrower themselves or a bank officer."""
+    """Latest intake for a borrower. The borrower themselves or a bank officer."""
     settings = get_settings()
     expected_key = settings.API_KEY.strip()
     if not (expected_key and x_api_key == expected_key):
@@ -160,6 +163,7 @@ async def get_latest_intake(
         "user_id": str(intake.user_id),
         "cohort": intake.cohort,
         "loan_purpose": intake.loan_purpose,
+        "loan_purpose_other_text": intake.loan_purpose_other_text,
         "requested_amount": intake.requested_amount,
         "business_profile": json.loads(intake.business_profile_json)
         if intake.business_profile_json

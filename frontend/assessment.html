@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>Alt-Credit — Psychometric Assessment</title>
+  <title>Alt-Credit: Psychometric Assessment</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/assessment.css?v=1.0.0">
-  <script src="/static/translations.js?v=1.0.2"></script>
+  <script src="/static/translations.js?v=1.0.4"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
   <script>
     // Login is mandatory for the borrower flow. Redirect to sign-in before any
@@ -23,7 +23,7 @@
       <p data-i18n="assessment-header-sub">RBI AA Consent · Trait-based · Agent-guided</p>
       <!-- Language defaults to whatever was chosen upstream (login/consent), carried
            via localStorage, but the borrower can still confirm/change it here before
-           starting — the intro message explicitly points at this picker. It locks
+           starting. The intro message explicitly points at this picker. It locks
            (buttons disabled) the moment the assessment actually begins, so it can't be
            changed mid-flow. -->
       <div class="lang-bar" id="lang-bar">
@@ -133,13 +133,13 @@
 
     const params = new URLSearchParams(window.location.search);
     // Login is mandatory, so default to the signed-in account's stable id when the
-    // URL doesn't carry one — never mint an anonymous, unlinked identity.
+    // URL doesn't carry one. Never mint an anonymous, unlinked identity.
     const _acct = (window.Auth && Auth.currentUser()) || null;
     let userId = params.get('user_id') || (_acct && _acct.user_id) || crypto.randomUUID();
     let language = params.get('lang') || localStorage.getItem('altcredit_lang') || 'en';
     let cohort = params.get('cohort') || 'Salaried';
     // The in-page language picker stays hidden (chosen upstream on login/consent),
-    // so `language` is fixed for the whole session — safe to resolve t() once.
+    // so `language` is fixed for the whole session, safe to resolve t() once.
     const t = (key) => (ALTCREDIT_DICTIONARY[language] && ALTCREDIT_DICTIONARY[language][key]) || ALTCREDIT_DICTIONARY['en'][key] || key;
     // Keep the shared translatePage() (run by translations.js on DOMContentLoaded)
     // in sync with the resolved language above, in case a ?lang= URL param
@@ -153,7 +153,7 @@
     // Unified narration router. When the AI-voice toggle is on (and Sarvam TTS is
     // configured on the backend) the agent's prompts are spoken with real
     // Indian-language voices via /speech/synthesize; otherwise it uses the
-    // browser's built-in speech synthesis — which is exactly the "current TTS
+    // browser's built-in speech synthesis, which is exactly the "current TTS
     // system" and is what toggling off reverts to. Every existing speak/stop call
     // site goes through here so the switch is seamless.
     const speaker = {
@@ -336,7 +336,7 @@
         data = null;
       }
 
-      // The server can legitimately refuse to start — most commonly the
+      // The server can legitimately refuse to start. Most commonly the
       // one-application-per-30-days limit (429), which returns {detail: "..."}.
       // Surface that message instead of rendering "undefined" / "NaN%".
       if (!resp || !resp.ok || !data || !data.session_id) {
@@ -446,7 +446,7 @@
         return;
       }
 
-      // data.message == item prompt (same as what handleItem renders) — skip to avoid duplication
+      // data.message == item prompt (same as what handleItem renders) (skip to avoid duplication
       handleItem(data.item);
     }
 
@@ -564,8 +564,8 @@
       ttsBtn.classList.toggle('active', speaker.useServer);
       ttsBtn.setAttribute('aria-pressed', speaker.useServer ? 'true' : 'false');
       ttsBtn.title = speaker.useServer
-        ? 'AI voice on (Sarvam) — tap to use your device voice'
-        : 'AI voice off — using your device voice';
+        ? 'AI voice on (Sarvam) (tap to use your device voice'
+        : 'AI voice off, using your device voice';
     }
     (async () => {
       speaker.available = await speaker.server.isAvailable();
@@ -584,7 +584,7 @@
 
     // ── Voice answers (open-ended items only) ───────────────────────────────
     // Prefers server-side STT (Sarvam, tuned for Indian languages, with Gemini as
-    // fallback — see speech/ on the backend); falls back to the browser's own
+    // fallback (see speech/ on the backend); falls back to the browser's own
     // Web Speech API when no server provider is configured. Transcript lands in
     // the answer box for the borrower to review/edit, same as typed text.
     const serverRecorder = new VoiceProvider.ServerSpeechRecorder();

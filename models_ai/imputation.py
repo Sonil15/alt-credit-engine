@@ -1,9 +1,9 @@
 """Cohort-aware imputation profile for missing data sources.
 
-A thin-file borrower — or one who has revoked consent for a source — arrives with
+A thin-file borrower (or one who has revoked consent for a source) arrives with
 whole feature groups absent. The models need *some* value in every column, but the
 value we substitute is not neutral: it is what the model reads as fact. Filling an
-absent source with ``0.0`` is directional — ``monthly_income_mean = 0`` reads as "no
+absent source with ``0.0`` is directional, ``monthly_income_mean = 0`` reads as "no
 income" (unfairly punishing), while ``missed_payments_count = 0`` reads as "perfect
 history" (unfairly rewarding). Neither is what "we don't know" should mean.
 
@@ -14,9 +14,9 @@ someone like you" rather than a biased extreme.
 
 Two kinds of absence are distinguished automatically by the per-cohort median:
 
-* **Applicable but not collected** (e.g. a genuine thin file missing cashflow) — the
+* **Applicable but not collected** (e.g. a genuine thin file missing cashflow): the
   cohort has observed values, so we fill the cohort median.
-* **Structurally not applicable** (e.g. business vintage for a salaried individual) —
+* **Structurally not applicable** (e.g. business vintage for a salaried individual):
   the cohort has *no* observed values (all-NaN), so the median is undefined and we
   fall back to ``0.0``, matching the correct real-world meaning ("no business").
 
@@ -94,7 +94,7 @@ def load_imputation_stats() -> dict[str, Any]:
     """Load the imputation profile, or an empty profile if the artifact is absent.
 
     An empty profile makes ``fill_missing_features`` fall back to ``0.0`` for every
-    column — i.e. the historical behaviour — so nothing breaks before the artifact
+    column (i.e. the historical behaviour) so nothing breaks before the artifact
     is built.
     """
     global _CACHE
@@ -116,14 +116,14 @@ def invalidate_cache() -> None:
 def imputation_fill_frame(df: pd.DataFrame) -> pd.DataFrame:
     """Return a per-row fill value for every FEATURE_COLUMN, aligned to ``df.index``.
 
-    Each row is imputed from *its own* cohort profile — this matters for mixed-cohort
+    Each row is imputed from *its own* cohort profile. This matters for mixed-cohort
     batches (training, population baselines), where a single shared profile would leak
     one cohort's typical value onto another. Resolution per (row, feature):
 
     * Row has a known cohort with a defined median → that cohort median.
     * Row has a known cohort but the median is undefined (feature structurally not
       applicable to the cohort, e.g. business vintage for a salaried applicant) → NaN,
-      which the caller resolves to ``0.0`` — the correct real-world meaning. We do *not*
+      which the caller resolves to ``0.0``. The correct real-world meaning. We do *not*
       borrow the global median here, which would fabricate a value.
     * Row has no identifiable cohort → the global median (best available fallback).
 

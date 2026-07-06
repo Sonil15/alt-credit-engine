@@ -89,16 +89,16 @@ class BrowserVoiceProvider {
       this.recognition.onerror = (event) => {
         const raw = event.error || "recognition failed";
         const msg = raw === "network"
-          ? "network error — mic requires HTTPS or localhost, and microphone permission must be allowed"
+          ? "network error: mic requires HTTPS or localhost, and microphone permission must be allowed"
           : raw === "not-allowed"
-          ? "microphone permission denied — allow mic access in your browser settings"
+          ? "microphone permission denied: allow mic access in your browser settings"
           : raw === "no-speech"
-          ? "no speech detected — please try again"
+          ? "no speech detected. Please try again"
           : raw;
         settle(reject, new Error(msg));
       };
       // onend fires after every session; reject if nothing was resolved yet
-      this.recognition.onend = () => settle(reject, new Error("no speech detected — please try again"));
+      this.recognition.onend = () => settle(reject, new Error("no speech detected. Please try again"));
 
       try {
         this.recognition.start();
@@ -127,7 +127,7 @@ class BhashiniVoiceProvider {
 
 /**
  * Records mic audio and sends it to the backend's /speech/transcribe endpoint
- * (Sarvam, tuned for Indian languages, with Gemini as fallback — see speech/
+ * (Sarvam, tuned for Indian languages, with Gemini as fallback (see speech/
  * on the backend). Used instead of the browser's built-in recognition when a
  * server provider is configured, since it handles Hindi/Bengali accents more
  * reliably than the browser's own speech engine.
@@ -191,7 +191,7 @@ class ServerSpeechRecorder {
 
 /**
  * Plays agent prompts through the backend's /speech/synthesize endpoint (Sarvam
- * bulbul — real Hindi/Bengali/English voices). Used when the borrower turns the
+ * bulbul (real Hindi/Bengali/English voices). Used when the borrower turns the
  * TTS toggle on, instead of the browser's speechSynthesis, which on most laptops
  * has no hi-IN/bn-IN voice installed and therefore stays silent for those
  * languages. One in-flight request and one <audio> element at a time; stop()

@@ -1,7 +1,7 @@
 """Human-readable, per-language date formatting.
 
 Any date shown to a borrower (a letter's decision date, a retry-after date in an
-error message, ...) should read as a spoken sentence, not a raw ISO string — an
+error message, ...) should read as a spoken sentence, not a raw ISO string, an
 ISO date like "2026-08-05" gets read digit-by-digit by both a human eye and any
 TTS engine, whereas "5 August 2026" reads naturally. Used anywhere a date is
 embedded in borrower-facing text (see convergence/decision_letter.py and

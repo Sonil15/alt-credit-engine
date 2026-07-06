@@ -32,7 +32,7 @@ geo_router = APIRouter(prefix="/api", tags=["geo"])
 MOCK_DATA_PATH = Path(__file__).resolve().parents[2] / "synthetic_data" / "mock_data_100_users.json"
 _mock_profiles_cache: list[dict] | None = None
 
-# In-memory state (demo — production uses a database)
+# In-memory state (demo: production uses a database)
 _active_consents: dict[str, dict] = {}       # consent_id -> consent record
 _revoked_consents: set[str] = set()           # consent_id
 _revoked_users: set[str] = set()              # user_id (for user-id-based revoke)
@@ -320,10 +320,10 @@ async def compliance_summary() -> dict:
             "RBI Digital Lending Guidelines 2022 (Key Fact Statement, cooling-off period)",
         ],
         "borrower_rights": {
-            "revoke_consent": "POST /consent/revoke — stops future data sharing immediately",
-            "request_erasure": "POST /consent/erasure — deletes raw PII and ML features",
+            "revoke_consent": "POST /consent/revoke: stops future data sharing immediately",
+            "request_erasure": "POST /consent/erasure: deletes raw PII and ML features",
             "retained_after_erasure": "Anonymised credit decision records (score, decision, date) retained 5 years per RBI",
-            "bureau_caveat": "Scores already submitted to credit bureaus cannot be recalled — governed by bureau rules",
+            "bureau_caveat": "Scores already submitted to credit bureaus cannot be recalled, governed by bureau rules",
             "check_status": "GET /consent/status/{user_id}",
         },
         "data_localization": "Production deployment targets India-region storage (Mumbai) with AES-256-GCM encryption.",

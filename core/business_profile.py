@@ -2,8 +2,8 @@
 
 The onboarding page lets an MSME borrower (Vendor / Farmer cohorts) describe
 their business in their own words (English, Hindi, or Bengali). The LLM turns
-that free text into structured fields the borrower then confirms or edits —
-nothing enters the pipeline unconfirmed. When the LLM is unavailable or
+that free text into structured fields the borrower then confirms or edits.
+Nothing enters the pipeline unconfirmed. When the LLM is unavailable or
 self-reports low confidence we fall back to a deterministic regex/keyword
 extractor instead of guessing, mirroring the open-ended answer scorer in
 ``psychometric/session.py``.
@@ -25,20 +25,31 @@ from core.config import get_settings
 from core.feature_store import fetch_user_features_wide, upsert_feature
 from models.db_models import ApplicationIntake
 
-# Loan purposes a borrower can pick, linked to their category. The server
-# rejects a purpose outside the selected cohort's list (422) — a simple,
-# deterministic purpose–category consistency check.
+# Loan purposes recommended per borrower category — used to order the
+# dropdown and to flag purpose–category *consistency* for the officer
+# (`purpose_consistent` in the score payload). The server no longer hard-blocks
+# a cross-cohort purpose (see ALL_PURPOSES below): a mismatch is a soft signal,
+# not a wall, because real borrowers straddle categories (e.g. a student doing
+# gig work). Every list ends in "other" with a free-text reason so a borrower
+# is never forced into a purpose that doesn't fit.
 PURPOSES_BY_COHORT: dict[str, list[str]] = {
-    "Salaried": ["personal", "medical", "home_improvement", "vehicle"],
-    "GigWorker": ["personal", "medical", "home_improvement", "vehicle"],
-    "Student": ["education", "skill_course"],
-    "Vendor": ["working_capital", "inventory", "equipment"],
-    "Farmer": ["crop_inputs", "equipment", "irrigation"],
-    "Homemaker": ["household", "small_home_business"],
+    "Salaried": ["personal", "medical", "home_improvement", "vehicle", "other"],
+    "GigWorker": ["personal", "medical", "home_improvement", "vehicle", "other"],
+    "Student": ["education", "skill_course", "device_equipment", "hostel_rent", "medical", "other"],
+    "Vendor": ["working_capital", "inventory", "equipment", "other"],
+    "Farmer": ["crop_inputs", "equipment", "irrigation", "other"],
+    "Homemaker": ["household", "small_home_business", "other"],
 }
 
-# Cohorts that get the free-text business section at onboarding.
-BUSINESS_COHORTS = ("Vendor", "Farmer")
+# Full set of known purpose codes, used only to reject typos/garbage — not to
+# enforce cohort membership (that's the soft `purpose_consistent` signal).
+ALL_PURPOSES: set[str] = {p for purposes in PURPOSES_BY_COHORT.values() for p in purposes}
+
+# Cohorts that get the free-text business section at onboarding by default.
+# Homemaker also gets it, conditionally, when the loan purpose is
+# "small_home_business" (handled client-side; the server accepts a
+# business_profile for any cohort regardless of this list).
+BUSINESS_COHORTS = ("Vendor", "Farmer", "GigWorker")
 
 # Minimum self-reported confidence before we trust the LLM's extraction over
 # the deterministic fallback (same threshold philosophy as the answer scorer).
@@ -119,12 +130,12 @@ _AMOUNT_PATTERN = re.compile(
 
 _PLAIN_AMOUNT_PATTERN = re.compile(r"(?:₹|rs\.?|rupees?|inr)\s*(\d[\d,]*(?:\.\d+)?)", re.IGNORECASE)
 
-# "40,000 rupees" / "৪০,০০০ টাকা" — currency word AFTER the number.
+# "40,000 rupees" / "৪০,০০০ টাকা": currency word AFTER the number.
 _SUFFIX_AMOUNT_PATTERN = re.compile(
     r"(\d[\d,]*(?:\.\d+)?)\s*(?:rupees?|rs\.?|₹|inr|रुपये|रुपए|টাকা|taka)", re.IGNORECASE
 )
 
-# Bare formatted number (e.g. "earning about 40,000 a month") — only trusted
+# Bare formatted number (e.g. "earning about 40,000 a month"): only trusted
 # when income context words are present and the figure is money-sized.
 _BARE_AMOUNT_PATTERN = re.compile(r"(\d{1,3}(?:,\d{2,3})+(?:\.\d+)?|\d{4,9})")
 
@@ -162,7 +173,7 @@ def _extract_amount(text: str) -> float | None:
 
 
 def fallback_extract_business_profile(text: str) -> dict[str, Any]:
-    """Deterministic regex/keyword extraction — no network, reproducible."""
+    """Deterministic regex/keyword extraction, no network, reproducible."""
     text = _normalize_digits(text)
     lowered = text.lower()
     profile: dict[str, Any] = {key: None for key in _PROFILE_KEYS}
@@ -182,7 +193,7 @@ def fallback_extract_business_profile(text: str) -> dict[str, Any]:
     if employees:
         profile["employees"] = int(employees.group(1))
 
-    # Only read an amount as turnover when income-ish context words appear —
+    # Only read an amount as turnover when income-ish context words appear;
     # otherwise a loan figure in the description would masquerade as turnover.
     if _TURNOVER_CONTEXT.search(text):
         amount = _extract_amount(text)
@@ -280,7 +291,7 @@ async def extract_business_profile(text: str, language: str) -> tuple[dict[str, 
 
     prompt = (
         "A micro-enterprise borrower describes their business in their own words "
-        "(English, Hindi, or Bengali). Extract ONLY facts they actually state — "
+        "(English, Hindi, or Bengali). Extract ONLY facts they actually state, "
         "use null for anything not mentioned. Never guess or embellish. "
         "monthly_turnover is in Indian Rupees per month (convert lakh=100000, "
         "hazaar=1000; if they state a daily or yearly figure, convert to monthly). "
@@ -339,6 +350,7 @@ def intake_to_dict(intake: ApplicationIntake | None) -> dict[str, Any] | None:
     return {
         "cohort": intake.cohort,
         "loan_purpose": intake.loan_purpose,
+        "loan_purpose_other_text": intake.loan_purpose_other_text,
         "requested_amount": intake.requested_amount,
     }
 
@@ -372,7 +384,7 @@ async def upsert_intake_features(session: AsyncSession, user_id: str) -> None:
     - ``business_vintage_years``: 0 means "no business / not stated".
     - ``turnover_income_consistency``: declared turnover vs observed
       ``monthly_income_mean``; 0 means "nothing to cross-check".
-    Individuals without a business profile simply get no rows — the model's
+    Individuals without a business profile simply get no rows. The model's
     fill-missing handles absent as 0.0, same as every other sparse feature.
     """
     intake = await fetch_latest_intake(session, user_id)

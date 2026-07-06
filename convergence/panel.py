@@ -1,6 +1,6 @@
 """Champion / challenger agreement gate.
 
-The glass-box EBM is the *champion* — it makes the decision and supplies the
+The glass-box EBM is the *champion*, it makes the decision and supplies the
 explanation. CatBoost and logistic regression are *challengers* that audit the
 champion. This is hierarchical, not democratic: challengers never override the
 champion, they only signal confidence.
@@ -10,7 +10,7 @@ champion, they only signal confidence.
 
 Disagreement is measured on the decision *band* (the same APPROVE/REVIEW/REJECT
 cutoffs the score engine uses), not on raw PD, because two models can differ on PD
-yet still agree on the action — and the action is what matters.
+yet still agree on the action, and the action is what matters.
 """
 
 from __future__ import annotations

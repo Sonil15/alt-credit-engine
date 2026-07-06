@@ -2,7 +2,7 @@
 
 Passwords are hashed with PBKDF2-HMAC-SHA256 (stdlib ``hashlib``) and a random
 per-account salt; login issues an opaque random bearer token stored server-side
-in the ``auth_tokens`` table. No external auth service, no paid dependency —
+in the ``auth_tokens`` table. No external auth service, no paid dependency;
 everything runs against the same local SQLite/Postgres the rest of the app uses.
 """
 

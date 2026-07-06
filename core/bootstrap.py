@@ -1,7 +1,7 @@
 """Zero-friction startup seeding.
 
 Populates an empty database with the bundled mock borrower cohort so the demo is
-fully interactive the instant the server boots — no Docker, no manual
+fully interactive the instant the server boots, no Docker, no manual
 generate/load/train sequence. Reuses the exact same encryption + preprocessing
 path as live ingestion (`process_vault_record`), then runs the ECM pipeline so
 econometric features are present. Training is NOT done here: the committed

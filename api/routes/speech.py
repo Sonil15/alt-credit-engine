@@ -1,6 +1,6 @@
 """Voice I/O for the psychometric assessment.
 
-STT: audio is transcribed and discarded — only the returned text is used, and the
+STT: audio is transcribed and discarded, only the returned text is used, and the
 borrower still reviews/edits it in the answer box before submitting, so a bad
 transcription never silently becomes a wrong answer.
 
@@ -69,7 +69,7 @@ async def synthesize_speech(req: SynthesizeRequest) -> Response:
     try:
         audio = await provider.synthesize(text, req.language)
     except Exception as exc:
-        # Some transport errors stringify to "" — include the type so a real
+        # Some transport errors stringify to "", include the type so a real
         # failure isn't reported as a blank "Synthesis failed: ".
         detail = str(exc) or exc.__class__.__name__
         raise HTTPException(status_code=502, detail=f"Synthesis failed: {detail}") from exc

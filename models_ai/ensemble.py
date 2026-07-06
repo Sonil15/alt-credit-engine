@@ -1,11 +1,11 @@
 """Train the champion + challenger panel and write a combined model card.
 
-Champion  : EBM (glass-box, model of record — drives the score and explanation).
+Champion  : EBM (glass-box, model of record, drives the score and explanation).
 Challengers: CatBoost + logistic regression (audit the champion for agreement).
 
 All three are trained on the same split so their holdout metrics are comparable.
-The headline ``metrics`` in the model card are the CHAMPION's — that's the model
-that actually decides — with challenger AUCs recorded alongside for transparency.
+The headline ``metrics`` in the model card are the CHAMPION's; that's the model
+that actually decides, with challenger AUCs recorded alongside for transparency.
 """
 
 from __future__ import annotations

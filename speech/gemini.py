@@ -1,4 +1,4 @@
-"""Gemini speech-to-text fallback — used when Sarvam is unavailable or unconfigured."""
+"""Gemini speech-to-text fallback, used when Sarvam is unavailable or unconfigured."""
 
 from __future__ import annotations
 

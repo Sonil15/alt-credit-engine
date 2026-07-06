@@ -47,7 +47,7 @@ def _to_naive_utc(dt: datetime) -> datetime:
 
 
 # Application-limit refusal, per session language. {count}/{window_days} are ints,
-# {retry_on} is a pre-formatted human date (see core.date_i18n) — never a raw ISO
+# {retry_on} is a pre-formatted human date (see core.date_i18n): never a raw ISO
 # string, since this message is also read aloud by the assessment's TTS.
 _LIMIT_MESSAGE = {
     "en": (

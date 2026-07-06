@@ -147,7 +147,7 @@ class AssessmentAnswerResponse(BaseModel):
 class BusinessProfile(BaseModel):
     """Structured business facts extracted from the borrower's own description.
 
-    Every field is optional — the borrower confirms/edits each one before submit,
+    Every field is optional. The borrower confirms/edits each one before submit,
     so absent means "not stated", never "guessed".
     """
 
@@ -181,6 +181,7 @@ class IntakeSubmitRequest(BaseModel):
     user_id: str
     cohort: str
     loan_purpose: str
+    loan_purpose_other_text: str | None = Field(default=None, max_length=300)
     requested_amount: float = Field(gt=0, le=100_000_000)
     business_description: str | None = Field(default=None, max_length=2000)
     business_profile: BusinessProfile | None = None

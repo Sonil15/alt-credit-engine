@@ -1,4 +1,4 @@
-"""Logistic-regression CHALLENGER — a structurally different family.
+"""Logistic-regression CHALLENGER, a structurally different family.
 
 The panel's value comes from diversity: agreement between two boosted-tree models
 is nearly tautological, but agreement between an additive GAM (EBM champion), a

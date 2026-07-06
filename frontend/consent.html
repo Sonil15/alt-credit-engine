@@ -6,7 +6,7 @@
   <title>Alt-Credit Consent Gateway</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/consent.css?v=1.0.0">
-  <script src="/static/translations.js?v=1.0.2"></script>
+  <script src="/static/translations.js?v=1.0.4"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
   <script>
     // Login is mandatory for the borrower flow. Redirect to sign-in before any
@@ -74,13 +74,13 @@
         <div class="disclosure">
           <strong data-i18n="consent-rights-title">Your data rights (DPDP Act 2023 &amp; RBI AA Framework)</strong>
           <ul>
-            <li data-i18n="consent-rights-li1">You may <strong>revoke this consent</strong> at any time — future data sharing stops immediately.</li>
+            <li data-i18n="consent-rights-li1">You may <strong>revoke this consent</strong> at any time; future data sharing stops immediately.</li>
             <li data-i18n="consent-rights-li2">You may <strong>request erasure</strong> of your raw data and derived features.</li>
             <li data-i18n="consent-rights-li3">We will always confirm what was deleted and what was retained.</li>
           </ul>
           <div class="caveat">
             <strong data-i18n="consent-caveat-title">Important limitation:</strong>
-            <span data-i18n="consent-caveat-text">Credit decisions already shared with credit bureaus (CIBIL, Experian) cannot be recalled — those records are governed by bureau rules, not this consent artifact.</span>
+            <span data-i18n="consent-caveat-text">Credit decisions already shared with credit bureaus (CIBIL, Experian) cannot be recalled. Those records are governed by bureau rules, not this consent artifact.</span>
           </div>
         </div>
 
@@ -92,7 +92,7 @@
         <p style="font-size:14px;color:#94a3b8;margin-bottom:16px;line-height:1.5;" data-i18n="consent-step2-text">
           Consent registered. Next, complete a short psychometric assessment in your preferred
           language (English, Hindi, or Bengali). You can answer by typing or speaking.
-          The agent guides you — scoring uses a fixed, auditable rubric.
+          The agent guides you; scoring uses a fixed, auditable rubric.
         </p>
         <p style="font-size:12px;color:#64748b;margin-bottom:4px;" data-i18n="consent-id-label">Your consent ID:</p>
         <p style="font-size:12px;font-family:ui-monospace,monospace;color:#60a5fa;word-break:break-all;margin-bottom:16px;" id="consent-id-display"></p>
@@ -139,7 +139,7 @@
 
         <div class="retained-note">
           <strong data-i18n="consent-retained-title">What is always retained</strong> <span data-i18n="consent-retained-text">(cannot be erased under DPDP §17 regulatory exemption):</span><br>
-          <span data-i18n="consent-retained-body">Anonymised credit decision records — score, decision band, date — are kept for
+          <span data-i18n="consent-retained-body">Anonymised credit decision records (score, decision band, date) are kept for
           5 years per RBI audit requirements. No name, phone, or account number is stored in these records.</span>
         </div>
       </div>
@@ -165,7 +165,7 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     // Login is mandatory, so default to the signed-in account's stable id when the
-    // URL doesn't carry one — never mint an anonymous, unlinked identity.
+    // URL doesn't carry one. Never mint an anonymous, unlinked identity.
     const _acct = (window.Auth && Auth.currentUser()) || null;
     let userId = params.get('user_id') || (_acct && _acct.user_id) || crypto.randomUUID();
     let consentId = localStorage.getItem('altcredit_consent_id_' + userId) || null;
@@ -192,7 +192,7 @@
 
         // Enforce the borrower's actual choices: authorize grants every scope, so we
         // immediately revoke any optional source they left unchecked. Without this the
-        // selection is cosmetic — unchecked sources would still be collected, scored,
+        // selection is cosmetic; unchecked sources would still be collected, scored,
         // and shown as drivers. Survey is mandatory (checkbox disabled) and never revoked;
         // hidden cohort-specific boxes (offsetParent === null) are skipped.
         const optionalScopes = ['telecom', 'ecommerce', 'geo', 'cashflow', 'campus', 'vendor', 'farmer', 'household'];
@@ -208,8 +208,8 @@
           });
         }
       } catch (_) {
-        // Non-fatal — assessment still works without a registered consent_id
-        document.getElementById('consent-id-display').textContent = '(offline — not registered)';
+        // Non-fatal; assessment still works without a registered consent_id
+        document.getElementById('consent-id-display').textContent = '(offline, not registered)';
       }
       goToStep(2);
     }
@@ -483,7 +483,7 @@
     }
 
     // On load: if user_id is in URL (returning borrower), jump straight to the
-    // privacy dashboard — UNLESS flow=new, which is a logged-in borrower starting
+    // privacy dashboard. UNLESS flow=new, which is a logged-in borrower starting
     // a fresh application under their existing account (they still grant consent).
     if (params.get('user_id') && params.get('flow') !== 'new') {
       goToStep(3);

@@ -32,13 +32,13 @@ async def assessment_ui(request: Request) -> HTMLResponse:
 
 @router.get("/apply", response_class=HTMLResponse)
 async def borrower_portal(request: Request) -> HTMLResponse:
-    """Borrower portal — start application or view previous results."""
+    """Borrower portal: start application or view previous results."""
     return templates.TemplateResponse(request, "apply.html", {"request": request})
 
 
 @router.get("/onboard", response_class=HTMLResponse)
 async def borrower_onboarding(request: Request) -> HTMLResponse:
-    """Borrower onboarding — loan intent, category, and business profile."""
+    """Borrower onboarding (loan intent, category, and business profile."""
     return templates.TemplateResponse(request, "onboard.html", {"request": request})
 
 

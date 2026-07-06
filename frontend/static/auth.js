@@ -1,4 +1,4 @@
-/* Borrower auth helper — token storage + auth-aware fetch.
+/* Borrower auth helper (token storage + auth-aware fetch.
  * The bearer token is minted by /auth/login|register and kept in localStorage.
  * Everything is local to the browser; no third-party auth service is involved.
  */

@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Alt-Credit — New Application</title>
+  <title>Alt-Credit: New Application</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/apply.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/onboard.css?v=1.0.0">
-  <script src="/static/translations.js?v=1.0.3"></script>
+  <script src="/static/translations.js?v=1.0.4"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
   <script>
     // Login is mandatory for the borrower portal. Redirect to sign-in before any
@@ -34,7 +34,7 @@
   <div class="hero" style="padding-bottom: 24px;">
     <div class="hero-badge" data-i18n="onboard-hero-badge">New Application</div>
     <h2 data-i18n="onboard-hero-title">Tell us about your loan</h2>
-    <p data-i18n="onboard-hero-sub">A few details before you grant consent — what you need, and why.</p>
+    <p data-i18n="onboard-hero-sub">A few details before you grant consent: what you need, and why.</p>
   </div>
 
   <div class="container">
@@ -53,7 +53,12 @@
 
       <div class="form-field">
         <label for="purpose-select" data-i18n="onboard-purpose-label">Purpose of the loan</label>
-        <select id="purpose-select"></select>
+        <select id="purpose-select" onchange="onPurposeChange()"></select>
+      </div>
+
+      <div class="form-field" id="purpose-other-field" style="display:none;">
+        <label for="purpose-other-input" data-i18n="onboard-purpose-other-label">Tell us what it's for</label>
+        <input id="purpose-other-input" type="text" maxlength="300" data-i18n="onboard-purpose-other-placeholder" placeholder="e.g. laptop repair, family function, relocation">
       </div>
 
       <div class="form-field">
@@ -64,14 +69,14 @@
       <div id="business-section" style="display:none;">
         <div class="business-divider"></div>
         <h3 data-i18n="onboard-business-title">About your business</h3>
-        <p class="business-hint" data-i18n="onboard-business-desc">Describe your business in your own words — what you do, for how long, and roughly what you earn each month. English, हिन्दी or বাংলা.</p>
+        <p class="business-hint" data-i18n="onboard-business-desc">Describe your business in your own words: what you do, for how long, and roughly what you earn each month. English, हिन्दी or বাংলা.</p>
         <textarea id="business-text" rows="4"></textarea>
         <button type="button" class="analyze-btn" id="analyze-btn" onclick="analyzeBusiness()">
           <span data-i18n="onboard-analyze-btn">Analyze my business</span>
         </button>
 
         <div id="extracted-panel" style="display:none;">
-          <p class="extracted-title" data-i18n="onboard-extracted-title">We understood this — please confirm or correct:</p>
+          <p class="extracted-title" data-i18n="onboard-extracted-title">We understood this. Please confirm or correct:</p>
           <p class="extracted-method" id="extracted-method"></p>
           <div class="extracted-grid">
             <div class="form-field">
@@ -127,17 +132,17 @@
 
   <script>
     const account = Auth.currentUser();
-    // Purpose options per category — must mirror PURPOSES_BY_COHORT on the
+    // Purpose options per category (must mirror PURPOSES_BY_COHORT on the
     // server (the server re-validates; this only drives the dropdown).
     let purposesByCohort = {
-      Salaried: ['personal', 'medical', 'home_improvement', 'vehicle'],
-      GigWorker: ['personal', 'medical', 'home_improvement', 'vehicle'],
-      Student: ['education', 'skill_course'],
-      Vendor: ['working_capital', 'inventory', 'equipment'],
-      Farmer: ['crop_inputs', 'equipment', 'irrigation'],
-      Homemaker: ['household', 'small_home_business'],
+      Salaried: ['personal', 'medical', 'home_improvement', 'vehicle', 'other'],
+      GigWorker: ['personal', 'medical', 'home_improvement', 'vehicle', 'other'],
+      Student: ['education', 'skill_course', 'device_equipment', 'hostel_rent', 'medical', 'other'],
+      Vendor: ['working_capital', 'inventory', 'equipment', 'other'],
+      Farmer: ['crop_inputs', 'equipment', 'irrigation', 'other'],
+      Homemaker: ['household', 'small_home_business', 'other'],
     };
-    let businessCohorts = ['Vendor', 'Farmer'];
+    let businessCohorts = ['Vendor', 'Farmer', 'GigWorker'];
     let extraction = { method: 'none', confidence: null };
 
     function t(key, fallback) {
@@ -160,13 +165,32 @@
         select.appendChild(opt);
       });
       if (current && (purposesByCohort[cohort] || []).includes(current)) select.value = current;
+      document.getElementById('purpose-other-field').style.display =
+        select.value === 'other' ? 'block' : 'none';
+    }
+
+    function updateBusinessVisibility() {
+      const cohort = document.getElementById('cohort-select').value;
+      const purpose = document.getElementById('purpose-select').value;
+      // Vendor/Farmer/GigWorker always get the business section; Homemaker
+      // gets it too when the stated purpose is a home business, since that's
+      // the borrower most likely to need business_vintage_years and
+      // turnover_income_consistency to offset a thin file.
+      const show = businessCohorts.includes(cohort)
+        || (cohort === 'Homemaker' && purpose === 'small_home_business');
+      document.getElementById('business-section').style.display = show ? 'block' : 'none';
     }
 
     function onCohortChange() {
       renderPurposes();
-      const cohort = document.getElementById('cohort-select').value;
-      document.getElementById('business-section').style.display =
-        businessCohorts.includes(cohort) ? 'block' : 'none';
+      updateBusinessVisibility();
+    }
+
+    function onPurposeChange() {
+      const purpose = document.getElementById('purpose-select').value;
+      document.getElementById('purpose-other-field').style.display =
+        purpose === 'other' ? 'block' : 'none';
+      updateBusinessVisibility();
     }
 
     function showError(msg) {
@@ -203,8 +227,8 @@
         extraction = { method: data.method || 'fallback', confidence: data.confidence ?? null };
         document.getElementById('extracted-method').textContent =
           extraction.method === 'llm'
-            ? t('onboard-method-llm', 'Read by the AI assistant — please verify each field.')
-            : t('onboard-method-fallback', 'Read by the offline analyzer — please verify each field.');
+            ? t('onboard-method-llm', 'Read by the AI assistant. Please verify each field.')
+            : t('onboard-method-fallback', 'Read by the offline analyzer. Please verify each field.');
         document.getElementById('extracted-panel').style.display = 'block';
       } catch (_) {
         showError(t('onboard-error-analyze', 'Could not analyze the description. You can fill the fields yourself.'));
@@ -231,6 +255,10 @@
         showError(t('onboard-error-amount', 'Please enter the loan amount you need.'));
         return;
       }
+      if (purpose === 'other' && !document.getElementById('purpose-other-input').value.trim()) {
+        showError(t('onboard-error-purpose-other', 'Please tell us what the loan is for.'));
+        return;
+      }
 
       const body = {
         user_id: account.user_id,
@@ -240,8 +268,13 @@
         extraction_method: extraction.method,
         extraction_confidence: extraction.confidence,
       };
+      if (purpose === 'other') {
+        body.loan_purpose_other_text = document.getElementById('purpose-other-input').value.trim();
+      }
 
-      if (businessCohorts.includes(cohort)) {
+      const showBusiness = businessCohorts.includes(cohort)
+        || (cohort === 'Homemaker' && purpose === 'small_home_business');
+      if (showBusiness) {
         const text = document.getElementById('business-text').value.trim();
         if (text) body.business_description = text;
         const profile = {

@@ -1,4 +1,4 @@
-"""Borrower authentication routes — register, login, logout, current user.
+"""Borrower authentication routes, register, login, logout, current user.
 
 Local password auth backed by the app's own database. A successful register or
 login returns an opaque bearer token the borrower's browser stores and sends as

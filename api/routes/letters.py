@@ -2,7 +2,7 @@
 
 The letter drafting itself happens at scoring time (see convergence.letter_store); these
 routes expose the queue to the loan officer, let a human review and sign a
-rejection/review letter, and let a borrower fetch their issued letter — asynchronously,
+rejection/review letter, and let a borrower fetch their issued letter, asynchronously,
 whenever each party next visits.
 """
 
@@ -33,7 +33,7 @@ class SignRequest(BaseModel):
 
 @router.get("/pending", dependencies=[Depends(require_api_key)])
 async def list_pending_letters(db: AsyncSession = Depends(get_db)) -> list[dict]:
-    """Officer review queue — every decision letter awaiting human sign-off."""
+    """Officer review queue, every decision letter awaiting human sign-off."""
     rows = await fetch_pending_letters(db)
     return [
         {
@@ -86,7 +86,7 @@ async def sign_borrower_letter(
     lang: str = "en",
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Loan officer reviews and signs — issues the letter to the borrower."""
+    """Loan officer reviews and signs, issues the letter to the borrower."""
     if not req.officer_id.strip():
         raise HTTPException(status_code=400, detail="Officer identity is required to sign.")
     letter = await sign_letter(db, user_id, req.officer_id.strip())

@@ -24,7 +24,7 @@ CONSTRUCTS = [
 #
 # This is the *deterministic* scorer used when Groq is unavailable or its read is
 # rejected (see psychometric.session.extract_open_ended_score). It must stay
-# pure, offline, and dependency-free — no VADER (English-only, would regress
+# pure, offline, and dependency-free: no VADER (English-only, would regress
 # hi/bn), no transformers.
 #
 # English terms are matched with word boundaries (so "pay" never fires inside
@@ -52,12 +52,12 @@ RESPONSIBLE_EN = re.compile(
 )
 RESPONSIBLE_INDIC = (
     # Hindi
-    "भर",        # bhar-na — to pay (a bill)
-    "चुक",       # chukana — pay off / settle
+    "भर",        # bhar-na, to pay (a bill)
+    "चुक",       # chukana, pay off / settle
     "बिल",       # bill
     "किराय",     # rent (किराया / किराये)
     "बचत",       # savings
-    "बचा",       # bacha-na — to save
+    "बचा",       # bacha-na, to save
     "बजट",       # budget
     "ज़रूरी",     # essential / necessary
     "जरूरी",
@@ -67,7 +67,7 @@ RESPONSIBLE_INDIC = (
     "बिजली",     # electricity
     "राशन",      # rations / groceries
     # Bengali
-    "পরিশোধ",    # poriśodh — repayment / pay off
+    "পরিশোধ",    # poriśodh, repayment / pay off
     "বিল",       # bill
     "ভাড়া",      # rent
     "সঞ্চয়",     # savings
@@ -96,7 +96,7 @@ AVOIDANT_EN = re.compile(
 )
 AVOIDANT_INDIC = (
     # Hindi
-    "टाल",        # taal-na — postpone / put off
+    "टाल",        # taal-na, postpone / put off
     "टालमटोल",     # procrastination
     "नजरअंदाज",   # ignore
     "अनदेखा",     # overlook / ignore
@@ -109,7 +109,7 @@ AVOIDANT_INDIC = (
     "उधार",       # borrowing / loan
     "बकाया",      # arrears / overdue
     # Bengali
-    "এড়ি",        # eriye — avoid
+    "এড়ি",        # eriye, avoid
     "উপেক্ষা",     # ignore
     "অগ্রাহ্য",     # disregard / ignore
     "দেরি",       # delay / late
@@ -124,7 +124,7 @@ AVOIDANT_INDIC = (
     "বকেয়া",      # arrears / overdue
 )
 
-# Negation particles — matched as whole tokens (see note above). English
+# Negation particles: matched as whole tokens (see note above). English
 # contractions are caught generically via an ``n't`` suffix check.
 NEGATION_EN = frozenset(
     {
@@ -192,7 +192,7 @@ def score_open_ended_answer(text: str) -> float:
     Curated multilingual lexicon (see module top): responsible cues push the
     score up, avoidant cues push it down, starting from a neutral 0.5. A nearby
     negation particle flips a cue's polarity, so "I do NOT save" / "बचत नहीं" /
-    "সঞ্চয় করি না" reads as avoidant rather than responsible. Pure function — same
+    "সঞ্চয় করি না" reads as avoidant rather than responsible. Pure function, same
     text always yields the same score in [0, 1]; no network, no heavy deps.
     """
     if not text.strip():

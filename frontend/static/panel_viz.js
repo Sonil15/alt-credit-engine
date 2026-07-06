@@ -89,10 +89,10 @@
     let vb, vc, vt;
     if (panel.unanimous) {
       vb = "#dcfce7"; vc = "#166534";
-      vt = `✓ Unanimous panel — auto-decision permitted <small>all ${panel.n_models} models agree</small>`;
+      vt = `✓ Unanimous panel: auto-decision permitted <small>all ${panel.n_models} models agree</small>`;
     } else if (panel.hard_conflict) {
       vb = "#fee2e2"; vc = "#991b1b";
-      vt = `⚠ Hard conflict — one model would approve while another would reject <small>routed to human review</small>`;
+      vt = `⚠ Hard conflict: one model would approve while another would reject <small>routed to human review</small>`;
     } else {
       vb = "#fef3c7"; vc = "#854d0e";
       vt = `~ Partial agreement <small>${panel.agreement_pct}% with champion · adjacent bands, not a conflict</small>`;
@@ -193,7 +193,7 @@
       tabs.querySelectorAll(".acv-tab").forEach((t) => t.classList.toggle("on", t.dataset.f === feat));
       const vtxt = borrower ? fmtValue(borrower.value, curve.fmt) : "—";
       const ptxt = borrower ? (borrower.points >= 0 ? "+" : "") + borrower.points.toFixed(1) : "—";
-      cap.innerHTML = `This curve <b>is the model</b> — the EBM's own term for <b>${curve.label}</b>, not a SHAP estimate.
+      cap.innerHTML = `This curve <b>is the model</b>. The EBM's own term for <b>${curve.label}</b>, not a SHAP estimate.
         At this borrower's value <b>${vtxt}</b>, the model contributes <b>${ptxt} points</b> to the score.
         Green raises the score, red lowers it.`;
     }

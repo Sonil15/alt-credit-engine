@@ -25,7 +25,7 @@ FEATURE_COLUMNS = [
     "adf_pvalue",
     "is_stationary",
     "trend_slope",
-    # Borrower onboarding — self-declared business profile (Vendor/Farmer).
+    # Borrower onboarding, self-declared business profile (Vendor/Farmer).
     # Absent for individuals; fill_missing_features maps absent -> 0.0.
     "business_vintage_years",
     "turnover_income_consistency",

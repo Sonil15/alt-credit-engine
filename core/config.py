@@ -54,7 +54,7 @@ class Settings:
 
     # Storage backend. Defaults to Postgres (the deployed/Render configuration).
     # Set USE_SQLITE=true for an optional zero-dependency local run (a SQLite
-    # file, no Docker/Postgres needed) — useful for an offline laptop demo.
+    # file, no Docker/Postgres needed), useful for an offline laptop demo.
     # A provided DATABASE_URL always takes precedence over both.
     USE_SQLITE: str = os.getenv("USE_SQLITE", "false")
     SQLITE_PATH: str = os.getenv("SQLITE_PATH", "./alt_credit.db")

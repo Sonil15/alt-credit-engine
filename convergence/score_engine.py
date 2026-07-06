@@ -119,14 +119,14 @@ def _champion_contributions(
     """Per-feature contributions (+score points) from the EBM champion's own terms,
     centered on the *typical applicant*.
 
-    These are the model's additive terms in log-odds space — not a SHAP
+    These are the model's additive terms in log-odds space, not a SHAP
     approximation. The raw terms are measured against the EBM intercept, which (because
     we train with balanced class weights) sits near a 50/50 coin-flip rather than the
     real ~9% applicant base rate. Against that intercept a typical low-risk borrower
     beats the baseline on nearly every feature, so the drivers come out all-positive
     and "needs work" signals never surface.
 
-    We re-center each contribution on ``baseline_contrib`` — the population-average
+    We re-center each contribution on ``baseline_contrib``. The population-average
     contribution per feature (the typical applicant, from
     :func:`models_ai.ebm_model.ebm_mean_contributions`). A driver is then positive only
     when the borrower beats a typical applicant on that signal, and negative when they
@@ -164,7 +164,7 @@ def _apply_agreement_gate(champion_decision: str, auto_reject: bool, agreement: 
     """Auto-decisions require panel support; genuine disagreement routes to a human.
 
     Hard red-flag rejects always stand (rules override models). Otherwise we only
-    overrule the champion when the panel *genuinely* conflicts — not for adjacent
+    overrule the champion when the panel *genuinely* conflicts, not for adjacent
     boundary scatter (e.g. REVIEW vs REJECT), which is noise on a strict scorecard:
 
       - hard conflict (one model would APPROVE while another would REJECT) -> REVIEW
@@ -186,7 +186,7 @@ def _top_drivers(contributions: list[dict[str, float]], top_n: int = 3) -> list[
 
 
 def _top_negative_drivers(contributions: list[dict[str, float]], top_n: int = 3) -> list[dict[str, float]]:
-    """The strongest *adverse* drivers — features that raised default risk (a positive
+    """The strongest *adverse* drivers, features that raised default risk (a positive
     centered contribution lowers the score). Selected on their own, not filtered out of
     a magnitude-ranked slice, so a rejected/marginal borrower always yields real
     adverse-action reason codes and targeted tips even when large positive drivers exist.
@@ -346,13 +346,13 @@ def _build_payload(
         reason_codes.insert(
             0,
             f"Conformal abstention: champion cannot guarantee default/non-default at "
-            f"{coverage_pct}% coverage — routed to manual review",
+            f"{coverage_pct}% coverage, routed to manual review",
         )
     elif gated_to_review:
         reason_codes.insert(
             0,
             "Model panel disagreement: champion (EBM) and challengers did not reach "
-            "consensus — routed to manual review",
+            "consensus, routed to manual review",
         )
     if confidence["thin_file"]:
         reason_codes.append(
@@ -367,7 +367,7 @@ def _build_payload(
 
     lending = recommend_terms(probability_of_default, credit_score, decision, user_row)
 
-    # Affordability gate — lending-policy overlay AFTER the model decision.
+    # Affordability gate, lending-policy overlay AFTER the model decision.
     # `decision` stays the model's call (fairness parity slices on it);
     # `final_outcome` is what the borrower is told.
     funding_gap = evaluate_funding_gap(decision, lending, intake)
@@ -376,7 +376,7 @@ def _build_payload(
         reason_codes.insert(
             0,
             f"Affordability gate: requested amount ₹{round(funding_gap['requested_amount']):,} "
-            f"exceeds maximum serviceable ₹{round(funding_gap['max_serviceable_amount']):,} — "
+            f"exceeds maximum serviceable ₹{round(funding_gap['max_serviceable_amount']):,}, "
             "not approved as requested; routed for counter-offer review",
         )
 
@@ -414,6 +414,7 @@ def _build_payload(
             "lending": lending,
             "requested_amount": safe_float(intake.get("requested_amount")) if intake else None,
             "loan_purpose": loan_purpose,
+            "loan_purpose_other_text": intake.get("loan_purpose_other_text") if intake else None,
             "purpose_consistent": purpose_consistent,
             "final_outcome": final_outcome,
             "funding_gap": funding_gap,

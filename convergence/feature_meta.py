@@ -52,15 +52,15 @@ FEATURE_META: dict[str, dict[str, str]] = {
     "present_bias": {"label": "Tendency to spend impulsively", "source": "Psychometric assessment", "fmt": "score01", "direction": "low", "engine": ENGINE_EXTRACTION},
     "debt_attitude": {"label": "Commitment to repaying debt", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
     "response_validity": {"label": "Answer consistency check", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
-    # Time-series econometric engine — derived from the monthly net cash-flow series.
+    # Time-series econometric engine, derived from the monthly net cash-flow series.
     "resilience_coefficient": {"label": "Income resilience (ECM γ)", "source": SOURCE_ECONOMETRIC, "fmt": "number", "direction": "high", "engine": ENGINE_ECONOMETRIC},
     "adf_statistic": {"label": "Stationarity statistic (ADF)", "source": SOURCE_ECONOMETRIC, "fmt": "number", "direction": "low", "engine": ENGINE_ECONOMETRIC},
     "adf_pvalue": {"label": "Stationarity p-value (ADF)", "source": SOURCE_ECONOMETRIC, "fmt": "number", "direction": "low", "engine": ENGINE_ECONOMETRIC},
     "is_stationary": {"label": "Stable income pattern", "source": SOURCE_ECONOMETRIC, "fmt": "bool", "direction": "high", "engine": ENGINE_ECONOMETRIC},
     "trend_slope": {"label": "Normalized trend slope", "source": SOURCE_ECONOMETRIC, "fmt": "number", "direction": "high", "engine": ENGINE_ECONOMETRIC},
-    # Borrower onboarding — self-declared, borrower-confirmed business profile.
-    "business_vintage_years": {"label": "Business vintage (years)", "source": "Borrower onboarding — business profile", "fmt": "count", "direction": "high", "engine": ENGINE_EXTRACTION},
-    "turnover_income_consistency": {"label": "Declared vs observed turnover consistency", "source": "Borrower onboarding — business profile", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
+    # Borrower onboarding, self-declared, borrower-confirmed business profile.
+    "business_vintage_years": {"label": "Business vintage (years)", "source": "Borrower onboarding, business profile", "fmt": "count", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "turnover_income_consistency": {"label": "Declared vs observed turnover consistency", "source": "Borrower onboarding, business profile", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
 }
 
 # Order data sources appear in the grouped lineage view.
@@ -71,7 +71,7 @@ SOURCE_ORDER = [
     "E-commerce purchases",
     "Geolocation consistency",
     "Psychometric assessment",
-    "Borrower onboarding — business profile",
+    "Borrower onboarding, business profile",
 ]
 
 TOP_DRIVERS_COUNT = 8

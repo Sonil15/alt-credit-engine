@@ -5,8 +5,8 @@ dimension is a way of slicing the portfolio (by borrower category, by social
 category, …); for every dimension we compute per-group approval rates and the
 disparate-impact (4/5ths) ratio.
 
-The dashboard defaults to the borrower-category view (Individual vs MSME) — the
-slice a loan officer reasons about day to day — and can switch to any other
+The dashboard defaults to the borrower-category view (Individual vs MSME): the
+slice a loan officer reasons about day to day, and can switch to any other
 configured dimension. Adding a dimension is a one-line entry in
 ``FAIRNESS_DIMENSIONS`` (plus the underlying column being present in the feature
 table).

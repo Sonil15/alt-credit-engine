@@ -2,13 +2,13 @@
 
 Speech-to-text (STT) lets borrowers dictate open-ended answers; text-to-speech (TTS)
 reads the agent's prompts aloud. The audio never leaves this layer as anything but
-transcribed text (STT) or a synthesised clip played once (TTS) — nothing is persisted.
+transcribed text (STT) or a synthesised clip played once (TTS), nothing is persisted.
 
 STT provider is chosen by ``SPEECH_STT_PROVIDER`` so a live API hiccup during a demo is
 an env-var flip; it falls back to the browser's own Web Speech API (see static/voice.js)
 when no server provider is configured. Server TTS (Sarvam ``bulbul``) is available
 whenever a Sarvam key is set, but whether it is *used* is a live per-session UI toggle on
-the assessment page — toggling it off reverts to the browser's built-in speech synthesis.
+the assessment page, toggling it off reverts to the browser's built-in speech synthesis.
 """
 
 from __future__ import annotations

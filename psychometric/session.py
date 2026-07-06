@@ -101,7 +101,7 @@ def _resolve_open_ended_score(parsed: dict[str, Any], text: str) -> float:
 
     Groq is the primary signal; we defer to the deterministic keyword scorer when
     the model's answer is malformed, out of range, or self-reported low-confidence
-    — rather than silently returning a neutral 0.5. Missing/garbled ``confidence``
+   , rather than silently returning a neutral 0.5. Missing/garbled ``confidence``
     is treated as confident, since the score itself is the primary signal.
     """
     try:
@@ -142,7 +142,7 @@ async def extract_open_ended_score(text: str, language: str) -> float:
     prompt = (
         "You are scoring a borrower's financial responsibility from their own words. "
         "Judge the stance and behaviour described (do they prioritise essentials, plan "
-        "ahead, take ownership?), NOT the emotional tone — a stressed but responsible "
+        "ahead, take ownership?), NOT the emotional tone, a stressed but responsible "
         "answer still scores high. Answers may be in English, Hindi, or Bengali.\n"
         "Return ONLY JSON with two keys:\n"
         '{"responsibility_score": <float 0.0 to 1.0>, "confidence": <float 0.0 to 1.0>}\n'
@@ -169,7 +169,7 @@ async def extract_open_ended_score(text: str, language: str) -> float:
     except Exception:
         # Falling back is the correct behaviour, but a silent fallback is how a
         # dead model name (or any other Groq outage) goes unnoticed indefinitely
-        # — log it so a persistent failure is visible in the server logs.
+        #, log it so a persistent failure is visible in the server logs.
         logger.warning("Groq open-ended scoring failed; using deterministic fallback", exc_info=True)
         score = score_open_ended_answer(text)
 

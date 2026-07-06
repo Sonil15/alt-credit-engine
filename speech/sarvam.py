@@ -1,4 +1,4 @@
-"""Sarvam AI speech — STT (saarika) and TTS (bulbul), both tuned for Indian
+"""Sarvam AI speech, STT (saarika) and TTS (bulbul), both tuned for Indian
 languages and accents."""
 
 from __future__ import annotations

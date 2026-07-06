@@ -1,4 +1,4 @@
-"""Explainable Boosting Machine — the glass-box CHAMPION (model of record).
+"""Explainable Boosting Machine. The glass-box CHAMPION (model of record).
 
 Unlike the CatBoost+SHAP path, an EBM is intrinsically interpretable: its
 prediction is an additive sum of one shape function per feature,
@@ -6,7 +6,7 @@ prediction is an additive sum of one shape function per feature,
     logit(PD) = intercept + Σ fᵢ(xᵢ)
 
 so the per-feature contributions are not a post-hoc *approximation* (as SHAP is
-for a black box) — they ARE the model's arithmetic. ``eval_terms`` returns those
+for a black box). They ARE the model's arithmetic. ``eval_terms`` returns those
 contributions directly, and ``sigmoid(intercept + Σ terms) == predict_proba``
 to machine precision. We train with ``interactions=0`` so every term maps to a
 single feature, which keeps the contributions one-to-one with FEATURE_COLUMNS and
@@ -87,7 +87,7 @@ def ebm_contributions(
 
     Returns ``({feature: contribution}, intercept)`` in log-odds space. Because the
     model is additive, ``intercept + Σ contributions == logit(predict_proba)`` exactly
-    — the same reconciliation the SHAP path relied on, but with no approximation.
+   . The same reconciliation the SHAP path relied on, but with no approximation.
     """
     features = fill_missing_features(feature_row.copy())
     terms = np.asarray(model.eval_terms(features))[0]  # (n_terms,) for this row
@@ -106,7 +106,7 @@ def ebm_contributions(
 def ebm_mean_contributions(
     model: ExplainableBoostingClassifier, df: pd.DataFrame
 ) -> dict[str, float]:
-    """Population-average per-feature log-odds contribution — the *typical applicant*.
+    """Population-average per-feature log-odds contribution. The *typical applicant*.
 
     The EBM's terms are mean-centered on the **balanced** training distribution
     (we fit with ``class_weight='balanced'`` sample weights), so the intercept sits
@@ -119,7 +119,7 @@ def ebm_mean_contributions(
     of the typical applicant. :mod:`convergence.score_engine` re-centers each
     borrower's contributions on this reference so a driver reads as positive only when
     the borrower genuinely beats a typical applicant on that signal, and negative when
-    they fall short — restoring an honest mix of "helps" and "needs work" drivers.
+    they fall short, restoring an honest mix of "helps" and "needs work" drivers.
     """
     if df.empty:
         return {feat: 0.0 for feat in FEATURE_COLUMNS}
@@ -141,7 +141,7 @@ def _finite(value: float, fallback: float) -> float:
 
 
 def ebm_shape_functions(model: ExplainableBoostingClassifier) -> list[dict]:
-    """Global per-feature shape functions — the curves that ARE the model.
+    """Global per-feature shape functions. The curves that ARE the model.
 
     Returns, for each main-effect feature, the bin edges ``x`` (length N+1) and the
     log-odds contribution ``logodds`` (length N, a step value per interval). This is

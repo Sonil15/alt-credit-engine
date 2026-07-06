@@ -124,7 +124,7 @@ def recommend_terms(
 def evaluate_funding_gap(decision: str, lending: dict, intake: dict | None) -> dict:
     """Affordability gate: does the model's approval actually cover the ask?
 
-    Pure post-decision overlay — never touches PD, score, or the model's
+    Pure post-decision overlay. Never touches PD, score, or the model's
     ``decision``. When the model APPROVEs but the requested amount exceeds the
     maximum serviceable principal, the application must NOT go out as an
     approval: the outcome becomes REVIEW (counter-offer at the serviceable

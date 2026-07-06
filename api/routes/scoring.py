@@ -97,7 +97,7 @@ _shape_cache: dict = {}
 
 @router.get("/model/explanations")
 async def get_model_explanations() -> dict:
-    """EBM champion's global shape functions — the model's own decision curves.
+    """EBM champion's global shape functions. The model's own decision curves.
 
     Each feature's contribution is read directly off its shape function; there is no
     SHAP approximation. ``points`` are the log-odds contributions expressed on the

@@ -318,7 +318,7 @@ def generate_user_profile(rng: random.Random | None = None) -> dict:
     }
     cohort_code = cohort_codes[cohort]
 
-    # Demographic dimensions — used only for fairness monitoring, never as model inputs.
+    # Demographic dimensions, used only for fairness monitoring, never as model inputs.
     gender = local_rng.choices(["male", "female", "other"], weights=[52, 45, 3])[0]
     geography = local_rng.choices(["rural", "semi_urban", "urban"], weights=[40, 35, 25])[0]
     # Income bracket tracks rough creditworthiness to surface a realistic disparity signal.

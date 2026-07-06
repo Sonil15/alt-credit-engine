@@ -80,7 +80,10 @@ async def test_submit_happy_path_and_latest_wins():
 
 
 @pytest.mark.asyncio
-async def test_purpose_cohort_mismatch_is_422():
+async def test_cross_cohort_purpose_is_allowed_not_blocked():
+    """A purpose from another cohort's recommended list is a soft signal for the
+    officer (`purpose_consistent` downstream), not a hard 422 — real borrowers
+    straddle categories (e.g. a student doing gig work)."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         account = await _register(ac)
@@ -94,8 +97,49 @@ async def test_purpose_cohort_mismatch_is_422():
             },
             headers=_headers(account),
         )
+        assert resp.status_code == 200, resp.text
+
+
+@pytest.mark.asyncio
+async def test_unknown_purpose_code_is_422():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        account = await _register(ac)
+        resp = await ac.post(
+            "/intake/submit",
+            json={
+                "user_id": account["user_id"],
+                "cohort": "Student",
+                "loan_purpose": "not_a_real_purpose",
+                "requested_amount": 10000,
+            },
+            headers=_headers(account),
+        )
         assert resp.status_code == 422
-        assert "not available" in resp.json()["detail"]
+        assert "Unknown loan purpose" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_other_purpose_stores_free_text_reason():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        account = await _register(ac)
+        resp = await ac.post(
+            "/intake/submit",
+            json={
+                "user_id": account["user_id"],
+                "cohort": "Student",
+                "loan_purpose": "other",
+                "loan_purpose_other_text": "buying a used laptop for coursework",
+                "requested_amount": 10000,
+            },
+            headers=_headers(account),
+        )
+        assert resp.status_code == 200, resp.text
+
+        latest = await ac.get(f"/intake/{account['user_id']}", headers=_headers(account))
+        assert latest.status_code == 200
+        assert latest.json()["loan_purpose_other_text"] == "buying a used laptop for coursework"
 
 
 @pytest.mark.asyncio

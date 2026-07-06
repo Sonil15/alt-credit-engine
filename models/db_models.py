@@ -81,7 +81,7 @@ class ApplicationIntake(Base):
     """Borrower-declared intent captured at onboarding (before consent).
 
     One row per submission, latest-wins per ``user_id``. The raw free-text
-    business description is NOT stored here — it goes encrypted into
+    business description is NOT stored here, it goes encrypted into
     ``SecureVault`` (data_type="intake"); this table holds only the
     borrower-confirmed structured fields the pipeline may read.
     """
@@ -92,6 +92,7 @@ class ApplicationIntake(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), index=True, nullable=False)
     cohort: Mapped[str] = mapped_column(String(30), nullable=False)
     loan_purpose: Mapped[str] = mapped_column(String(50), nullable=False)
+    loan_purpose_other_text: Mapped[str | None] = mapped_column(String(300), nullable=True)
     requested_amount: Mapped[float] = mapped_column(Float, nullable=False)
     business_profile_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     extraction_method: Mapped[str] = mapped_column(String(20), nullable=False, default="none")
@@ -112,7 +113,7 @@ class BorrowerAccount(Base):
     The account's ``user_id`` is the borrower's stable identity across the whole
     pipeline (vault, features, decisions), so once a borrower logs in every
     application they submit ties back to the same account. Passwords are stored
-    only as a PBKDF2 hash + per-account salt — never in plaintext.
+    only as a PBKDF2 hash + per-account salt. Never in plaintext.
     """
 
     __tablename__ = "borrower_accounts"
@@ -150,8 +151,8 @@ class DecisionLetter(Base):
     """A borrower-facing decision letter and its human sign-off state.
 
     One active letter per borrower (latest-wins, keyed on ``user_id``). The letter
-    freezes the decision *as made* — outcome, reason codes, score, model version, and
-    date — so it is not silently re-rendered when the borrower re-scores later. An
+    freezes the decision *as made*, outcome, reason codes, score, model version, and
+    date, so it is not silently re-rendered when the borrower re-scores later. An
     APPROVE outcome is issued automatically (``status='issued'`` with no officer). A
     REJECT/REVIEW outcome is drafted as ``status='pending_review'`` and only becomes
     ``issued`` after a loan officer reviews and signs, at which point ``officer_id``

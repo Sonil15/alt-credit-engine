@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Alt-Credit — Your Assessment Result</title>
+  <title>Alt-Credit: Your Assessment Result</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/borrower.css?v=1.0.0">
-  <script src="/static/translations.js?v=1.0.3"></script>
+  <script src="/static/translations.js?v=1.0.4"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
   <script>
     // Login is mandatory to view a borrower's assessment. Redirect to sign-in
@@ -124,7 +124,7 @@
         <h2 data-i18n="borrower-letter-title">Your Decision Letter</h2>
         <div id="letter-pending" style="display:none; background:#fffbeb; border:1px solid #fcd34d; color:#92400e; padding:14px; border-radius:12px; font-size:14px; line-height:1.6;"
              data-i18n="borrower-letter-pending">
-          Your formal decision letter is being reviewed and signed by a loan officer. It will appear here once ready — please check back after signing in later.
+          Your formal decision letter is being reviewed and signed by a loan officer. It will appear here once ready. Please check back after signing in later.
         </div>
         <div id="letter-body" style="display:none;"></div>
         <div class="actions" id="letter-actions" style="display:none;">
@@ -198,7 +198,7 @@
         const headers = Auth.authHeaders();
         if (sessionId) headers['X-Session-Id'] = sessionId;
         const resp = await fetch('/letters/me?lang=' + encodeURIComponent(lang), { headers });
-        if (!resp.ok) return; // no letter yet — leave the section hidden
+        if (!resp.ok) return; // no letter yet (leave the section hidden
         const data = await resp.json();
         currentLetter = data;
         document.getElementById('letter-card').style.display = 'block';
@@ -268,8 +268,11 @@
 
       if (d.loan_purpose || d.requested_amount) {
         document.getElementById('intent-grid').style.display = '';
-        document.getElementById('purpose-val').textContent =
-          d.loan_purpose ? (t('purpose-' + d.loan_purpose) || d.loan_purpose.replace(/_/g, ' ')) : '—';
+        let purposeText = d.loan_purpose ? (t('purpose-' + d.loan_purpose) || d.loan_purpose.replace(/_/g, ' ')) : '—';
+        if (d.loan_purpose === 'other' && d.loan_purpose_other_text) {
+          purposeText += ': ' + d.loan_purpose_other_text;
+        }
+        document.getElementById('purpose-val').textContent = purposeText;
         document.getElementById('requested-val').textContent =
           d.requested_amount ? '₹' + Math.round(d.requested_amount).toLocaleString('en-IN') : '—';
       }
@@ -279,7 +282,7 @@
         const requested = '₹' + Math.round(d.funding_gap.requested_amount).toLocaleString('en-IN');
         const maxAmt = '₹' + Math.round(d.funding_gap.max_serviceable_amount).toLocaleString('en-IN');
         document.getElementById('funding-gap-text').textContent = ' ' +
-          (t('borrower-funding-gap-msg') || 'The requested amount of {requested} exceeds the maximum serviceable amount of {max} for your income profile. Your application cannot be approved as requested — it has been routed to a loan officer for a counter-offer of up to {max}.')
+          (t('borrower-funding-gap-msg') || 'The requested amount of {requested} exceeds the maximum serviceable amount of {max} for your income profile. Your application cannot be approved as requested; it has been routed to a loan officer for a counter-offer of up to {max}.')
             .replace(/\{requested\}/g, requested)
             .replace(/\{max\}/g, maxAmt);
         box.style.display = 'block';

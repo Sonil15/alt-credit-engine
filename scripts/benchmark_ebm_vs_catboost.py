@@ -1,6 +1,6 @@
 """Pre-decision benchmark: EBM (glass-box) vs CatBoost (current model).
 
-Standalone — touches NOTHING in the live scoring path. It only reads ml_features
+Standalone. Touches NOTHING in the live scoring path. It only reads ml_features
 from the DB, trains both models out-of-fold on the SAME splits, and reports:
 
   1. AUC parity   -> "do we lose accuracy by going glass-box?" (one slide)

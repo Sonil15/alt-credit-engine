@@ -28,7 +28,7 @@ async def ingest_ground_truth(
 ) -> IngestionResponse:
     """
     Store generative ground-truth labels and fairness metadata.
-    Used only for model training — never exposed as model inputs at scoring time.
+    Used only for model training. Never exposed as model inputs at scoring time.
     """
     await upsert_feature(db, payload.user_id, "default_label", float(payload.default_label))
 

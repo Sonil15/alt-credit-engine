@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Alt-Credit — Bank LOS Dashboard</title>
+  <title>Alt-Credit: Bank LOS Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/dashboard.css?v=1.0.0">
@@ -63,7 +63,7 @@
     </div>
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-      <h2 class="section-title" style="margin:0;">Decision Letters — Review Queue
+      <h2 class="section-title" style="margin:0;">Decision Letters: Review Queue
         <span id="letter-queue-count" style="display:none; background:#fef3c7; color:#92400e; border:1px solid #fcd34d; border-radius:20px; padding:2px 10px; font-size:13px; font-weight:700; margin-left:8px;">0</span>
       </h2>
       <button class="secondary" onclick="loadPendingLetters()" style="font-size:13px;">Refresh</button>
@@ -100,7 +100,7 @@
             <div>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
                 <span class="badge" id="decision-badge">—</span>
-                <span class="badge" id="gate-flag" style="display:none; background:#fef3c7; color:#92400e; border:1px solid #fcd34d; padding:7px 16px; border-radius:24px; font-size:13px; font-weight:700;" title="Model approved, but the requested amount exceeds the serviceable maximum — outcome is REVIEW for a counter-offer.">⚖ AFFORDABILITY GATE → REVIEW</span>
+                <span class="badge" id="gate-flag" style="display:none; background:#fef3c7; color:#92400e; border:1px solid #fcd34d; padding:7px 16px; border-radius:24px; font-size:13px; font-weight:700;" title="Model approved, but the requested amount exceeds the serviceable maximum, outcome is REVIEW for a counter-offer.">⚖ AFFORDABILITY GATE → REVIEW</span>
                 <span class="badge" id="cohort-badge" style="display:none; background:#334155; color:#cbd5e1; padding: 7px 16px; border-radius: 24px; font-size: 14px; font-weight: 700;">—</span>
                 <button onclick="openOverrideModal()" title="View AI Reasoning (glass-box) below to justify override" style="margin-left: 16px; padding: 6px 12px; background: #fef08a; border: 1px solid #ca8a04; color: #a16207; font-weight: bold; border-radius: 6px; cursor: pointer;">Change Decision</button>
               </div>
@@ -126,7 +126,7 @@
 
       <!-- Champion / challenger model panel -->
       <div class="chart-card" id="model-panel-card" style="display:none;">
-        <h2>Model Panel — champion decides, challengers audit</h2>
+        <h2>Model Panel: champion decides, challengers audit</h2>
         <div id="model-panel-body"></div>
       </div>
 
@@ -144,7 +144,7 @@
 
       <!-- Explainability: the model's own additive contributions (no SHAP) -->
       <div class="chart-card">
-        <h2>Why this score — the model's own contributions (in points)</h2>
+        <h2>Why this score: the model's own contributions (in points)</h2>
         <canvas id="shap-chart" height="120"></canvas>
         <div class="drivers" id="drivers-list"></div>
         <div class="reason-box" id="reason-codes-box" style="display:none;">
@@ -154,14 +154,14 @@
 
       <!-- Glass-box shape functions: the model itself, not a SHAP estimate -->
       <div class="chart-card" id="shape-card" style="display:none;">
-        <h2>How the model decided — its own shape functions <span style="font-weight:600;color:#2563eb;">· glass-box, no SHAP</span></h2>
-        <p class="trace-sub">Each curve is the EBM champion's actual term for one feature — the line <em>is</em> the model's reasoning, read directly. The blue marker shows where this borrower sits and the exact points the model gave them.</p>
+        <h2>How the model decided: its own shape functions <span style="font-weight:600;color:#2563eb;">· glass-box, no SHAP</span></h2>
+        <p class="trace-sub">Each curve is the EBM champion's actual term for one feature. The line <em>is</em> the model's reasoning, read directly. The blue marker shows where this borrower sits and the exact points the model gave them.</p>
         <div id="shape-viewer"></div>
       </div>
 
       <!-- End-to-end decision pipeline -->
       <div class="chart-card" id="pipeline-card" style="display:none;">
-        <h2>How this score is computed — end-to-end pipeline</h2>
+        <h2>How this score is computed: end-to-end pipeline</h2>
         <div class="pipeline">
           <div class="pl-stage">
             <div class="pl-box pl-data">
@@ -206,13 +206,13 @@
             </div>
           </div>
         </div>
-        <p class="pl-note">The <span class="eng eng-ecm">Econometric</span> engine and <span class="eng eng-stat">Statistical</span> extraction both produce input features; the <strong>glass-box EBM champion</strong> consumes all of them and assigns every point shown in the Signal Trace below — and those points are the model's own additive terms, not a SHAP approximation.</p>
+        <p class="pl-note">The <span class="eng eng-ecm">Econometric</span> engine and <span class="eng eng-stat">Statistical</span> extraction both produce input features; the <strong>glass-box EBM champion</strong> consumes all of them and assigns every point shown in the Signal Trace below, and those points are the model's own additive terms, not a SHAP approximation.</p>
       </div>
 
       <!-- Input data -> score linkage -->
       <div class="chart-card" id="trace-card" style="display:none;">
         <h2>Input data → score linkage (Signal Trace)</h2>
-        <p class="trace-sub">Every row is a real value drawn from this borrower's alternative data, tagged with the engine that derived it — <span class="eng eng-ecm">ECM</span> econometric or <span class="eng eng-stat">STAT</span> statistical — and the exact points the ML model gave it. This is the audit trail from raw input to decision.</p>
+        <p class="trace-sub">Every row is a real value drawn from this borrower's alternative data, tagged with the engine that derived it (<span class="eng eng-ecm">ECM</span> econometric or <span class="eng eng-stat">STAT</span> statistical) and the exact points the ML model gave it. This is the audit trail from raw input to decision.</p>
         <div class="trace-table-container">
           <table class="trace-table" id="trace-top"></table>
         </div>
@@ -222,7 +222,7 @@
     </div>
 
     <div id="user-list-panel" style="display:none;">
-      <h2 class="section-title">All Scored Borrowers — click to assess</h2>
+      <h2 class="section-title">All Scored Borrowers: click to assess</h2>
       <div id="user-chips"></div>
     </div>
   </div>
@@ -304,7 +304,7 @@
       });
       const dimLabel = (dim.label || 'group').toLowerCase();
       document.getElementById('fairness-summary').innerHTML =
-        `Disparate impact ratio <strong>${di.toFixed(3)}</strong> — <span class="${pass?'fairness-ok':'fairness-warn'}">${pass?'Passes':'Flagged by'} 80% rule</span>. Approval-rate parity across <strong>${dimLabel}</strong> groups, per RBI fair-lending expectations.`;
+        `Disparate impact ratio <strong>${di.toFixed(3)}</strong>: <span class="${pass?'fairness-ok':'fairness-warn'}">${pass?'Passes':'Flagged by'} 80% rule</span>. Approval-rate parity across <strong>${dimLabel}</strong> groups, per RBI fair-lending expectations.`;
     }
 
     async function loadScore() {
@@ -413,11 +413,14 @@
       // Borrower intent captured at onboarding (purpose + requested amount).
       let intentHtml = '';
       if (d.loan_purpose || d.requested_amount) {
-        const purposeLabel = d.loan_purpose ? d.loan_purpose.replace(/_/g, ' ') : '—';
+        let purposeLabel = d.loan_purpose ? d.loan_purpose.replace(/_/g, ' ') : '—';
+        if (d.loan_purpose === 'other' && d.loan_purpose_other_text) {
+          purposeLabel = 'Other: ' + d.loan_purpose_other_text;
+        }
         const consistChip = d.purpose_consistent === null || d.purpose_consistent === undefined ? '' :
           d.purpose_consistent
-            ? ' <span style="color:#16a34a; font-weight:700;" title="Purpose is valid for this borrower category">✓</span>'
-            : ' <span style="color:#dc2626; font-weight:700;" title="Purpose does not match this borrower category">✗</span>';
+            ? ' <span style="color:#16a34a; font-weight:700;" title="Purpose is consistent with this borrower category">✓</span>'
+            : ' <span style="color:#dc2626; font-weight:700;" title="Purpose does not match the categories typically declared for this borrower type — not a rejection, flagged for review">✗</span>';
         const gated = d.funding_gap && d.funding_gap.gated;
         intentHtml = `<div class="offer" style="margin-bottom:10px;">
           <div class="o"><div class="k">Requested</div><div class="v" ${gated ? 'style="color:#dc2626;"' : ''}>${d.requested_amount ? fmtINR(d.requested_amount) : '—'}</div></div>
@@ -425,7 +428,7 @@
         </div>`;
       }
       if (!l.eligible) {
-        area.innerHTML = intentHtml + `<div class="offer ineligible">No offer extended — ${l.rationale || 'does not meet criteria'}.</div>`;
+        area.innerHTML = intentHtml + `<div class="offer ineligible">No offer extended, ${l.rationale || 'does not meet criteria'}.</div>`;
         rat.textContent = '';
         return;
       }
@@ -609,7 +612,7 @@
         countBadge.textContent = rows.length;
         countBadge.style.display = rows.length ? 'inline-block' : 'none';
         if (!rows.length) {
-          box.innerHTML = '<p style="color:#16a34a;font-size:13px;">No letters awaiting sign-off — the queue is clear.</p>';
+          box.innerHTML = '<p style="color:#16a34a;font-size:13px;">No letters awaiting sign-off. The queue is clear.</p>';
           return;
         }
         box.innerHTML = rows.map(r => `
