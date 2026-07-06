@@ -295,6 +295,8 @@ const ALTCREDIT_DICTIONARY = {
     "feature-adf_pvalue": "Earning predictability",
     "feature-is_stationary": "Consistent income history",
     "feature-trend_slope": "Growing earning trend",
+    "feature-business_vintage_years": "Years in business",
+    "feature-turnover_income_consistency": "Consistency of reported income",
     "insight-bill_payment": "Tip: Pay telecom and electricity bills on time to boost your score.",
     "insight-necessity_ratio": "Tip: Spend more on daily essentials rather than luxury shopping.",
     "insight-merchant_rating": "Tip: Shop at well-known, trusted local/online stores.",
@@ -315,6 +317,8 @@ const ALTCREDIT_DICTIONARY = {
     "insight-input_purchase": "Tip: Purchase seeds, fertilizers, and tools through banking channels.",
     "insight-utility_consistency": "Tip: Consistently pay water, gas, and electricity bills via bank account.",
     "insight-grocery_stability": "Tip: Maintain stable month-on-month expenses for groceries and essentials.",
+    "insight-business_vintage_years": "Tip: A longer business history indicates stability and helps improve your score.",
+    "insight-turnover_income_consistency": "Tip: Ensure your declared business turnover matches your actual bank transaction history.",
     "insight-default": "Tip: Continue building a consistent digital transaction history across all your accounts."
   },
   hi: {
@@ -613,6 +617,8 @@ const ALTCREDIT_DICTIONARY = {
     "feature-adf_pvalue": "कमाई का सटीक अनुमान",
     "feature-is_stationary": "लगातार कमाई का इतिहास",
     "feature-trend_slope": "कमाई में वृद्धि का रुझान",
+    "feature-business_vintage_years": "व्यवसाय में वर्ष",
+    "feature-turnover_income_consistency": "घोषित आय की निरंतरता",
     "insight-bill_payment": "सुझाव: अपने स्कोर को बढ़ाने के लिए फोन और बिजली के बिलों का समय पर भुगतान करें।",
     "insight-necessity_ratio": "सुझाव: विलासिता की वस्तुओं के बजाय दैनिक आवश्यकताओं पर अधिक खर्च करें।",
     "insight-merchant_rating": "सुझाव: प्रसिद्ध और भरोसेमंद स्थानीय या ऑनलाइन दुकानों से खरीदारी करें।",
@@ -633,6 +639,8 @@ const ALTCREDIT_DICTIONARY = {
     "insight-input_purchase": "सुझाव: बीज, खाद और उपकरण बैंक भुगतान या डिजिटल माध्यमों से खरीदें।",
     "insight-utility_consistency": "सुझाव: अपने बैंक खाते से नियमित रूप से पानी, गैस और बिजली के बिलों का भुगतान करें।",
     "insight-grocery_stability": "सुझाव: राशन और आवश्यक वस्तुओं के लिए हर महीने एक समान बजट रखें।",
+    "insight-business_vintage_years": "सुझाव: लंबे समय का व्यावसायिक इतिहास स्थिरता दर्शाता है और आपके स्कोर को सुधारने में मदद करता है।",
+    "insight-turnover_income_consistency": "सुझाव: सुनिश्चित करें कि आपका घोषित व्यावसायिक टर्नओवर आपके वास्तविक बैंक लेनदेन से मेल खाता हो।",
     "insight-default": "सुझाव: अपने सभी खातों में डिजिटल लेन-देन का लगातार रिकॉर्ड बनाए रखें।"
   },
   bn: {
@@ -929,6 +937,8 @@ const ALTCREDIT_DICTIONARY = {
     "feature-adf_pvalue": "উপার্জনের অনুমানযোগ্যতা",
     "feature-is_stationary": "ধারাবাহিক উপার্জনের ইতিহাস",
     "feature-trend_slope": "উপার্জনের ক্রমবর্ধমান ধারা",
+    "feature-business_vintage_years": "ব্যবসায় কত বছর",
+    "feature-turnover_income_consistency": "ঘোষিত আয়ের ধারাবাহিকতা",
     "insight-bill_payment": "পরামর্শ: আপনার স্কোর বাড়াতে ফোন এবং বিদ্যুৎ বিল সময়মতো পরিশোধ করুন।",
     "insight-necessity_ratio": "পরামর্শ: বিলাসবহুল কেনাকাটার চেয়ে প্রতিদিনের প্রয়োজনীয় জিনিসে বেশি খরচ করুন।",
     "insight-merchant_rating": "পরামর্শ: সুপরিচিত ও বিশ্বস্ত স্থানীয় বা অনলাইন দোকান থেকে কেনাকাটা করুন।",
@@ -949,6 +959,8 @@ const ALTCREDIT_DICTIONARY = {
     "insight-input_purchase": "পরামর্শ: বীজ, সার এবং চাষের সরঞ্জাম ব্যাংকিং বা ডিজিটাল মাধ্যমে কিনুন।",
     "insight-utility_consistency": "পরামর্শ: ব্যাংক অ্যাকাউন্ট থেকে নিয়মিত জল, গ্যাস ও বিদ্যুৎ বিল পরিশোধ করুন।",
     "insight-grocery_stability": "পরামর্শ: মুদি ও প্রয়োজনীয় জিনিসের জন্য প্রতি মাসে একটি স্থিতিশীল বাজেট বজায় রাখুন।",
+    "insight-business_vintage_years": "পরামর্শ: দীর্ঘদিনের ব্যবসায়িক ইতিহাস স্থিতিশীলতা নির্দেশ করে এবং আপনার স্কোর উন্নত করতে সাহায্য করে।",
+    "insight-turnover_income_consistency": "পরামর্শ: নিশ্চিত করুন যে আপনার ঘোষিত ব্যবসায়িক টার্নওভার আপনার প্রকৃত ব্যাংক লেনদেনের সাথে মিলেছে।",
     "insight-default": "পরামর্শ: আপনার সমস্ত অ্যাকাউন্টে নিয়মিত ডিজিটাল লেনদেন বজায় রাখুন।"
   }
 };

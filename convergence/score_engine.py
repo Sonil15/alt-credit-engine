@@ -218,7 +218,9 @@ def _generate_actionable_insights(shap_drivers: list[dict[str, float]]) -> list[
         "harvest_income_spike": "Tip: Consistent cycles in farming income help validate agricultural profiles.",
         "input_purchase_consistency": "Tip: Regular purchases of agricultural inputs build a stronger profile.",
         "utility_payment_consistency": "Tip: Consistent payment of household utilities is a strong positive signal.",
-        "grocery_spend_stability": "Tip: Stable household spending patterns improve your credit assessment."
+        "grocery_spend_stability": "Tip: Stable household spending patterns improve your credit assessment.",
+        "business_vintage_years": "Tip: A longer business history indicates stability and helps improve your score.",
+        "turnover_income_consistency": "Tip: Ensure your declared business turnover matches your actual bank transaction history."
     }
     
     insights = []

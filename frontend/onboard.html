@@ -295,7 +295,11 @@
         });
         if (!resp.ok) {
           const data = await resp.json().catch(() => ({}));
-          showError(data.detail || t('onboard-error-submit', 'Could not save your details. Please try again.'));
+          let errMsg = data.detail || t('onboard-error-submit', 'Could not save your details. Please try again.');
+          if (typeof errMsg === 'object') {
+            errMsg = JSON.stringify(errMsg);
+          }
+          showError(errMsg);
           return;
         }
       } catch (_) {
