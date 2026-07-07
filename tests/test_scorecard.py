@@ -7,7 +7,7 @@ from convergence.scorecard import (
     expected_value_to_base_points,
     pd_to_credit_score,
     pd_to_log_odds,
-    shap_to_points,
+    ebm_to_points,
 )
 
 
@@ -19,18 +19,18 @@ def test_scorecard_monotonicity():
     assert 300 <= high_pd_score <= 900
 
 
-def test_shap_points_reconcile_with_score():
+def test_ebm_points_reconcile_with_score():
     """base_points + Σ feature_points must reconstruct the headline score.
 
-    With SHAP in log-odds space: base_value + Σ shap = log-odds(PD). The PDO
+    With EBM in log-odds space: base_value + Σ contrib = log-odds(PD). The PDO
     transform of that sum must equal the score (pre-clamp).
     """
     base_value = -2.0
-    shap = [0.4, -0.3, 0.1, 0.05]
-    total_log_odds = base_value + sum(shap)
+    contribs = [0.4, -0.3, 0.1, 0.05]
+    total_log_odds = base_value + sum(contribs)
     pd_value = 1.0 / (1.0 + pow(2.718281828, -total_log_odds))
 
-    reconstructed = expected_value_to_base_points(base_value) + sum(shap_to_points(s) for s in shap)
+    reconstructed = expected_value_to_base_points(base_value) + sum(ebm_to_points(s) for s in contribs)
     expected = SCORE_OFFSET - PDO_FACTOR * pd_to_log_odds(pd_value)
     assert abs(reconstructed - expected) < 1e-6
 

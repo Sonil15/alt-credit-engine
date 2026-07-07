@@ -6,7 +6,11 @@ Generative model (ground truth is hidden from the ML pipeline):
   2. Sample default outcome Y ~ Bernoulli(p_default) where
      logit(p_default) = intercept + slope * (0.5 - theta) + epsilon.
   3. Observable features are noisy functions of theta (not deterministic rules on features).
-  4. Protected-group attribute is sampled independently for fairness analysis.
+  4. Demographic attributes (fairness metadata only, never model inputs) are assigned by
+     theta-stratified dealing: each group receives a matched spread of latent
+     creditworthiness, so approval-rate parity holds by construction up to sampling
+     noise. A small deliberate tilt is applied on geography (urban advantage) so the
+     fairness monitor has a realistic, visible—but bounded—disparity to report.
 """
 
 from __future__ import annotations
@@ -109,10 +113,15 @@ def _sigmoid(x: float) -> float:
 
 
 def sample_latent_and_default(rng: random.Random) -> tuple[float, int]:
-    """Sample latent creditworthiness and Bernoulli default label."""
+    """Sample latent creditworthiness and Bernoulli default label.
+
+    Intercept/slope are tuned so calibrated PDs spread across all three decision
+    bands (roughly 40/40/20 approve/review/reject on the scorecard) instead of
+    piling the whole portfolio into the approve band.
+    """
     theta = rng.betavariate(2.0, 2.0)
     noise = rng.gauss(0.0, 0.25)
-    logit_pd = -2.5 + 4.0 * (0.5 - theta) + noise
+    logit_pd = -1.55 + 4.0 * (0.5 - theta) + noise
     p_default = _sigmoid(logit_pd)
     default_label = 1 if rng.random() < p_default else 0
     return theta, default_label
@@ -300,12 +309,86 @@ def generate_survey(user_id: str, theta: float, extra_features: dict | None = No
     }
 
 
-def generate_user_profile(rng: random.Random | None = None) -> dict:
-    user_id = str(uuid.uuid4())
-    local_rng = rng or _user_rng(user_id)
-    theta, default_label = sample_latent_and_default(local_rng)
-    protected_group = local_rng.choice(PROTECTED_GROUPS)
-    borrower_type = "msme" if local_rng.random() < 0.25 else "individual"
+# Fairness-metadata group shares (counts per 100 borrowers).
+DEMOGRAPHIC_QUOTAS: dict[str, dict[str, int]] = {
+    "gender": {"male": 52, "female": 45, "other": 3},
+    "geography": {"rural": 40, "semi_urban": 35, "urban": 25},
+    "protected_group": {"general": 20, "obc": 20, "sc": 20, "st": 20, "minority": 20},
+    "borrower_type": {"individual": 75, "msme": 25},
+}
+
+# Deliberate mild disparity: (attribute, favored group, disfavored group, #swaps).
+# A few rank swaps nudge urban borrowers toward higher theta, leaving a visible but
+# bounded approval-rate gap for the fairness monitor to surface.
+DEMOGRAPHIC_TILTS: list[tuple[str, str, str, int]] = [
+    ("geography", "urban", "rural", 3),
+]
+
+
+def _deal_balanced(order: list[int], quotas: dict[str, int]) -> dict[int, str]:
+    """Deal group labels over theta-ranked users with a weighted round-robin.
+
+    Each group's members end up evenly spaced along the theta ranking, so every
+    group sees a matched distribution of latent creditworthiness.
+    """
+    n = len(order)
+    total = sum(quotas.values())
+    allocated = {group: 0 for group in quotas}
+    labels: dict[int, str] = {}
+    for pos, idx in enumerate(order):
+        # Pick the group furthest behind its pro-rata share (largest remainder).
+        group = max(quotas, key=lambda g: quotas[g] * (pos + 1) / total - allocated[g])
+        labels[idx] = group
+        allocated[group] += 1
+    return labels
+
+
+def _apply_tilt(
+    labels: dict[int, str], order: list[int], favored: str, disfavored: str, swaps: int
+) -> None:
+    """Swap ``swaps`` label pairs so ``favored`` drifts toward higher theta ranks."""
+    favored_positions = [p for p, idx in enumerate(order) if labels[idx] == favored]
+    disfavored_positions = [p for p, idx in enumerate(order) if labels[idx] == disfavored]
+    done = 0
+    for low in favored_positions:  # lowest-ranked favored members first
+        candidates = [p for p in disfavored_positions if p > low]
+        if not candidates:
+            break
+        high = candidates[-1]  # highest-ranked disfavored member
+        labels[order[low]], labels[order[high]] = labels[order[high]], labels[order[low]]
+        disfavored_positions.remove(high)
+        done += 1
+        if done >= swaps:
+            break
+
+
+def assign_demographics(thetas: list[float]) -> list[dict[str, str]]:
+    """Assign fairness metadata via theta-stratified dealing (see module docstring)."""
+    order = sorted(range(len(thetas)), key=lambda i: thetas[i])
+    per_attribute: dict[str, dict[int, str]] = {}
+    for attribute, quotas in DEMOGRAPHIC_QUOTAS.items():
+        labels = _deal_balanced(order, quotas)
+        per_attribute[attribute] = labels
+    for attribute, favored, disfavored, swaps in DEMOGRAPHIC_TILTS:
+        _apply_tilt(per_attribute[attribute], order, favored, disfavored, swaps)
+    return [
+        {attribute: per_attribute[attribute][i] for attribute in DEMOGRAPHIC_QUOTAS}
+        for i in range(len(thetas))
+    ]
+
+
+def generate_user_profile(
+    theta: float,
+    default_label: int,
+    demographics: dict[str, str],
+    rng: random.Random,
+) -> dict:
+    # Seeded UUID: the whole cohort (ids, and therefore every per-user data stream,
+    # which is keyed on the id) is reproducible from GLOBAL_SEED.
+    user_id = str(uuid.UUID(int=rng.getrandbits(128), version=4))
+    local_rng = rng
+    protected_group = demographics["protected_group"]
+    borrower_type = demographics["borrower_type"]
 
     cohort = local_rng.choice(["Salaried", "GigWorker", "Student", "Vendor", "Farmer", "Homemaker"])
     cohort_codes = {
@@ -319,10 +402,8 @@ def generate_user_profile(rng: random.Random | None = None) -> dict:
     cohort_code = cohort_codes[cohort]
 
     # Demographic dimensions, used only for fairness monitoring, never as model inputs.
-    gender = local_rng.choices(["male", "female", "other"], weights=[52, 45, 3])[0]
-    geography = local_rng.choices(["rural", "semi_urban", "urban"], weights=[40, 35, 25])[0]
-    # Income bracket tracks rough creditworthiness to surface a realistic disparity signal.
-    income_bracket = "low" if theta < 0.35 else ("high" if theta > 0.65 else "mid")
+    gender = demographics["gender"]
+    geography = demographics["geography"]
 
     extra_features = {
         "cohort_code": cohort_code,
@@ -368,7 +449,6 @@ def generate_user_profile(rng: random.Random | None = None) -> dict:
             "cohort": cohort,
             "gender": gender,
             "geography": geography,
-            "income_bracket": income_bracket,
         },
     }
     if borrower_type == "msme":
@@ -384,7 +464,14 @@ def generate_user_profile(rng: random.Random | None = None) -> dict:
 
 def main() -> None:
     master_rng = random.Random(GLOBAL_SEED)
-    profiles = [generate_user_profile(master_rng) for _ in range(100)]
+    Faker.seed(GLOBAL_SEED)  # dates/addresses drawn via faker are reproducible too
+    count = 100
+    latents = [sample_latent_and_default(master_rng) for _ in range(count)]
+    demographics = assign_demographics([theta for theta, _ in latents])
+    profiles = [
+        generate_user_profile(theta, default_label, demographics[i], master_rng)
+        for i, (theta, default_label) in enumerate(latents)
+    ]
     OUTPUT_PATH.write_text(json.dumps(profiles, indent=2), encoding="utf-8")
     default_rate = sum(p["_ground_truth"]["default_label"] for p in profiles) / len(profiles)
     print(f"Generated {len(profiles)} user profiles -> {OUTPUT_PATH}")

@@ -25,7 +25,7 @@ from interpret.glassbox import ExplainableBoostingClassifier
 from sklearn.utils.class_weight import compute_sample_weight
 
 from core.seeds import CATBOOST_RANDOM_SEED
-from models_ai.constants import FEATURE_COLUMNS, fill_missing_features
+from models_ai.constants import FEATURE_COLUMNS, fill_missing_features, prior_correction_log_odds
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,10 @@ def train_ebm(df: pd.DataFrame, label_series: pd.Series) -> ExplainableBoostingC
         random_state=CATBOOST_RANDOM_SEED,
     )
     model.fit(features, y, sample_weight=compute_sample_weight("balanced", y))
+    # Undo the balanced-weight recentering: shift the additive intercept back to the
+    # portfolio prior so predict_proba (and every score derived from it) is honest.
+    # Per-feature terms are untouched, so contributions/reason codes still reconcile.
+    model.intercept_ = model.intercept_ + prior_correction_log_odds(y)
     return model
 
 

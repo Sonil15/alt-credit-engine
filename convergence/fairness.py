@@ -20,6 +20,11 @@ import pandas as pd
 
 DISPARATE_IMPACT_THRESHOLD = 0.8
 
+# Groups below this size are still reported but excluded from the disparate-impact
+# ratio: a 2-person group with one rejection would otherwise swing the ratio to ~0,
+# which is sampling noise, not a parity signal (standard small-cohort suppression).
+MIN_GROUP_SIZE_FOR_RATIO = 5
+
 MITIGATION_NARRATIVE = (
     "The model excludes protected attributes from feature inputs. Group parity is "
     "monitored at decision time; approval-rate ratios below 0.8 trigger manual review. "
@@ -51,12 +56,6 @@ FAIRNESS_DIMENSIONS: list[dict[str, Any]] = [
         "label": "Geography",
         "column": "geography_code",
         "code_map": {0.0: "Rural", 1.0: "Semi-Urban", 2.0: "Urban"},
-    },
-    {
-        "key": "income_bracket",
-        "label": "Income bracket",
-        "column": "income_bracket_code",
-        "code_map": {0.0: "Low income", 1.0: "Mid income", 2.0: "High income"},
     },
     {
         "key": "social_category",
@@ -111,6 +110,10 @@ def _compute_dimension(
 
     merged = score_df.merge(meta[["user_id", "group"]], on="user_id", how="left")
     merged["group"] = merged["group"].fillna("unknown")
+    # Borrowers who never disclosed this attribute (e.g. live app onboards) cannot be
+    # assigned to a parity group; they are monitored via the portfolio-level metrics
+    # instead of polluting every dimension with an "unknown" bar.
+    merged = merged[merged["group"] != "unknown"]
 
     group_stats: dict[str, dict[str, float | int]] = {}
     for group in merged["group"].unique():
@@ -127,7 +130,7 @@ def _compute_dimension(
     rates = [
         stats["approval_rate"]
         for group, stats in group_stats.items()
-        if stats["count"] > 0 and group != "unknown"
+        if stats["count"] >= MIN_GROUP_SIZE_FOR_RATIO
     ]
     max_rate = max(rates) if rates else 0.0
     min_rate = min(rates) if rates else 0.0

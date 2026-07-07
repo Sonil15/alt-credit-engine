@@ -1,12 +1,12 @@
-from convergence.reason_codes import format_reason_codes, shap_to_reason_codes
+from convergence.reason_codes import format_reason_codes, drivers_to_reason_codes
 
 
-def test_shap_to_reason_codes():
+def test_drivers_to_reason_codes():
     drivers = [
-        {"feature": "missed_payments_count", "shap_value": 0.5},
-        {"feature": "resilience_coefficient", "shap_value": -0.3},
+        {"feature": "missed_payments_count", "contribution_value": 0.5},
+        {"feature": "resilience_coefficient", "contribution_value": -0.3},
     ]
-    codes = shap_to_reason_codes(drivers)
+    codes = drivers_to_reason_codes(drivers)
     assert len(codes) == 1
     assert "Missed" in codes[0] or "missed" in codes[0].lower()
 

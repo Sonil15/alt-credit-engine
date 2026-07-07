@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence.feature_meta import FEATURE_META
-from convergence.scorecard import shap_to_points
+from convergence.scorecard import ebm_to_points
 from convergence.score_engine import portfolio_summary, score_all_users, score_user
 from core.auth import get_session_user_id, require_api_key, require_own_session
 from core.database import AsyncSessionLocal, get_db
@@ -120,7 +120,7 @@ async def get_model_explanations() -> dict:
                     "fmt": meta.get("fmt", "number"),
                     "direction": meta.get("direction", ""),
                     "x": fn["x"],
-                    "points": [round(shap_to_points(v), 2) for v in fn["logodds"]],
+                    "points": [round(ebm_to_points(v), 2) for v in fn["logodds"]],
                 }
             )
         _shape_cache.update(
@@ -166,7 +166,7 @@ async def get_credit_score(
     db: AsyncSession = Depends(get_db),
     _: None = Depends(require_own_session),
 ) -> CreditScoreResponse:
-    """Return alternate credit score, PD, decision, SHAP drivers, and reason codes."""
+    """Return alternate credit score, PD, decision, feature drivers, and reason codes."""
     try:
         result = await score_user(db, user_id)
         return CreditScoreResponse(**result)

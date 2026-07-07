@@ -6,8 +6,8 @@
     "catboost",
     "logistic"
   ],
-  "trained_at": "2026-07-06T13:33:59.630319+00:00",
-  "users_trained": 104,
+  "trained_at": "2026-07-07T05:02:11.731890+00:00",
+  "users_trained": 100,
   "feature_columns": [
     "avg_days_late",
     "missed_payments_count",
@@ -34,67 +34,25 @@
     "turnover_income_consistency"
   ],
   "metrics": {
-    "auc": 0.8158,
-    "gini": 0.6316,
-    "ks": 0.7895,
-    "accuracy": 0.8095,
-    "default_rate": 0.0952,
+    "auc": 0.4706,
+    "gini": -0.0588,
+    "ks": 0.2941,
+    "accuracy": 0.85,
+    "default_rate": 0.15,
     "calibration": [
       {
         "bin_start": 0.0,
         "bin_end": 0.1,
-        "predicted_mean": 0.03316023251529893,
-        "observed_rate": 0.0,
-        "count": 9
+        "predicted_mean": 0.036722517320291734,
+        "observed_rate": 0.15789473684210525,
+        "count": 19
       },
       {
         "bin_start": 0.1,
         "bin_end": 0.2,
-        "predicted_mean": 0.1456216491495727,
-        "observed_rate": 0.0,
-        "count": 4
-      },
-      {
-        "bin_start": 0.30000000000000004,
-        "bin_end": 0.4,
-        "predicted_mean": 0.3496918869347465,
+        "predicted_mean": 0.12513289318936321,
         "observed_rate": 0.0,
         "count": 1
-      },
-      {
-        "bin_start": 0.4,
-        "bin_end": 0.5,
-        "predicted_mean": 0.4192594949679114,
-        "observed_rate": 0.0,
-        "count": 1
-      },
-      {
-        "bin_start": 0.5,
-        "bin_end": 0.6000000000000001,
-        "predicted_mean": 0.5638133737297917,
-        "observed_rate": 1.0,
-        "count": 1
-      },
-      {
-        "bin_start": 0.6000000000000001,
-        "bin_end": 0.7000000000000001,
-        "predicted_mean": 0.6959878094837693,
-        "observed_rate": 0.5,
-        "count": 2
-      },
-      {
-        "bin_start": 0.7000000000000001,
-        "bin_end": 0.8,
-        "predicted_mean": 0.7548762598440079,
-        "observed_rate": 0.0,
-        "count": 1
-      },
-      {
-        "bin_start": 0.9,
-        "bin_end": 1.0,
-        "predicted_mean": 0.9319772162238212,
-        "observed_rate": 0.0,
-        "count": 2
       }
     ],
     "confusion": {
@@ -105,9 +63,9 @@
       ],
       "matrix": [
         [
-          9,
-          4,
-          6
+          12,
+          5,
+          0
         ],
         [
           0,
@@ -115,44 +73,48 @@
           0
         ],
         [
+          3,
           0,
-          0,
-          2
+          0
         ]
       ],
-      "accuracy": 0.5238095238095238
+      "accuracy": 0.6
     },
     "roc_curve": {
       "fpr": [
         0.0,
-        0.0526,
-        0.1579,
-        0.1579,
-        0.2105,
-        0.2105,
+        0.0588,
+        0.2941,
+        0.2941,
+        0.5294,
+        0.5294,
+        0.7647,
+        0.7647,
         1.0
       ],
       "tpr": [
         0.0,
         0.0,
         0.0,
-        0.5,
-        0.5,
+        0.3333,
+        0.3333,
+        0.6667,
+        0.6667,
         1.0,
         1.0
       ]
     }
   },
   "cv_metrics": {
-    "cv_auc_mean": 0.8053,
-    "cv_auc_std": 0.1669
+    "cv_auc_mean": 0.6696,
+    "cv_auc_std": 0.1298
   },
   "challenger_metrics": {
     "catboost": {
-      "auc": 0.8158
+      "auc": 0.6275
     },
     "logistic": {
-      "auc": 0.8947
+      "auc": 0.7059
     }
   },
   "scorecard": {
@@ -165,17 +127,22 @@
     "pdo": 50
   },
   "decision_thresholds": {
-    "approve_score": 580,
-    "review_score": 480,
-    "approve_pd_max": 0.1166,
-    "review_pd_max": 0.3455
+    "approve_score": 650,
+    "review_score": 560,
+    "approve_pd_max": 0.0476,
+    "review_pd_max": 0.1483
   },
   "conformal": {
     "alpha": 0.1,
     "coverage_target": 0.9,
-    "threshold_q": 0.983156,
-    "n_calibration": 17,
-    "empirical_coverage": 0.9412,
+    "threshold_q": 0.915723,
+    "n_calibration": 20,
+    "empirical_coverage": 1.0,
     "model": "ebm_champion"
+  },
+  "temperatures": {
+    "ebm": 6.0,
+    "catboost": 4.43,
+    "logistic": 3.37
   }
 }

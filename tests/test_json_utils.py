@@ -4,7 +4,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from convergence.scorecard import shap_to_points
+from convergence.scorecard import ebm_to_points
 from core.json_utils import safe_float, safe_round, sanitize_for_json
 from models.pydantic_schemas import CreditScoreResponse
 
@@ -24,9 +24,9 @@ def test_safe_round_replaces_non_finite_values():
     assert safe_round(np.float64("inf"), 2) == 0.0
 
 
-def test_shap_points_are_finite_and_serializable():
-    raw_shap = [float("nan"), float("inf"), 0.42, -0.31]
-    points = {f"f{i}": safe_round(shap_to_points(safe_float(v)), 2) for i, v in enumerate(raw_shap)}
+def test_ebm_points_are_finite_and_serializable():
+    raw_contrib = [float("nan"), float("inf"), 0.42, -0.31]
+    points = {f"f{i}": safe_round(ebm_to_points(safe_float(v)), 2) for i, v in enumerate(raw_contrib)}
     assert all(math.isfinite(value) for value in points.values())
     json.dumps(points, allow_nan=False)
 
@@ -34,7 +34,7 @@ def test_shap_points_are_finite_and_serializable():
 def test_sanitize_for_json_handles_nested_numpy_values():
     payload = {
         "probability_of_default": np.float64("nan"),
-        "shap_drivers": [{"feature": "x", "shap_value": np.float64("inf")}],
+        "feature_drivers": [{"feature": "x", "contribution_value": np.float64("inf")}],
         "factor_points": {"monthly_income_mean": np.float64("nan")},
     }
     sanitized = sanitize_for_json(payload)
@@ -48,7 +48,7 @@ def test_credit_score_response_serializes_with_strict_json_encoder():
         probability_of_default=float("nan"),
         decision="REVIEW",
         auto_reject=False,
-        shap_drivers=[{"feature": "missed_payments_count", "shap_value": float("inf")}],
+        feature_drivers=[{"feature": "missed_payments_count", "contribution_value": float("inf")}],
         factor_points={"monthly_income_mean": float("nan")},
     )
     encoded = json.dumps(response.model_dump(), allow_nan=False)

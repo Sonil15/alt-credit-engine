@@ -20,11 +20,14 @@ import numpy as np
 from convergence.scorecard import pd_to_credit_score
 
 # Score cutoffs for the decision band. Single source of truth for the score engine.
-# Tuned to the honestly-calibrated EBM champion: at BASE_ODDS=10 a population-average
-# borrower scores ~600 (≈9% PD). The old 750 bar required ~1% PD and yielded 0%
-# approvals; 580 (~12% PD) targets ~20% auto-approvals on the demo portfolio.
-APPROVE_SCORE = 580
-REVIEW_SCORE = 480
+# Tuned to the honestly-calibrated + temperature-scaled EBM champion: prior
+# correction recenters PDs on the real base rate and temperature scaling spreads
+# them across the band (calibrated PDs run ~1-14%, scores ~560-810). Against that
+# spread, 650/560 yields a realistic approve/review/reject split (with headroom
+# above the bar so panel-unanimous approvals survive the agreement + conformal
+# gates) instead of piling the whole portfolio into the approve band.
+APPROVE_SCORE = 650
+REVIEW_SCORE = 560
 
 
 def decision_thresholds() -> dict[str, int]:
