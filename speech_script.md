@@ -36,11 +36,11 @@ short sentences, one idea at a time.
 
   About half the country can't get a fair loan for exactly that reason — there's no file to score. The easy answer is to point modern AI at the problem and hope. As a bank, we can't do that. We answer to regulators, we carry the risk, and we have to justify every single decision.
 
-  So here's what makes our approach different. Most alternative-credit players chase raw accuracy with a black box and worry about explaining it later. We inverted that: we start from *glass-box, compliant-by-construction* and prove we lose nothing in accuracy. That's the uniqueness — a model a regulator can audit line by line, that still matches a black box head-to-head.
+  So here's what makes our approach different. Most alt-credit players chase accuracy with a black box and worry about explaining it later. We flipped that. We started with a model that's explainable from day one — and still matches a black box on accuracy. That's the uniqueness: a model a regulator can audit line by line, that still holds its own against the best opaque models out there.
 
-  Concretely, we built a *sequential dual-engine core*. It starts with five raw data pillars and cohort arrays. Engine A uses time-series econometrics to pre-process that data and measure how stable someone's cash flow really is. Engine B is our champion model — an Explainable Boosting Machine, backed by a panel of challenger models. And it all converges into one familiar output: a calibrated 300-to-900 credit score that drops straight into the tools banks already use.
+  Concretely, we built a two-stage scoring core. It starts with five raw data pillars and cohort arrays. Engine A uses time-series econometrics to clean the data and measure how stable someone's cash flow really is. Engine B is our main model — an Explainable Boosting Machine, backed by a panel of challenger models. And it all converges into one familiar output: a calibrated 300-to-900 credit score that drops straight into the tools banks already use.
 
-  Everything you'll see today comes down to three things we hardened to get from prototype to production. One — econometric detrending, so we stopped mistaking a rising income for instability. Two — matrix expansion: cohort-aware imputation in place of naive zero-fill, plus real alternative-data signals for UPI, agriculture, and vendors. And three — the glass box and the safety gates: we moved off a CatBoost-plus-SHAP black box onto an intrinsically explainable EBM, with conformal abstention on top. Let me walk you through each one."
+  Everything you'll see today comes down to three things we hardened to get from prototype to production. One — we fixed a math bug where rising income looked like instability. Two — we expanded the feature matrix: smarter imputation for missing data, plus real alt-data signals for UPI, agriculture, and vendors. And three — the glass box and the safety gates: we moved off a black-box CatBoost model onto an intrinsically explainable EBM, with a conformal abstention layer on top. Let me walk you through each one."
 
 ---
 
@@ -77,11 +77,11 @@ short sentences, one idea at a time.
 **Visual Cues:** Academic vs. Agricultural cohort table (cashflow profile, extracted signals, processing logic) and "The Ipsative Psychometric Fix" (forced-choice testing + deterministic `response_validity` score).
 
 * **Gauri:**
-  "For thin-file borrowers, context is the whole game. You cannot grade a university student and a seasonal farmer on the same ruler — their cash flow doesn't even have the same shape.
+  "For thin-file borrowers, context is everything. You can't grade a university student and a seasonal farmer on the same ruler — their cash flow doesn't even look the same.
 
-  A student's profile is high-frequency, low-value digital spend, so we read signals like UPI spend consistency, promptness on small dues, and e-wallet top-up frequency — early evidence of discipline. A farmer's profile is lumpy and seasonal, so we engineer a harvest-income-spike feature that stops the model from flagging an *expected* surge as instability, plus input-purchase consistency as a read on necessity spending. Both cohorts also produce relative facet sub-scores, zero to a hundred, for the dashboard — sitting *alongside* the strict twenty-three-feature model schema, never feeding into it.
+  A student's profile is high-frequency, low-value digital spend, so we read signals like UPI spend consistency, promptness on small dues, and e-wallet top-up frequency — early evidence of discipline. A farmer's profile is lumpy and seasonal, so we built a harvest-income-spike feature that stops the model from flagging an *expected* surge as instability, plus input-purchase consistency as a read on necessity spending. Both cohorts also produce relative facet sub-scores, zero to a hundred, for the dashboard — sitting *alongside* the strict twenty-three-feature model schema, never feeding into it.
 
-  On the bottom: the psychometric fix. A normal survey is trivial to game — everyone picks the responsible-sounding answer. So we replaced Likert scales with *forced-choice*, ipsative testing. Instead of 'Are you responsible?', we make you choose between two options that are both good, so you can only reveal what you actually prioritize. And we pair it with a deterministic `response_validity` score that checks whether your answers stay consistent across statement pairs. Straight-line faking gets neutralized."
+  On the bottom: the psychometric fix. A normal survey is easy to game — everyone picks the responsible-sounding answer. So we replaced Likert scales with *forced-choice* testing. Instead of 'Are you responsible?', we make you choose between two options that are both good, so you can only reveal what you actually prioritize. And we pair it with a deterministic `response_validity` score that checks whether your answers stay consistent across statement pairs. Straight-line faking gets neutralized."
 
 ---
 
@@ -89,13 +89,13 @@ short sentences, one idea at a time.
 **Visual Cues:** Before/after graphs — "Increasing Salary Trend (The Problem)" vs. "Error Correction Model Shock (The Fix)" — and "The New Detrending Math" (deterministic trend, detrending residuals, new ECM) with final Engine A vectors.
 
 * **Gauri:**
-  "This slide is the econometrics flaw we caught, and the fix — and it's my favorite one.
+  "This slide is the econometrics bug we caught, and the fix — and it's my favorite one.
 
-  Look at the graph on the left. Standard time-series models assume a flat, stable baseline. So when a borrower's income climbs — a promotion, a growing business — the old error-correction model read that upward slope as *volatility* and marked them down. The stationarity test failed, p greater than 0.05, and we penalized growth as if it were instability. That's the Increasing Salary Paradox. It's exactly backwards.
+  Look at the graph on the left. Standard time-series models assume a flat, stable baseline. So when a borrower's income climbs — a promotion, a growing business — the old model read that upward slope as *volatility* and marked them down. The stationarity test failed, p greater than 0.05, and we penalized growth as if it were instability. That's the Increasing Salary Paradox. It's exactly backwards.
 
-  The fix is on the right, and it's three steps of clean math. First, we fit a deterministic trend — alpha plus beta-t — and we extract that slope, beta, as its own feature, `trend_slope`, so a rising trajectory becomes a *positive* signal. Second, we subtract the trend out to get the residuals. Third, we run the error-correction model on those *detrended* residuals — so now we're measuring the wobble *around* the trend line, not the trend itself.
+  The fix is on the right, and it's three clean steps. First, we fit a simple trend line and pull out the slope as its own feature, `trend_slope`, so a rising income becomes a *positive* signal. Second, we subtract the trend to get the residuals. Third, we run the stability model on those *detrended* residuals — so now we're measuring the wobble *around* the trend line, not the trend itself.
 
-  The output is three honest vectors: `trend_slope`, `is_stationary`, and a `resilience_coefficient` that combines the correction speed with stationarity. So a rising income is rewarded as growth, while genuine month-to-month instability still gets caught. The paradox is gone, and we didn't lose any real risk signal to get there."
+  The output is three honest vectors: `trend_slope`, `is_stationary`, and a `resilience_coefficient` that combines how fast income corrects after a shock with how stable it is overall. So a rising income is rewarded as growth, while genuine month-to-month instability still gets caught. The paradox is gone, and we didn't lose any real risk signal to get there."
 
 ---
 
@@ -103,11 +103,11 @@ short sentences, one idea at a time.
 **Visual Cues:** The Compliance Matrix (Legacy CatBoost + SHAP vs. Production EBM), the Shape Function Additive Equation `logit(PD) = β₀ + Σ fᵢ(xᵢ)`, and the Conformal Abstention Gate.
 
 * **Sonil:**
-  "Most ML credit models are black boxes, and the industry has a standard workaround, up top on the left. Train something powerful like CatBoost, discover you can't explain it to a regulator, then bolt on SHAP to *estimate* what the model probably did. But SHAP is a post-hoc estimation — it is not a legal proof. The real decider stays opaque.
+  "Most ML credit models are black boxes, and the industry has a standard workaround, up top on the left. Train something powerful like CatBoost, discover you can't explain it to a regulator, then bolt on SHAP to *guess* what the model probably did. But SHAP is a post-hoc estimate — it's not a legal proof. The real decider stays opaque.
 
-  So we pivoted to the glass box on the right: an Explainable Boosting Machine. It's natively additive — the log-odds of default is just beta-zero plus the sum of one shape function per feature. `f_1` of income, plus `f_2` of age, and so on. Zero pairwise interactions. The explanations are exactly one-to-one with the feature columns, computed natively — there's nothing left to estimate after the fact, because the model *is* the explanation. And for a credit officer, that means if the model ever learns something absurd from noise, you can look at that one curve and correct it by hand.
+  So we pivoted to the glass box on the right: an Explainable Boosting Machine. It's natively additive — the log-odds of default is just a base score plus the sum of one curve per feature. Income gets one curve, age gets another, and so on. No hidden interactions. The explanations map one-to-one to the feature columns — the model *is* the explanation. And for a credit officer, that means if the model ever learns something absurd from noise, you can look at that one curve and correct it by hand.
 
-  Bottom of the slide is the safety net: a conformal abstention gate. Using split conformal prediction at alpha equals 0.10, when both a default and a no-default outcome are statistically plausible for an applicant, the model refuses to gamble — it abstains and defers to a human review. That's direct NPA protection.
+  Bottom of the slide is the safety net: a conformal abstention gate. When both a default and a no-default outcome are statistically plausible for an applicant, the model refuses to gamble — it abstains and defers to a human review. That's direct NPA protection.
 
   Now the benchmark, because this is the number that matters. The industry assumption is that a glass-box model costs you accuracy. It doesn't here. We ran our EBM head-to-head against the CatBoost black box on the same data — our EBM scores an AUC of 0.753 against CatBoost's 0.733. So the transparent model actually *edges out* the black box. That's our technical moat in one line: full native auditability *and* benchmark-beating performance, together — not a trade-off. Anyone can train a black box; very few can hand a regulator a model that's this explainable without giving up the accuracy to get there."
 
@@ -119,7 +119,7 @@ short sentences, one idea at a time.
 * **Gauri:**
   "Credit officers don't want a machine-learning probability. They want a number between 300 and 900 that behaves the way a credit score is supposed to.
 
-  So we run a standard actuarial conversion — the same Points-to-Double-the-Odds method behind traditional scorecards. We take the EBM's raw probability of default, anchor a base score of 600 at base odds of ten-to-one, and set fifty points to double the odds. That gives us a PDO factor of about 72, an offset of about 434, and a clean, calibrated score. And notice — the raw probability is centered on the *cohort typical applicant*, so a factor only counts as a strength when you're genuinely better than your peers, not against some flattering artificial baseline.
+  So we run a standard actuarial conversion — the same Points-to-Double-the-Odds method behind traditional scorecards. We take the EBM's raw probability of default, anchor a base score of 600 at base odds of ten-to-one, and set fifty points to double the odds. That gives us a clean, calibrated score. And notice — the raw probability is centered on the *cohort typical applicant*, so a factor only counts as a strength when you're genuinely better than your peers, not against some flattering artificial baseline.
 
   The bottom half is where this pays off for compliance. Because the EBM is additive, the adverse-action drivers are sorted by their *exact* mathematical feature weight — so the Key Fact Statement reason codes are accurate by construction, not guessed. And the Affordability Gate sits on top as a post-decision overlay: if an approved borrower asks for more than they can safely service, the engine routes to human review with a counter-offer. That deliberately keeps loan-amount policy *out* of the risk model — the model assesses risk, and affordability is a separate, human-owned decision."
 

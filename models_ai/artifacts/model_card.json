@@ -6,7 +6,7 @@
     "catboost",
     "logistic"
   ],
-  "trained_at": "2026-07-07T05:02:11.731890+00:00",
+  "trained_at": "2026-07-07T06:48:03.119587+00:00",
   "users_trained": 100,
   "feature_columns": [
     "avg_days_late",
@@ -34,23 +34,30 @@
     "turnover_income_consistency"
   ],
   "metrics": {
-    "auc": 0.4706,
-    "gini": -0.0588,
-    "ks": 0.2941,
+    "auc": 0.5294,
+    "gini": 0.0588,
+    "ks": 0.3137,
     "accuracy": 0.85,
     "default_rate": 0.15,
     "calibration": [
       {
         "bin_start": 0.0,
         "bin_end": 0.1,
-        "predicted_mean": 0.036722517320291734,
-        "observed_rate": 0.15789473684210525,
-        "count": 19
+        "predicted_mean": 0.01528782318080559,
+        "observed_rate": 0.1875,
+        "count": 16
       },
       {
         "bin_start": 0.1,
         "bin_end": 0.2,
-        "predicted_mean": 0.12513289318936321,
+        "predicted_mean": 0.14907815673887737,
+        "observed_rate": 0.0,
+        "count": 3
+      },
+      {
+        "bin_start": 0.30000000000000004,
+        "bin_end": 0.4,
+        "predicted_mean": 0.37505292780431493,
         "observed_rate": 0.0,
         "count": 1
       }
@@ -64,17 +71,17 @@
       "matrix": [
         [
           12,
-          5,
-          0
-        ],
-        [
-          0,
-          0,
-          0
-        ],
-        [
           3,
+          2
+        ],
+        [
           0,
+          0,
+          0
+        ],
+        [
+          2,
+          1,
           0
         ]
       ],
@@ -86,8 +93,8 @@
         0.0588,
         0.2941,
         0.2941,
-        0.5294,
-        0.5294,
+        0.3529,
+        0.3529,
         0.7647,
         0.7647,
         1.0
@@ -106,15 +113,15 @@
     }
   },
   "cv_metrics": {
-    "cv_auc_mean": 0.6696,
-    "cv_auc_std": 0.1298
+    "cv_auc_mean": 0.6853,
+    "cv_auc_std": 0.1017
   },
   "challenger_metrics": {
     "catboost": {
       "auc": 0.6275
     },
     "logistic": {
-      "auc": 0.7059
+      "auc": 0.8235
     }
   },
   "scorecard": {
@@ -135,14 +142,14 @@
   "conformal": {
     "alpha": 0.1,
     "coverage_target": 0.9,
-    "threshold_q": 0.915723,
+    "threshold_q": 0.715858,
     "n_calibration": 20,
     "empirical_coverage": 1.0,
     "model": "ebm_champion"
   },
   "temperatures": {
-    "ebm": 6.0,
-    "catboost": 4.43,
-    "logistic": 3.37
+    "ebm": 1.73,
+    "catboost": 1.0,
+    "logistic": 2.27
   }
 }

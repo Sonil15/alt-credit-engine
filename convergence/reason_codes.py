@@ -24,6 +24,8 @@ FEATURE_REASON_MAP: dict[str, str] = {
     "trend_slope": "Declining income trend",
     "historical_spatial_variance": "Inconsistent delivery locations",
     "distinct_pin_codes": "Multiple delivery addresses",
+    "business_vintage_years": "Limited business operating history",
+    "turnover_income_consistency": "Declared income does not match observed cash flow",
 }
 
 

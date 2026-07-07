@@ -210,13 +210,12 @@ portfolio (2026-07 dataset):
 
 | Decision | Share |
 |---|---|
-| APPROVE | 26% |
-| REVIEW | 68% |
-| REJECT | 6% |
+| APPROVE | 41% |
+| REVIEW | 46% |
+| REJECT | 13% |
 
-Average score ~610, full 300–900 range. This is a deliberate, defensible
-recalibration, say so to judges: *"our honest model needed an honest scorecard;
-the old cutoffs were propped up by an over-confident black box."*
+Average score ~763, full 300–900 range (left-tail feature widening pushes the
+worst borrowers below the REJECT floor instead of clustering just above it).
 
 **Training:** `python -m models_ai.train` (or `POST /score/train`) now trains all
 three and writes artifacts `ebm_champion.pkl`, `catboost_model.cbm`,

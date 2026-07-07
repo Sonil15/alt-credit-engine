@@ -112,12 +112,18 @@ def _sigmoid(x: float) -> float:
     return 1.0 / (1.0 + math.exp(-x))
 
 
+def _risk_penalty(theta: float) -> float:
+    """Extra bad-signal pressure for the left tail only."""
+    return max(0.0, 0.32 - theta) * 2.2
+
+
 def sample_latent_and_default(rng: random.Random) -> tuple[float, int]:
     """Sample latent creditworthiness and Bernoulli default label.
 
     Intercept/slope are tuned so calibrated PDs spread across all three decision
     bands (roughly 40/40/20 approve/review/reject on the scorecard) instead of
-    piling the whole portfolio into the approve band.
+    piling the whole portfolio into the approve band. Tail widening is applied via
+    ``_risk_penalty`` on observable features, not by inflating the default prior.
     """
     theta = rng.betavariate(2.0, 2.0)
     noise = rng.gauss(0.0, 0.25)
@@ -131,8 +137,9 @@ def generate_telecom_invoices(user_id: str, theta: float, count: int = 12) -> li
     rng = _user_rng(f"{user_id}:telecom")
     invoices = []
     base_date = fake.date_between(start_date="-1y", end_date="-1m")
-    late_prob = max(0.02, 0.35 - 0.30 * theta + rng.uniform(-0.05, 0.05))
-    miss_prob = max(0.01, 0.15 - 0.12 * theta + rng.uniform(-0.03, 0.03))
+    penalty = _risk_penalty(theta)
+    late_prob = max(0.02, 0.35 - 0.30 * theta + 0.28 * penalty + rng.uniform(-0.05, 0.05))
+    miss_prob = max(0.01, 0.15 - 0.12 * theta + 0.24 * penalty + rng.uniform(-0.03, 0.03))
 
     for i in range(count):
         invoice_date = base_date + timedelta(days=30 * i)
@@ -223,7 +230,8 @@ def generate_geo_locations(user_id: str, theta: float, count: int = 50) -> list[
     rng = _user_rng(f"{user_id}:geo")
     home_lat = rng.uniform(INDIA_BOUNDS["lat_min"], INDIA_BOUNDS["lat_max"])
     home_long = rng.uniform(INDIA_BOUNDS["long_min"], INDIA_BOUNDS["long_max"])
-    spread = max(0.002, 0.02 - 0.018 * theta)
+    penalty = _risk_penalty(theta)
+    spread = max(0.002, 0.02 - 0.018 * theta + 0.018 * penalty)
     work_lat = home_lat + rng.uniform(-spread, spread)
     work_long = home_long + rng.uniform(-spread, spread)
 
@@ -246,8 +254,9 @@ def generate_geo_locations(user_id: str, theta: float, count: int = 50) -> list[
 def generate_cashflow_transactions(user_id: str, theta: float, count: int = 40) -> list[dict]:
     rng = _user_rng(f"{user_id}:cashflow")
     base_date = fake.date_between(start_date="-120d", end_date="-1d")
-    income_scale = 8000 + 42000 * theta
-    volatility = max(0.05, 0.35 - 0.25 * theta)
+    penalty = _risk_penalty(theta)
+    income_scale = max(2000, 8000 + 42000 * theta - 22000 * penalty)
+    volatility = max(0.05, 0.35 - 0.25 * theta + 0.22 * penalty)
 
     transactions = []
     for i in range(count):

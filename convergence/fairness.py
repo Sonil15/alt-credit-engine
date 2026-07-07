@@ -61,7 +61,7 @@ FAIRNESS_DIMENSIONS: list[dict[str, Any]] = [
         "key": "social_category",
         "label": "Social category",
         "column": "protected_group_code",
-        "code_map": {0.0: "General", 1.0: "OBC", 2.0: "SC", 3.0: "ST", 4.0: "Minority"},
+        "code_map": {0.0: "General", 1.0: "OBC", 2.0: "SC", 3.0: "ST", 4.0: "Other"},
     },
 ]
 

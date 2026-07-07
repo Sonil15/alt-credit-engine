@@ -24,7 +24,9 @@ from convergence.scorecard import (
     ebm_to_points,
 )
 from core.business_profile import (
+    BUSINESS_MODEL_FEATURES,
     PURPOSES_BY_COHORT,
+    business_features_applicable,
     fetch_all_latest_intakes,
     fetch_latest_intake,
     intake_to_dict,
@@ -329,14 +331,23 @@ def _build_payload(
 
     # Never explain the score with data the borrower didn't consent to: drop every
     # feature belonging to a revoked scope from the driver lists and the lineage trace.
+    # Also hide structurally-N/A business features (e.g. "years in business" for a
+    # student laptop loan) even though the model may still consume them as 0.
     revoked_features: set[str] = set()
     for scope in (revoked_scopes or []):
         revoked_features.update(SCOPE_TO_FEATURES.get(scope, []))
-    visible_contributions = [c for c in contributions if c["feature"] not in revoked_features]
+    excluded_features = set(revoked_features)
+    if not business_features_applicable(
+        cohort,
+        intake.get("loan_purpose") if intake else None,
+        has_business_profile=bool(intake.get("has_business_profile")) if intake else False,
+    ):
+        excluded_features.update(BUSINESS_MODEL_FEATURES)
+    visible_contributions = [c for c in contributions if c["feature"] not in excluded_features]
 
     feature_drivers = _top_drivers(visible_contributions)
     negative_drivers = _top_negative_drivers(visible_contributions)
-    feature_trace = build_feature_trace(user_row, factor_points, exclude_features=revoked_features)
+    feature_trace = build_feature_trace(user_row, factor_points, exclude_features=excluded_features)
     reason_codes = drivers_to_reason_codes(negative_drivers)
     gated_to_review = decision == "REVIEW" and champion_decision != "REVIEW" and not auto_reject
     conformal_gated = decision == "REVIEW" and pre_conformal_decision == "APPROVE" and conformal.get("abstain")

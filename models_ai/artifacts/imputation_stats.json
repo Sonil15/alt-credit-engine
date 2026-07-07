@@ -1,6 +1,6 @@
 {
   "global": {
-    "avg_days_late": 3.2409090909090907,
+    "avg_days_late": 3.3484848484848486,
     "missed_payments_count": 1.0,
     "necessity_ratio": 0.8265142777433425,
     "avg_merchant_rating": 3.7649999999999997,
@@ -17,16 +17,16 @@
     "debt_attitude": 0.5659,
     "response_validity": 0.85965,
     "resilience_coefficient": 1.0,
-    "adf_statistic": -2.314619402757521,
-    "adf_pvalue": 0.16731613556854305,
+    "adf_statistic": -2.329291079061709,
+    "adf_pvalue": 0.16281710174456315,
     "is_stationary": 0.0,
-    "trend_slope": -0.08574522294825024,
+    "trend_slope": -0.08440631085019176,
     "business_vintage_years": 8.0,
     "turnover_income_consistency": 0.75705
   },
   "by_cohort": {
     "0": {
-      "avg_days_late": 3.3333333333333335,
+      "avg_days_late": 3.5454545454545454,
       "missed_payments_count": 1.0,
       "necessity_ratio": 0.8243443270498982,
       "avg_merchant_rating": 3.8549999999999995,
@@ -51,7 +51,7 @@
       "turnover_income_consistency": null
     },
     "1": {
-      "avg_days_late": 3.4318181818181817,
+      "avg_days_late": 4.0,
       "missed_payments_count": 1.0,
       "necessity_ratio": 0.8108536638445133,
       "avg_merchant_rating": 3.8075,
@@ -71,12 +71,12 @@
       "adf_statistic": -1.93203956519603,
       "adf_pvalue": 0.318802516873386,
       "is_stationary": 0.0,
-      "trend_slope": -0.09737222885894034,
+      "trend_slope": -0.09575182380571896,
       "business_vintage_years": null,
       "turnover_income_consistency": null
     },
     "2": {
-      "avg_days_late": 3.966666666666667,
+      "avg_days_late": 3.625,
       "missed_payments_count": 1.0,
       "necessity_ratio": 0.854124062908244,
       "avg_merchant_rating": 3.7375,
@@ -93,15 +93,15 @@
       "debt_attitude": 0.55925,
       "response_validity": 0.8649,
       "resilience_coefficient": 1.0,
-      "adf_statistic": -2.598776686516368,
-      "adf_pvalue": 0.09427448405421342,
+      "adf_statistic": -2.525698862554644,
+      "adf_pvalue": 0.10934792331832294,
       "is_stationary": 0.0,
       "trend_slope": -0.13353099251166475,
       "business_vintage_years": null,
       "turnover_income_consistency": null
     },
     "3": {
-      "avg_days_late": 2.909090909090909,
+      "avg_days_late": 3.0,
       "missed_payments_count": 1.0,
       "necessity_ratio": 0.8282614470082801,
       "avg_merchant_rating": 3.7449999999999997,
@@ -118,10 +118,10 @@
       "debt_attitude": 0.5073,
       "response_validity": 0.8627,
       "resilience_coefficient": 1.0,
-      "adf_statistic": -2.6863026752090433,
-      "adf_pvalue": 0.07643864382897662,
+      "adf_statistic": -2.6780508811468886,
+      "adf_pvalue": 0.07791404433748102,
       "is_stationary": 0.0,
-      "trend_slope": 0.03934852845270961,
+      "trend_slope": 0.03764449827590994,
       "business_vintage_years": 6.0,
       "turnover_income_consistency": 0.7276
     },
@@ -151,7 +151,7 @@
       "turnover_income_consistency": 0.8044
     },
     "5": {
-      "avg_days_late": 3.0,
+      "avg_days_late": 3.6,
       "missed_payments_count": 1.0,
       "necessity_ratio": 0.8165388526520114,
       "avg_merchant_rating": 3.725,

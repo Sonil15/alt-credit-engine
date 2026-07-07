@@ -51,6 +51,37 @@ ALL_PURPOSES: set[str] = {p for purposes in PURPOSES_BY_COHORT.values() for p in
 # business_profile for any cohort regardless of this list).
 BUSINESS_COHORTS = ("Vendor", "Farmer", "GigWorker")
 
+# Model features derived from the borrower-confirmed business profile. They may still
+# be structurally N/A (0) for non-business applicants, but must not surface in score
+# explanations unless the borrower actually onboarded with a business profile.
+BUSINESS_MODEL_FEATURES: tuple[str, ...] = (
+    "business_vintage_years",
+    "turnover_income_consistency",
+)
+
+
+def business_features_applicable(
+    cohort: str | None,
+    loan_purpose: str | None = None,
+    *,
+    has_business_profile: bool = False,
+) -> bool:
+    """Whether business-profile features belong in borrower-facing explanations.
+
+    Mirrors the onboarding UI: Vendor/Farmer/GigWorker always collect a business
+    profile; Homemaker does when the purpose is ``small_home_business``; any cohort
+    that submitted a confirmed profile counts too. A student borrowing for a laptop
+    should never see "years in business" in their reasons or tips.
+    """
+    if has_business_profile:
+        return True
+    if not cohort:
+        return False
+    if cohort in BUSINESS_COHORTS:
+        return True
+    return cohort == "Homemaker" and loan_purpose == "small_home_business"
+
+
 # Minimum self-reported confidence before we trust the LLM's extraction over
 # the deterministic fallback (same threshold philosophy as the answer scorer).
 EXTRACTION_CONFIDENCE_THRESHOLD = 0.5
@@ -352,6 +383,7 @@ def intake_to_dict(intake: ApplicationIntake | None) -> dict[str, Any] | None:
         "loan_purpose": intake.loan_purpose,
         "loan_purpose_other_text": intake.loan_purpose_other_text,
         "requested_amount": intake.requested_amount,
+        "has_business_profile": bool(intake.business_profile_json),
     }
 
 
