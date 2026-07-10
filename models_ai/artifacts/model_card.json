@@ -6,7 +6,7 @@
     "catboost",
     "logistic"
   ],
-  "trained_at": "2026-07-10T12:27:59.408044+00:00",
+  "trained_at": "2026-07-10T12:53:45.777017+00:00",
   "users_trained": 100,
   "feature_columns": [
     "avg_days_late",
@@ -43,39 +43,18 @@
     "grocery_spend_stability"
   ],
   "metrics": {
-    "auc": 0.6667,
-    "gini": 0.3333,
-    "ks": 0.6111,
+    "auc": 0.6389,
+    "gini": 0.2778,
+    "ks": 0.5556,
     "accuracy": 0.9,
     "default_rate": 0.1,
     "calibration": [
       {
         "bin_start": 0.0,
         "bin_end": 0.1,
-        "predicted_mean": 0.04396688399649116,
-        "observed_rate": 0.07142857142857142,
-        "count": 14
-      },
-      {
-        "bin_start": 0.1,
-        "bin_end": 0.2,
-        "predicted_mean": 0.1465584732292099,
-        "observed_rate": 0.25,
-        "count": 4
-      },
-      {
-        "bin_start": 0.30000000000000004,
-        "bin_end": 0.4,
-        "predicted_mean": 0.39635507208828247,
-        "observed_rate": 0.0,
-        "count": 1
-      },
-      {
-        "bin_start": 0.4,
-        "bin_end": 0.5,
-        "predicted_mean": 0.48437486692820403,
-        "observed_rate": 0.0,
-        "count": 1
+        "predicted_mean": 0.013173798518438177,
+        "observed_rate": 0.1,
+        "count": 20
       }
     ],
     "confusion": {
@@ -86,9 +65,9 @@
       ],
       "matrix": [
         [
-          13,
-          3,
-          2
+          17,
+          1,
+          0
         ],
         [
           0,
@@ -101,7 +80,7 @@
           0
         ]
       ],
-      "accuracy": 0.65
+      "accuracy": 0.85
     },
     "roc_curve": {
       "fpr": [
@@ -109,8 +88,8 @@
         0.0556,
         0.2778,
         0.2778,
-        0.3889,
-        0.3889,
+        0.4444,
+        0.4444,
         1.0
       ],
       "tpr": [
@@ -130,10 +109,10 @@
   },
   "challenger_metrics": {
     "catboost": {
-      "auc": 0.75
+      "auc": 0.8333
     },
     "logistic": {
-      "auc": 0.3333
+      "auc": 0.3056
     }
   },
   "scorecard": {
@@ -146,17 +125,22 @@
     "pdo": 50
   },
   "decision_thresholds": {
-    "approve_score": 580,
-    "review_score": 480,
-    "approve_pd_max": 0.1166,
-    "review_pd_max": 0.3455
+    "approve_score": 650,
+    "review_score": 560,
+    "approve_pd_max": 0.0476,
+    "review_pd_max": 0.1483
   },
   "conformal": {
     "alpha": 0.1,
     "coverage_target": 0.9,
-    "threshold_q": 0.962609,
-    "n_calibration": 16,
-    "empirical_coverage": 0.9375,
+    "threshold_q": 0.993268,
+    "n_calibration": 20,
+    "empirical_coverage": 1.0,
     "model": "ebm_champion"
+  },
+  "temperatures": {
+    "ebm": 1.0,
+    "catboost": 6.0,
+    "logistic": 6.0
   }
 }
