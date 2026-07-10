@@ -29,6 +29,16 @@ FEATURE_COLUMNS = [
     # Absent for individuals; fill_missing_features maps absent -> 0.0.
     "business_vintage_years",
     "turnover_income_consistency",
+    # Cohort-specific facet features
+    "upi_spend_consistency",
+    "small_dues_payment_promptness",
+    "e_wallet_topup_frequency",
+    "daily_transaction_count",
+    "average_ticket_size",
+    "harvest_income_spike",
+    "input_purchase_consistency",
+    "utility_payment_consistency",
+    "grocery_spend_stability",
 ]
 
 LABEL_COLUMN = "default_label"

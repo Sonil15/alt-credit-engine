@@ -66,7 +66,15 @@ def load_logistic(path: Path | None = None) -> Pipeline:
     if not target.exists():
         raise FileNotFoundError(f"Logistic challenger not found at {target}. Run models_ai/train.py first.")
     with open(target, "rb") as fh:
-        return pickle.load(fh)
+        model = pickle.load(fh)
+        
+    # Patch for sklearn version mismatch
+    if hasattr(model, "steps"):
+        for name, step in model.steps:
+            if hasattr(step, "predict_proba") and not hasattr(step, "multi_class"):
+                step.multi_class = "auto"
+                
+    return model
 
 
 def predict_pd(model: Pipeline, df: pd.DataFrame) -> pd.DataFrame:

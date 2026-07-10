@@ -235,15 +235,7 @@ Copy this block for each feature:
   penalise exactly the excluded people you claim to serve?"
 - **Pitch line:** "A missing source resolves to *typical-for-someone-like-you*, not to
   zero, because zero isn't neutral, it's a verdict."
-- **Differentiator:** Most teams zero-fill missing features and never notice that zero is
-  directional; zero income reads as 'destitute', zero missed-payments reads as 'flawless
-  history', so the same blank both punishes *and* rewards depending on the field. We learn
-  a per-cohort typical-applicant profile at training time and impute an absent source with
-  the median of the borrower's *own* cohort. The system also tells apart "applicable but
-  not collected" (a genuine thin file → fill the cohort-typical value) from "structurally
-  not applicable" (business vintage for a salaried worker → correctly stays zero). It's
-  the same mechanism that makes consent-revocation fair: withdrawing a source makes you
-  look *average* on it, never worst-case.
+- **Differentiator:** Most teams either restrict models to salaried borrowers or zero-fill missing features without noticing that zero is directional. We feed all 9 category-specific facet features (e.g., daily transaction velocity for Vendors, input purchase consistency for Farmers, UPI spend consistency for Students) directly into the 3 models. To avoid bias, the system learns a per-cohort typical-applicant profile at training time and imputes an absent source with the median of the borrower's *own* cohort. It also dynamically distinguishes "applicable but not collected" (imputed with the cohort median) from "structurally not applicable" (e.g., business vintage or transaction velocity for a salaried worker, which correctly remains a neutral `0.0`). This allows the models to perform category-appropriate assessments natively.
 - **Demo moment:** Take an approved salaried applicant, blank their entire cashflow
   source live, and re-score. The score barely moves and the confidence badge drops,
   instead of the applicant cratering to a reject. "Missing data makes us less *confident*,

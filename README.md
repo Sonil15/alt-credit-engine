@@ -192,11 +192,83 @@ Implemented in [`convergence/fairness.py`](convergence/fairness.py); threshold `
 
 ## Model Panel & Conformal Abstention Gate (Review routing)
 
-To improve reliability and address explainability concerns, the system implements a model panel and conformal abstention gates:
-1. **Explainable Boosting Machine (EBM) Champion:** The primary decision maker. It is intrinsically interpretable and provides exact, additive point contributions for each feature.
-2. **Challenger Models:** A CatBoost and a Logistic Regression model serve as validators to check if structurally different models agree with the champion.
-3. **The Agreement Gate:** Routes borderline or hard-conflict cases to `REVIEW` (e.g., when the champion approves but a challenger rejects).
-4. **Conformal Abstention:** Employs split conformal prediction to output a statistical `{no_default, default}` prediction set. If both are plausible, the system abstains from auto-approval and routes the applicant to `REVIEW`.
+To improve reliability, auditability, and protect against over-confident model decisions, the system implements an ensemble panel of diverse models alongside split conformal prediction:
+
+1. **Explainable Boosting Machine (EBM) Champion:** The primary decision maker. EBM is an intrinsically interpretable glass-box model where each feature's contribution is modeled via a readable curve ($f(x) = \beta_0 + \sum f_i(x_i)$). It provides exact, additive point contributions for each feature, eliminating the need for post-hoc approximation tools (like SHAP).
+2. **Challenger Models:** A CatBoost model (accuracy benchmark) and a Logistic/WoE model (different function family) serve as independent validators to check if structurally different models agree with the champion.
+3. **The Agreement Gate:** Compares the champion's decision band against the challengers. Hard conflicts (e.g. one model approves and another rejects) or contested approvals (champion approves but panel is not unanimous) route the applicant to manual `REVIEW` instead of silent auto-approval.
+4. **Conformal Abstention:** Employs split conformal prediction to construct a statistical `{no_default, default}` prediction set. If both outcomes are plausible at the significance level ($\alpha = 0.10$), the model abstains and routes the case to `REVIEW`.
+
+### Model Performance Metrics (from `/score/model/card`)
+
+The models are trained on identical splits of the target database to ensure fair performance comparison:
+
+| Metric / Model | Champion (EBM) | Challenger (CatBoost) | Challenger (Logistic Regression) |
+| :--- | :--- | :--- | :--- |
+| **Holdout AUC** | `0.6667` | `0.7500` | `0.3333` |
+| **Gini Coefficient** | `0.3333` | - | - |
+| **Kolmogorov-Smirnov (KS)** | `0.6111` | - | - |
+| **Holdout Accuracy** | `90.00%` | - | - |
+| **CV AUC (5-fold Mean ± Std)** | `0.7681 ± 0.1903` | - | - |
+
+- **Conformal Calibration**: Target coverage is set to `90.0%` ($\alpha = 0.10$). Current empirical coverage is `93.75%` on the held-out calibration split ($N = 16$).
+- **Scorecard Anchoring**: The 300–900 scorecard is calibrated with a base score of 600 at base odds of 10:1 (corresponding to the population's real default rate of ~9%).
+- **Decision Cutoffs**:
+  - **APPROVE**: Score $\ge 580$ (EBM Probability of Default $\le 11.66\%$)
+  - **REVIEW**: Score $\ge 480$ (EBM Probability of Default $\le 34.55\%$)
+  - **REJECT**: Score $< 480$
+
+### Model Feature Schema (32 Input Variables)
+
+The ensemble models process 32 features across five alternative data facets, onboarding intake fields, and cohort-specific transaction profiles. The features, grouped by their AA-style consent scope, are:
+
+| Consent Scope | Feature Name | Description |
+| :--- | :--- | :--- |
+| **Telecom** | `avg_days_late` | Average number of days telecom payments are late |
+| | `missed_payments_count` | Number of missed telecom billing cycles |
+| **E-Commerce** | `necessity_ratio` | Ratio of essential/necessity purchases to total spend |
+| | `avg_merchant_rating` | Average rating of merchants visited |
+| | `monthly_spend_volatility` | Volatility in e-commerce spend patterns |
+| **Geolocation** | `spatial_variance_score` | Dispersion/variance in coordinates of daily check-ins |
+| | `anchor_count` | Number of distinct high-frequency anchor locations (e.g., home/work) |
+| **Cashflow** (Econometric) | `monthly_income_mean` | Estimated mean monthly cash inflows |
+| | `monthly_expense_mean` | Estimated mean monthly cash outflows |
+| | `cashflow_volatility` | Volatility of monthly cash flow |
+| | `resilience_coefficient` | Co-integration coefficient estimated via single-equation Error Correction Model (ECM) |
+| | `adf_statistic` | Augmented Dickey-Fuller stationarity test statistic (runs on detrended net cashflow series) |
+| | `adf_pvalue` | P-value of the ADF stationarity test |
+| | `is_stationary` | Binary indicator (1.0 if `adf_pvalue` < 0.05) indicating stable mean cashflow |
+| | `trend_slope` | Slope of the linear trend line fitted to the net cashflow series |
+| **Psychometric** | `conscientiousness` | Psychometric score measuring diligence and organization (0–100) |
+| | `locus_of_control` | Score measuring internal vs. external attribution of life events (0–100) |
+| | `financial_self_efficacy` | Score measuring confidence in managing financial goals (0–100) |
+| | `present_bias` | Score measuring immediate reward orientation vs. long-term planning (0–100) |
+| | `debt_attitude` | Score measuring risk aversion/comfort with debt (0–100) |
+| | `response_validity` | Metric measuring psychometric response integrity (survey-time patterns, consistency) |
+| **Onboarding** (Borrower-declared) | `business_vintage_years` | Stated years in operation for micro-enterprise (GigWorker/Farmer/Vendor; 0.0 for others) |
+| | `turnover_income_consistency` | Self-report honesty check: ratio of declared turnover to observed bank cash inflow (clipped `[0.0, 1.0]`) |
+| **Campus** (Student) | `upi_spend_consistency` | Ratio/consistency of student UPI spend patterns (0.0 for non-students) |
+| | `small_dues_payment_promptness` | Promptness in clearing small dues and utility bills (0.0 for non-students) |
+| | `e_wallet_topup_frequency` | Frequency of e-wallet top-ups (indicating active payment channels; 0.0 for non-students) |
+| **Vendor** | `daily_transaction_count` | Average daily transaction count for micro-business operations (0.0 for non-vendors) |
+| | `average_ticket_size` | Average transaction ticket size (0.0 for non-vendors) |
+| **Farmer** | `harvest_income_spike` | Peak income spikes matching harvest season cycles (0.0 for non-farmers) |
+| | `input_purchase_consistency` | Consistency in purchasing seed, fertilizer, and agricultural inputs (0.0 for non-farmers) |
+| **Household** (Homemaker) | `utility_payment_consistency` | Consistency of home utility bill payments (electricity, gas, water; 0.0 for non-homemakers) |
+| | `grocery_spend_stability` | Stability of monthly grocery spend volatility (0.0 for non-homemakers) |
+
+### Econometric Resilience Modeling (ECM)
+The cashflow facet uses a single-equation Error Correction Model to capture financial recovery speed. On the monthly net cashflow series, the system fits:
+$$\Delta y_t = \alpha + \gamma (y_{t-1} - \bar{y}) + \epsilon_t$$
+The **resilience coefficient** is derived as $\max(0, \min(1, -\gamma))$, indicating how quickly a borrower's account returns to equilibrium after an income shock. If Augmented Dickey-Fuller (ADF) confirms the net cashflow series is stationary ($\text{p-value} < 0.05$), the coefficient is given a $+0.1$ booster.
+
+### Cohort-Aware Imputation
+To prevent bias against thin-file applicants, missing features or those masked by revoked consent scopes are imputed with the median of the borrower's **own cohort** (e.g. Salaried, Vendor, Farmer, GigWorker) rather than a penalizing `0.0`. Features that are structurally inapplicable to a cohort (e.g., `business_vintage_years` for Salaried) remain `0.0`, ensuring fair and context-appropriate scoring.
+
+### Typical-Applicant-Centered Explanations
+Explainable Boosting Machine (EBM) feature contributions (pre-calculated per-feature points) are re-centered against the population-average contribution (the typical applicant) instead of the raw intercept.
+- **Why**: Since EBM is trained with balanced class weights, its intercept sits near a 50% coin-flip probability of default, making low-risk applicants look positive on every feature (causing an all-positive explainability report).
+- **Solution**: Centering on the typical applicant means features only add points if they outperform their cohort peer, and subtract points if they fall short. This reduces all-positive report cards from ~50% of applicants to an honest ~14%, highlighting both strengths and areas needing improvement without changing the underlying probability of default, score, or decision.
 
 ## Deployment
 

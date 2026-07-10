@@ -6,8 +6,8 @@
     "catboost",
     "logistic"
   ],
-  "trained_at": "2026-07-06T13:33:59.630319+00:00",
-  "users_trained": 104,
+  "trained_at": "2026-07-10T12:27:59.408044+00:00",
+  "users_trained": 100,
   "feature_columns": [
     "avg_days_late",
     "missed_payments_count",
@@ -31,70 +31,51 @@
     "is_stationary",
     "trend_slope",
     "business_vintage_years",
-    "turnover_income_consistency"
+    "turnover_income_consistency",
+    "upi_spend_consistency",
+    "small_dues_payment_promptness",
+    "e_wallet_topup_frequency",
+    "daily_transaction_count",
+    "average_ticket_size",
+    "harvest_income_spike",
+    "input_purchase_consistency",
+    "utility_payment_consistency",
+    "grocery_spend_stability"
   ],
   "metrics": {
-    "auc": 0.8158,
-    "gini": 0.6316,
-    "ks": 0.7895,
-    "accuracy": 0.8095,
-    "default_rate": 0.0952,
+    "auc": 0.6667,
+    "gini": 0.3333,
+    "ks": 0.6111,
+    "accuracy": 0.9,
+    "default_rate": 0.1,
     "calibration": [
       {
         "bin_start": 0.0,
         "bin_end": 0.1,
-        "predicted_mean": 0.03316023251529893,
-        "observed_rate": 0.0,
-        "count": 9
+        "predicted_mean": 0.04396688399649116,
+        "observed_rate": 0.07142857142857142,
+        "count": 14
       },
       {
         "bin_start": 0.1,
         "bin_end": 0.2,
-        "predicted_mean": 0.1456216491495727,
-        "observed_rate": 0.0,
+        "predicted_mean": 0.1465584732292099,
+        "observed_rate": 0.25,
         "count": 4
       },
       {
         "bin_start": 0.30000000000000004,
         "bin_end": 0.4,
-        "predicted_mean": 0.3496918869347465,
+        "predicted_mean": 0.39635507208828247,
         "observed_rate": 0.0,
         "count": 1
       },
       {
         "bin_start": 0.4,
         "bin_end": 0.5,
-        "predicted_mean": 0.4192594949679114,
+        "predicted_mean": 0.48437486692820403,
         "observed_rate": 0.0,
         "count": 1
-      },
-      {
-        "bin_start": 0.5,
-        "bin_end": 0.6000000000000001,
-        "predicted_mean": 0.5638133737297917,
-        "observed_rate": 1.0,
-        "count": 1
-      },
-      {
-        "bin_start": 0.6000000000000001,
-        "bin_end": 0.7000000000000001,
-        "predicted_mean": 0.6959878094837693,
-        "observed_rate": 0.5,
-        "count": 2
-      },
-      {
-        "bin_start": 0.7000000000000001,
-        "bin_end": 0.8,
-        "predicted_mean": 0.7548762598440079,
-        "observed_rate": 0.0,
-        "count": 1
-      },
-      {
-        "bin_start": 0.9,
-        "bin_end": 1.0,
-        "predicted_mean": 0.9319772162238212,
-        "observed_rate": 0.0,
-        "count": 2
       }
     ],
     "confusion": {
@@ -105,9 +86,9 @@
       ],
       "matrix": [
         [
-          9,
-          4,
-          6
+          13,
+          3,
+          2
         ],
         [
           0,
@@ -115,21 +96,21 @@
           0
         ],
         [
+          2,
           0,
-          0,
-          2
+          0
         ]
       ],
-      "accuracy": 0.5238095238095238
+      "accuracy": 0.65
     },
     "roc_curve": {
       "fpr": [
         0.0,
-        0.0526,
-        0.1579,
-        0.1579,
-        0.2105,
-        0.2105,
+        0.0556,
+        0.2778,
+        0.2778,
+        0.3889,
+        0.3889,
         1.0
       ],
       "tpr": [
@@ -144,15 +125,15 @@
     }
   },
   "cv_metrics": {
-    "cv_auc_mean": 0.8053,
-    "cv_auc_std": 0.1669
+    "cv_auc_mean": 0.7681,
+    "cv_auc_std": 0.1903
   },
   "challenger_metrics": {
     "catboost": {
-      "auc": 0.8158
+      "auc": 0.75
     },
     "logistic": {
-      "auc": 0.8947
+      "auc": 0.3333
     }
   },
   "scorecard": {
@@ -173,9 +154,9 @@
   "conformal": {
     "alpha": 0.1,
     "coverage_target": 0.9,
-    "threshold_q": 0.983156,
-    "n_calibration": 17,
-    "empirical_coverage": 0.9412,
+    "threshold_q": 0.962609,
+    "n_calibration": 16,
+    "empirical_coverage": 0.9375,
     "model": "ebm_champion"
   }
 }
