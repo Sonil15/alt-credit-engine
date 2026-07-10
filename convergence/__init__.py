@@ -1,1 +1,1 @@
-"""Convergence layer: rule overrides, score fusion, SHAP explanations."""
+"""Convergence layer: rule overrides, score fusion, EBM explanations."""

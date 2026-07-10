@@ -14,17 +14,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from convergence.fairness import compute_fairness_report
 from convergence.feature_meta import build_feature_trace
 from convergence.lending import evaluate_funding_gap, recommend_terms
-from convergence.letter_store import upsert_letter_for_decision
+from convergence.letter_store import trim_pending_letter_queue, upsert_letter_for_decision
 from convergence.panel import APPROVE_SCORE, REVIEW_SCORE, compute_agreement, decision_thresholds
 from convergence.facets import BorrowerCohort, COHORT_CODE_MAP, compute_confidence, compute_norm_stats, compute_facet_scores
-from convergence.reason_codes import format_reason_codes, shap_to_reason_codes
+from convergence.reason_codes import format_reason_codes, drivers_to_reason_codes
 from convergence.scorecard import (
     expected_value_to_base_points,
     pd_to_credit_score,
-    shap_to_points,
+    ebm_to_points,
 )
 from core.business_profile import (
+    BUSINESS_MODEL_FEATURES,
     PURPOSES_BY_COHORT,
+    business_features_applicable,
     fetch_all_latest_intakes,
     fetch_latest_intake,
     intake_to_dict,
@@ -133,19 +135,18 @@ def _champion_contributions(
     fall short. The intercept is shifted to the typical applicant's log-odds in lock
     step, so ``base_points + Σ points`` still reconstructs the score exactly.
 
-    The ``shap_value`` key is retained for payload/schema compatibility; it now
-    carries the centered EBM term contribution rather than a Shapley value.
+    The ``contribution_value`` carries the centered EBM term contribution.
     """
     contrib_map, base = ebm_contributions(champion, feature_row)
     baseline_contrib = baseline_contrib or {}
     contributions = [
         {
             "feature": name,
-            "shap_value": (
+            "contribution_value": (
                 centered := safe_float(contrib_map.get(name, 0.0))
                 - safe_float(baseline_contrib.get(name, 0.0))
             ),
-            "points": safe_round(shap_to_points(centered), 1),
+            "points": safe_round(ebm_to_points(centered), 1),
         }
         for name in FEATURE_COLUMNS
     ]
@@ -181,7 +182,7 @@ def _apply_agreement_gate(champion_decision: str, auto_reject: bool, agreement: 
 
 
 def _top_drivers(contributions: list[dict[str, float]], top_n: int = 3) -> list[dict[str, float]]:
-    ordered = sorted(contributions, key=lambda item: abs(item["shap_value"]), reverse=True)
+    ordered = sorted(contributions, key=lambda item: abs(item["contribution_value"]), reverse=True)
     return ordered[:top_n]
 
 
@@ -191,12 +192,12 @@ def _top_negative_drivers(contributions: list[dict[str, float]], top_n: int = 3)
     a magnitude-ranked slice, so a rejected/marginal borrower always yields real
     adverse-action reason codes and targeted tips even when large positive drivers exist.
     """
-    adverse = [item for item in contributions if safe_float(item["shap_value"]) > 0]
-    adverse.sort(key=lambda item: item["shap_value"], reverse=True)
+    adverse = [item for item in contributions if safe_float(item["contribution_value"]) > 0]
+    adverse.sort(key=lambda item: item["contribution_value"], reverse=True)
     return adverse[:top_n]
 
 
-def _generate_actionable_insights(shap_drivers: list[dict[str, float]]) -> list[str]:
+def _generate_actionable_insights(drivers: list[dict[str, float]]) -> list[str]:
     mapping = {
         "avg_days_late": "Tip: Ensuring all telecom and utility bills are paid on time improves your score.",
         "missed_payments_count": "Tip: Ensuring all telecom and utility bills are paid on time improves your score.",
@@ -224,13 +225,13 @@ def _generate_actionable_insights(shap_drivers: list[dict[str, float]]) -> list[
     }
     
     insights = []
-    # If a shap_value is positive, it means it increased Probability of Default (hurt the score)
-    for driver in shap_drivers:
+    # If a contribution_value is positive, it means it increased Probability of Default (hurt the score)
+    for driver in drivers:
         feature = driver.get("feature", "")
-        shap_val = driver.get("shap_value", 0.0)
+        contrib_val = driver.get("contribution_value", 0.0)
         
-        # Only provide tip if the feature was actually detrimental (shap_value > 0)
-        if shap_val > 0.0 and feature in mapping:
+        # Only provide tip if the feature was actually detrimental (contribution_value > 0)
+        if contrib_val > 0.0 and feature in mapping:
             insights.append(mapping[feature])
             
     # Remove duplicates and limit to 3
@@ -330,15 +331,24 @@ def _build_payload(
 
     # Never explain the score with data the borrower didn't consent to: drop every
     # feature belonging to a revoked scope from the driver lists and the lineage trace.
+    # Also hide structurally-N/A business features (e.g. "years in business" for a
+    # student laptop loan) even though the model may still consume them as 0.
     revoked_features: set[str] = set()
     for scope in (revoked_scopes or []):
         revoked_features.update(SCOPE_TO_FEATURES.get(scope, []))
-    visible_contributions = [c for c in contributions if c["feature"] not in revoked_features]
+    excluded_features = set(revoked_features)
+    if not business_features_applicable(
+        cohort,
+        intake.get("loan_purpose") if intake else None,
+        has_business_profile=bool(intake.get("has_business_profile")) if intake else False,
+    ):
+        excluded_features.update(BUSINESS_MODEL_FEATURES)
+    visible_contributions = [c for c in contributions if c["feature"] not in excluded_features]
 
-    shap_drivers = _top_drivers(visible_contributions)
+    feature_drivers = _top_drivers(visible_contributions)
     negative_drivers = _top_negative_drivers(visible_contributions)
-    feature_trace = build_feature_trace(user_row, factor_points, exclude_features=revoked_features)
-    reason_codes = shap_to_reason_codes(negative_drivers)
+    feature_trace = build_feature_trace(user_row, factor_points, exclude_features=excluded_features)
+    reason_codes = drivers_to_reason_codes(negative_drivers)
     gated_to_review = decision == "REVIEW" and champion_decision != "REVIEW" and not auto_reject
     conformal_gated = decision == "REVIEW" and pre_conformal_decision == "APPROVE" and conformal.get("abstain")
     if auto_reject and reject_reason:
@@ -403,7 +413,7 @@ def _build_payload(
             "actionable_insights": actionable_insights,
             "auto_reject": auto_reject,
             "reject_reason": reject_reason,
-            "shap_drivers": shap_drivers,
+            "feature_drivers": feature_drivers,
             "reason_codes": reason_codes,
             "reason_codes_text": format_reason_codes(reason_codes),
             "base_points": base_points,
@@ -528,6 +538,7 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
             results.append(result)
         except Exception:
             logger.exception("Failed to score user %s", user_id)
+    await trim_pending_letter_queue(session)
     return results
 
 

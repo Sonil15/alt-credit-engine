@@ -145,7 +145,7 @@
       <!-- Explainability: the model's own additive contributions (no SHAP) -->
       <div class="chart-card">
         <h2>Why this score: the model's own contributions (in points)</h2>
-        <canvas id="shap-chart" height="120"></canvas>
+        <canvas id="ebm-chart" height="120"></canvas>
         <div class="drivers" id="drivers-list"></div>
         <div class="reason-box" id="reason-codes-box" style="display:none;">
           <strong>Adverse Action Reason Codes:</strong> <span id="reason-codes-text"></span>
@@ -229,7 +229,7 @@
 
   <script src="/static/panel_viz.js"></script>
   <script>
-    let shapChart=null, gaugeChart=null, distChart=null, radarChart=null, fairnessChart=null;
+    let ebmChart=null, gaugeChart=null, distChart=null, radarChart=null, fairnessChart=null;
     let lastFairness=null;
     let approveScore = 580, reviewScore = 480;
     let currentUserId = '';
@@ -375,16 +375,17 @@
       renderGauge(d.credit_score);
       renderLending(d.lending||{}, d);
       renderFacets(d.facet_scores||[]);
-      renderShap(d.shap_drivers||[]);
+      renderEbmDrivers(d.feature_drivers||[]);
       renderPipeline(d);
       renderTrace(d.feature_trace||{});
 
       // champion/challenger panel + glass-box shape functions
-      if (window.AltCredit) {
-        document.getElementById('model-panel-card').style.display = d.panel ? 'block' : 'none';
+      if (d.panel && Object.keys(d.panel).length) {
         AltCredit.renderModelPanel(document.getElementById('model-panel-body'), d.panel);
+        document.getElementById('model-panel-card').style.display = 'block';
+        
         AltCredit.loadShapeFunctions().then(map => {
-          AltCredit.renderShapeViewer(document.getElementById('shape-viewer'), map, d.feature_trace||{}, d.shap_drivers||[]);
+          AltCredit.renderShapeViewer(document.getElementById('shape-viewer'), map, d.feature_trace||{}, d.feature_drivers||[]);
           document.getElementById('shape-card').style.display =
             document.getElementById('shape-viewer').style.display === 'none' ? 'none' : 'block';
         });
@@ -462,11 +463,11 @@
         </div>`).join('');
     }
 
-    function renderShap(drivers) {
+    function renderEbmDrivers(drivers) {
       const labels = drivers.map(d=>d.feature.replace(/_/g,' '));
       const points = drivers.map(d=>d.points ?? 0);
-      if (shapChart) shapChart.destroy();
-      shapChart = new Chart(document.getElementById('shap-chart'), {
+      if (ebmChart) ebmChart.destroy();
+      ebmChart = new Chart(document.getElementById('ebm-chart'), {
         type:'bar',
         data:{ labels, datasets:[{ data:points, backgroundColor: points.map(p=>p>=0?'#16a34a':'#dc2626'), borderRadius:5 }] },
         options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{ x:{ title:{display:true, text:'Impact on score (points)'} } } }

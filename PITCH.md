@@ -104,7 +104,8 @@ Copy this block for each feature:
 - **Differentiator:** Shows calibration literacy and intellectual honesty, turns a
   potential "gotcha" into a credibility win.
 - **Demo moment:** The decision split (APPROVE / REVIEW / REJECT) across the portfolio
-  sitting at a believable distribution, not 100% approvals.
+  sitting at a believable distribution (~41% / ~46% / ~13%), not 100% approvals and
+  not zero rejections.
 
 ### Typical-applicant-centered drivers (honest "What Affected Your Score")
 - **Judge problem it answers:** "Your borrower explanation shows only positives, is
@@ -294,8 +295,11 @@ Copy this block for each feature:
 - **Judge problem it answers:** "If you decline someone, can you tell them why, as
   regulation requires?"
 - **Pitch line:** "Every decision produces plain-language reasons a borrower can act on,
-  derived from the model's own additive terms."
+  derived from the model's own additive terms, and only from signals that actually apply
+  to them, a student borrowing for a laptop never sees 'years in business'."
 - **Demo moment:** Open a declined/review borrower and read the human-readable reasons.
+  Contrast a Vendor (business reasons may appear) with a Student on a device loan
+  (business factors are absent from reasons, tips, and the signal trace).
 
 ### Loan-officer-readable dashboard labels (no psychometric jargon)
 - **Judge problem it answers:** "A loan officer isn't a psychologist, will they actually

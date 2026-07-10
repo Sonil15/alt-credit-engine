@@ -288,14 +288,14 @@ class HealthResponse(BaseModel):
     model_version: str | None = None
 
 
-class ShapDriver(BaseModel):
+class FeatureDriver(BaseModel):
     feature: str
-    shap_value: float
+    contribution_value: float
     points: float = 0.0
 
-    @field_validator("shap_value", "points", mode="before")
+    @field_validator("contribution_value", "points", mode="before")
     @classmethod
-    def _sanitize_shap_value(cls, value: Any) -> float:
+    def _sanitize_contribution_value(cls, value: Any) -> float:
         return safe_float(value)
 
 
@@ -306,7 +306,7 @@ class CreditScoreResponse(BaseModel):
     decision: str
     auto_reject: bool
     reject_reason: str | None = None
-    shap_drivers: list[ShapDriver]
+    feature_drivers: list[FeatureDriver]
     reason_codes: list[str] = []
     reason_codes_text: str = ""
     base_points: float = 0.0
@@ -342,9 +342,9 @@ class CreditScoreResponse(BaseModel):
             return {}
         return {str(key): safe_float(item) for key, item in value.items()}
 
-    @field_validator("shap_drivers", mode="before")
+    @field_validator("feature_drivers", mode="before")
     @classmethod
-    def _sanitize_shap_drivers(cls, value: Any) -> Any:
+    def _sanitize_feature_drivers(cls, value: Any) -> Any:
         return sanitize_for_json(value)
 
 

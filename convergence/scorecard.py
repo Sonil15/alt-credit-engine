@@ -1,7 +1,7 @@
 """Log-odds to points scorecard with PDO calibration.
 
 The headline score is a deterministic PDO transform of the model's probability of
-default. Explainability points are derived from the model's *own* SHAP
+default. Explainability points are derived from the model's *own* EBM
 contributions (which live in log-odds space) using the same PDO factor, so the
 per-feature breakdown reconciles to the score:
 
@@ -65,18 +65,18 @@ def pd_to_credit_score(probability_of_default: float) -> int:
     return _clamp_score(SCORE_OFFSET - PDO_FACTOR * log_odds)
 
 
-def shap_to_points(shap_value: float) -> float:
-    """Translate one SHAP log-odds contribution into credit-score points.
+def ebm_to_points(contribution_value: float) -> float:
+    """Translate one EBM log-odds contribution into credit-score points.
 
-    Positive SHAP raises default log-odds, which *lowers* the score, hence the
+    Positive contribution raises default log-odds, which *lowers* the score, hence the
     sign flip. Summed over all features (plus base_points) this reconstructs the
     score up to the 300-900 clamp.
     """
-    return -PDO_FACTOR * float(shap_value)
+    return -PDO_FACTOR * float(contribution_value)
 
 
 def expected_value_to_base_points(expected_value: float) -> float:
-    """Score the model would assign at its average prediction (SHAP base value)."""
+    """Score the model would assign at its average prediction (EBM base value)."""
     return SCORE_OFFSET - PDO_FACTOR * float(expected_value)
 
 

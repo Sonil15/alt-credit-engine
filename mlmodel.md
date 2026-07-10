@@ -25,9 +25,13 @@ Critique B is about **how confident we are in it**.
 
 ---
 
-## 2. Current system vs EBM: the exact difference
+## 2. Legacy stack vs EBM: what changed
 
-| | Current system (CatBoost + SHAP) | EBM (Explainable Boosting Machine) |
+The scoring path **used to be** CatBoost + SHAP (pre-migration). It is now the
+glass-box EBM champion (§6). The table contrasts the **previous** decider with the
+**current** one:
+
+| | Previous system (CatBoost + SHAP) | Current system (EBM champion) |
 |---|---|---|
 | The function | Sum of 150 depth-4 trees; **up to 4 features mixed per split** → entangled | `f(x) = β₀ + Σ fᵢ(xᵢ) + Σ f_ij(xᵢ,xⱼ)`; additive **by construction** |
 | The explanation | A **separate object** (TreeSHAP) computed *after* the fact | **No separate object**, each `fᵢ` is the model AND the explanation |
@@ -206,13 +210,12 @@ portfolio (2026-07 dataset):
 
 | Decision | Share |
 |---|---|
-| APPROVE | 26% |
-| REVIEW | 68% |
-| REJECT | 6% |
+| APPROVE | 41% |
+| REVIEW | 46% |
+| REJECT | 13% |
 
-Average score ~610, full 300–900 range. This is a deliberate, defensible
-recalibration, say so to judges: *"our honest model needed an honest scorecard;
-the old cutoffs were propped up by an over-confident black box."*
+Average score ~763, full 300–900 range (left-tail feature widening pushes the
+worst borrowers below the REJECT floor instead of clustering just above it).
 
 **Training:** `python -m models_ai.train` (or `POST /score/train`) now trains all
 three and writes artifacts `ebm_champion.pkl`, `catboost_model.cbm`,

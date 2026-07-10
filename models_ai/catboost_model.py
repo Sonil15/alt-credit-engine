@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.feature_store import fetch_features_wide
 from core.seeds import CATBOOST_RANDOM_SEED
-from models_ai.constants import FEATURE_COLUMNS, LABEL_COLUMN, fill_missing_features
+from models_ai.constants import FEATURE_COLUMNS, LABEL_COLUMN, fill_missing_features, prior_correction_log_odds
 from models_ai.validation import (
     build_model_card,
     cross_validate_metrics,
@@ -60,6 +60,11 @@ def train_catboost(
         auto_class_weights="Balanced",
     )
     model.fit(features, y)
+    # Undo the balanced-weight recentering (see prior_correction_log_odds): shift the
+    # raw-score bias so the challenger's PD scale matches the champion's honest prior,
+    # keeping the panel's decision bands comparable.
+    scale, bias = model.get_scale_and_bias()
+    model.set_scale_and_bias(scale, bias + prior_correction_log_odds(y))
     return model
 
 

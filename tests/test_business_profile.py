@@ -6,6 +6,7 @@ from core.business_profile import (
     EXTRACTION_CONFIDENCE_THRESHOLD,
     PURPOSES_BY_COHORT,
     _resolve_extraction,
+    business_features_applicable,
     extract_business_profile,
     fallback_extract_business_profile,
     turnover_income_consistency,
@@ -118,3 +119,20 @@ def test_turnover_income_consistency_bounds():
 def test_purposes_map_covers_all_cohorts():
     for cohort in ("Salaried", "GigWorker", "Student", "Vendor", "Farmer", "Homemaker"):
         assert PURPOSES_BY_COHORT[cohort], cohort
+
+
+def test_business_features_not_applicable_for_student_laptop():
+    assert business_features_applicable("Student", "device_equipment") is False
+
+
+def test_business_features_applicable_for_vendor():
+    assert business_features_applicable("Vendor", "working_capital") is True
+
+
+def test_business_features_applicable_for_homemaker_home_business():
+    assert business_features_applicable("Homemaker", "small_home_business") is True
+    assert business_features_applicable("Homemaker", "household") is False
+
+
+def test_business_features_applicable_when_profile_submitted():
+    assert business_features_applicable("Student", "device_equipment", has_business_profile=True) is True

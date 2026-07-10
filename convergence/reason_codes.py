@@ -1,4 +1,4 @@
-"""Plain-language adverse action reason codes from SHAP drivers."""
+"""Plain-language adverse action reason codes from EBM drivers."""
 
 FEATURE_REASON_MAP: dict[str, str] = {
     "avg_days_late": "Irregular bill payment timing",
@@ -24,16 +24,18 @@ FEATURE_REASON_MAP: dict[str, str] = {
     "trend_slope": "Declining income trend",
     "historical_spatial_variance": "Inconsistent delivery locations",
     "distinct_pin_codes": "Multiple delivery addresses",
+    "business_vintage_years": "Limited business operating history",
+    "turnover_income_consistency": "Declared income does not match observed cash flow",
 }
 
 
-def shap_to_reason_codes(shap_drivers: list[dict[str, float]], top_n: int = 3) -> list[str]:
-    """Convert SHAP drivers to human-readable adverse action reason codes."""
+def drivers_to_reason_codes(drivers: list[dict[str, float]], top_n: int = 3) -> list[str]:
+    """Convert EBM drivers to human-readable adverse action reason codes."""
     reasons: list[str] = []
-    for driver in shap_drivers[:top_n]:
+    for driver in drivers[:top_n]:
         feature = driver.get("feature", "")
-        shap_value = float(driver.get("shap_value", 0.0))
-        if shap_value <= 0:
+        contribution_value = float(driver.get("contribution_value", 0.0))
+        if contribution_value <= 0:
             continue
         label = FEATURE_REASON_MAP.get(feature, feature.replace("_", " ").title())
         reasons.append(label)

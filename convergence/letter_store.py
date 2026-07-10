@@ -22,6 +22,11 @@ from models.db_models import DecisionLetter
 PENDING = "pending_review"
 ISSUED = "issued"
 
+# Demo officer queue: bulk portfolio scoring creates a pending letter for every
+# REJECT/REVIEW outcome (~60+). Cap the visible queue so the dashboard stays usable.
+DEMO_PENDING_LETTER_CAP = 8
+DEMO_AUTO_ISSUE_OFFICER = "system-demo-queue"
+
 
 def _target_status(outcome: str) -> str:
     """APPROVE issues automatically; REJECT/REVIEW need an officer signature."""
@@ -105,6 +110,30 @@ async def fetch_pending_letters(session: AsyncSession) -> list[DecisionLetter]:
         )
     ).scalars().all()
     return list(rows)
+
+
+async def trim_pending_letter_queue(
+    session: AsyncSession,
+    max_pending: int = DEMO_PENDING_LETTER_CAP,
+) -> int:
+    """Auto-issue surplus pending letters so the officer queue stays demo-sized.
+
+    Keeps the most recently drafted ``max_pending`` items; older surplus drafts are
+    issued under ``DEMO_AUTO_ISSUE_OFFICER`` so re-scoring does not re-queue them.
+    """
+    if max_pending < 1:
+        return 0
+    pending = await fetch_pending_letters(session)
+    surplus = len(pending) - max_pending
+    if surplus <= 0:
+        return 0
+    now = datetime.now(timezone.utc)
+    for letter in pending[:surplus]:
+        letter.status = ISSUED
+        letter.officer_id = DEMO_AUTO_ISSUE_OFFICER
+        letter.signed_at = now
+    await session.commit()
+    return surplus
 
 
 async def sign_letter(session: AsyncSession, user_id: str, officer_id: str) -> DecisionLetter | None:

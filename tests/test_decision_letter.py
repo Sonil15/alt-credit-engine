@@ -11,10 +11,14 @@ from sqlalchemy import delete
 
 from convergence.decision_letter import render_letter
 from convergence.letter_store import (
+    DEMO_AUTO_ISSUE_OFFICER,
+    DEMO_PENDING_LETTER_CAP,
     ISSUED,
     PENDING,
     fetch_letter,
+    fetch_pending_letters,
     sign_letter,
+    trim_pending_letter_queue,
     upsert_letter_for_decision,
 )
 from core.database import AsyncSessionLocal
@@ -108,6 +112,35 @@ async def test_upsert_and_sign_flow():
     finally:
         async with AsyncSessionLocal() as s:
             await s.execute(delete(DecisionLetter).where(DecisionLetter.user_id == uuid.UUID(uid)))
+            await s.commit()
+
+
+@pytest.mark.asyncio
+async def test_trim_pending_letter_queue_keeps_cap():
+    uids = [str(uuid.uuid4()) for _ in range(DEMO_PENDING_LETTER_CAP + 3)]
+    reject_payload = {
+        "decision": "REJECT",
+        "final_outcome": "REJECT",
+        "credit_score": 410,
+        "model_version": "ebm-champion-v3",
+        "reason_codes": ["Low or unstable income"],
+    }
+    try:
+        async with AsyncSessionLocal() as s:
+            before = len(await fetch_pending_letters(s))
+            for uid in uids:
+                await upsert_letter_for_decision(s, {**reject_payload, "user_id": uid})
+            await s.commit()
+        async with AsyncSessionLocal() as s:
+            assert len(await fetch_pending_letters(s)) == before + len(uids)
+            trimmed = await trim_pending_letter_queue(s)
+            assert trimmed == max(0, before + len(uids) - DEMO_PENDING_LETTER_CAP)
+            pending = await fetch_pending_letters(s)
+            assert len(pending) == min(DEMO_PENDING_LETTER_CAP, before + len(uids))
+    finally:
+        async with AsyncSessionLocal() as s:
+            for uid in uids:
+                await s.execute(delete(DecisionLetter).where(DecisionLetter.user_id == uuid.UUID(uid)))
             await s.commit()
 
 
