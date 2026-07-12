@@ -6,18 +6,8 @@ from typing import Any
 
 import pandas as pd
 from catboost import CatBoostClassifier
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from core.feature_store import fetch_features_wide
 from core.seeds import CATBOOST_RANDOM_SEED
-from models_ai.constants import FEATURE_COLUMNS, LABEL_COLUMN, fill_missing_features, prior_correction_log_odds
-from models_ai.validation import (
-    build_model_card,
-    cross_validate_metrics,
-    evaluate_model,
-    save_model_card,
-    train_test_split_data,
-)
+from models_ai.constants import LABEL_COLUMN, fill_missing_features, prior_correction_log_odds
 
 logger = logging.getLogger(__name__)
 
@@ -104,39 +94,3 @@ def get_feature_matrix_for_user(df: pd.DataFrame, user_id: str) -> pd.DataFrame:
     return fill_missing_features(row.copy())
 
 
-async def train_from_db(session: AsyncSession) -> dict[str, Any]:
-    """Load features from DB, train CatBoost with validation, save artifact + model card."""
-    wide = await fetch_features_wide(session)
-    if wide.empty:
-        raise ValueError("No ml_features available for training")
-
-    labels = extract_labels(wide)
-    features = fill_missing_features(wide.copy())
-
-    X_train, X_test, y_train, y_test = train_test_split_data(features, labels)
-    model = train_catboost(
-        X_train.reset_index(drop=True),
-        label_series=y_train.reset_index(drop=True),
-    )
-
-    holdout_metrics = evaluate_model(model, X_test, y_test)
-    cv_metrics = cross_validate_metrics(features, labels)
-
-    path = save_model(model)
-    card = build_model_card(
-        holdout_metrics,
-        users_trained=len(wide),
-        feature_columns=FEATURE_COLUMNS,
-        cv_metrics=cv_metrics,
-    )
-    save_model_card(card)
-
-    return {
-        "users_trained": len(wide),
-        "default_rate": float(labels.mean()),
-        "model_path": str(path),
-        "feature_count": len(FEATURE_COLUMNS),
-        "model_version": card["model_version"],
-        "metrics": holdout_metrics,
-        "cv_metrics": cv_metrics,
-    }
