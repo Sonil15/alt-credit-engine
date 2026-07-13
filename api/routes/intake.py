@@ -77,6 +77,32 @@ async def submit_intake(
     if session_user_id != request.user_id:
         raise HTTPException(status_code=403, detail="Access denied")
 
+    # Velocity Check for duplicate Udyam registration number
+    if request.business_profile and request.business_profile.udyam_number:
+        incoming_udyam = request.business_profile.udyam_number.strip().upper()
+        if incoming_udyam:
+            from sqlalchemy import select
+            result = await db.execute(
+                select(ApplicationIntake).where(
+                    ApplicationIntake.user_id != UUID(request.user_id),
+                    ApplicationIntake.business_profile_json.isnot(None)
+                )
+            )
+            other_intakes = result.scalars().all()
+            for other in other_intakes:
+                try:
+                    profile = json.loads(other.business_profile_json)
+                    other_udyam = profile.get("udyam_number")
+                    if other_udyam and other_udyam.strip().upper() == incoming_udyam:
+                        raise HTTPException(
+                            status_code=400,
+                            detail="Velocity Check Failed: This Udyam Registration Number is already registered under another identity."
+                        )
+                except Exception as e:
+                    if isinstance(e, HTTPException):
+                        raise e
+                    pass
+
     if request.cohort not in PURPOSES_BY_COHORT:
         raise HTTPException(status_code=422, detail=f"Unknown borrower category: {request.cohort}")
     # Purpose only needs to be a known code, not one recommended for this

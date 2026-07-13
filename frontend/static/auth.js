@@ -57,8 +57,18 @@
     return data;
   }
 
-  async function register(loginId, password) {
-    const data = await _post('/auth/register', { login_id: loginId, password });
+  async function register(loginId, password, cibilScore, captchaAnswer, captchaToken) {
+    const payload = { login_id: loginId, password };
+    if (cibilScore !== undefined && cibilScore !== null) {
+      payload.cibil_score = cibilScore;
+    }
+    if (captchaAnswer !== undefined && captchaAnswer !== null) {
+      payload.captcha_answer = captchaAnswer;
+    }
+    if (captchaToken !== undefined && captchaToken !== null) {
+      payload.captcha_token = captchaToken;
+    }
+    const data = await _post('/auth/register', payload);
     _store(data);
     return data;
   }

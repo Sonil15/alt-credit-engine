@@ -109,11 +109,38 @@ async def test_extract_without_api_key_uses_fallback(monkeypatch):
 
 
 def test_turnover_income_consistency_bounds():
+    # Default / Salaried (expected ratio = 0.90)
     assert turnover_income_consistency(40000, 40000) == 1.0
-    assert turnover_income_consistency(80000, 40000) == 0.5
+    assert turnover_income_consistency(40000, 36000) == 1.0
+    assert turnover_income_consistency(40000, 18000) == 0.5
     assert turnover_income_consistency(40000, 80000) == 0.5
     assert turnover_income_consistency(0, 40000) == 0.0
     assert turnover_income_consistency(40000, 0) == 0.0
+
+    # Farmer (expected ratio = 0.20)
+    assert turnover_income_consistency(100000, 20000, "Farmer") == 1.0
+    assert turnover_income_consistency(100000, 10000, "Farmer") == 0.5
+    assert turnover_income_consistency(40000, 80000, "Farmer") == 0.5
+
+    # Vendor (expected ratio = 0.40)
+    assert turnover_income_consistency(100000, 40000, "Vendor") == 1.0
+    assert turnover_income_consistency(100000, 20000, "Vendor") == 0.5
+
+    # GigWorker (expected ratio = 0.80)
+    assert turnover_income_consistency(100000, 80000, "GigWorker") == 1.0
+    assert turnover_income_consistency(100000, 40000, "GigWorker") == 0.5
+
+    # Tier 1 Vintage (< 0.5 years): always fully consistent
+    assert turnover_income_consistency(40000, 0, "Vendor", business_vintage_years=0.2) == 1.0
+    assert turnover_income_consistency(40000, 1000, "Vendor", business_vintage_years=0.4) == 1.0
+
+    # Tier 2 Vintage (0.5 <= vintage < 1.5 years): grace factor of 50%
+    # Vendor expected digital ratio = 0.40. With vintage=1.0, it is adjusted to 0.20.
+    assert turnover_income_consistency(100000, 20000, "Vendor", business_vintage_years=1.0) == 1.0
+    assert turnover_income_consistency(100000, 10000, "Vendor", business_vintage_years=1.0) == 0.5
+    # Default/Salaried expected digital ratio = 0.90. With vintage=0.8, it is adjusted to 0.45.
+    assert turnover_income_consistency(100000, 45000, "Salaried", business_vintage_years=0.8) == 1.0
+    assert turnover_income_consistency(100000, 22500, "Salaried", business_vintage_years=0.8) == 0.5
 
 
 def test_purposes_map_covers_all_cohorts():

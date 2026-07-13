@@ -30,6 +30,7 @@
       <h1><a href="/" style="color: inherit; text-decoration: none;">Alt-Credit LOS Dashboard</a> <span class="sub">Alternate Credit Scoring for Thin-File Borrowers</span></h1>
     </div>
     <div class="app-header-right">
+      <a href="/explanation" style="font-weight: 700; color: #60a5fa;">Score Explainer</a>
       <a href="/">Home</a>
       <a href="/consent">Consent Gateway</a>
       <a href="/docs">API Documentation</a>
@@ -78,6 +79,7 @@
       <input type="text" id="user-id-input" placeholder="Enter Borrower ID (UUID)" value="{{ user_id }}">
       <button onclick="loadScore()">Assess</button>
       <button class="secondary" onclick="loadAll()">List All</button>
+      <button class="secondary" onclick="openExplainer()" style="border-color: #2563eb; color: #2563eb; font-weight: 700;">E2E Explainer (Demo)</button>
     </div>
     <div id="error-box" class="error-box" style="display:none;"></div>
     <div id="loading-indicator" style="display:none;padding:32px;text-align:center;">
@@ -100,6 +102,7 @@
             <div>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
                 <span class="badge" id="decision-badge">—</span>
+                <span class="badge" id="bureau-routing-badge" style="display:none; padding:7px 16px; border-radius:24px; font-size:13px; font-weight:700;">—</span>
                 <span class="badge" id="gate-flag" style="display:none; background:#fef3c7; color:#92400e; border:1px solid #fcd34d; padding:7px 16px; border-radius:24px; font-size:13px; font-weight:700;" title="Model approved, but the requested amount exceeds the serviceable maximum, outcome is REVIEW for a counter-offer.">⚖ AFFORDABILITY GATE → REVIEW</span>
                 <span class="badge" id="cohort-badge" style="display:none; background:#334155; color:#cbd5e1; padding: 7px 16px; border-radius: 24px; font-size: 14px; font-weight: 700;">—</span>
                 <button onclick="openOverrideModal()" title="View AI Reasoning (glass-box) below to justify override" style="margin-left: 16px; padding: 6px 12px; background: #fef08a; border: 1px solid #ca8a04; color: #a16207; font-weight: bold; border-radius: 6px; cursor: pointer;">Change Decision</button>
@@ -133,7 +136,7 @@
       <!-- Facets: radar + bars -->
       <div class="two-col">
         <div class="chart-card">
-          <h2>Five-Facet Profile</h2>
+          <h2 id="facet-chart-title">Facet Profile</h2>
           <canvas id="facet-radar" height="220"></canvas>
         </div>
         <div class="chart-card">
@@ -166,7 +169,7 @@
           <div class="pl-stage">
             <div class="pl-box pl-data">
               <div class="pl-t">Alternative Data</div>
-              <div class="pl-d">5 consented sources</div>
+              <div class="pl-d" id="pl-sources-desc">Consented sources</div>
               <div class="pl-v" id="pl-sources" style="color:#0f172a;">—</div>
             </div>
           </div>
@@ -174,7 +177,7 @@
           <div class="pl-stage">
             <div class="pl-box pl-stat">
               <div class="pl-t">Statistical Extraction</div>
-              <div class="pl-d">Telecom · e-comm · geo · psychometric · cash-flow</div>
+              <div class="pl-d" id="pl-sources-list">Statistical extraction...</div>
             </div>
             <div class="pl-box pl-ecm">
               <div class="pl-t">Econometric Engine</div>
@@ -237,6 +240,19 @@
     const scoreColor = s => s >= approveScore ? '#16a34a' : s >= reviewScore ? '#eab308' : '#dc2626';
     const scoreGrade = s => s >= approveScore ? 'STRONG' : s >= reviewScore ? 'MODERATE' : 'HIGH RISK';
     const facetColor = s => s >= 75 ? '#16a34a' : s >= 55 ? '#22c55e' : s >= 35 ? '#eab308' : '#dc2626';
+
+    function openExplainer() {
+      const cohortBadge = document.getElementById('cohort-badge');
+      let cohort = 'Salaried';
+      if (cohortBadge && cohortBadge.textContent && cohortBadge.style.display !== 'none') {
+        const text = cohortBadge.textContent.trim().replace(/\s+/g, '');
+        const validCohorts = ["Salaried", "GigWorker", "Student", "Vendor", "Farmer", "Homemaker"];
+        if (validCohorts.includes(text)) {
+          cohort = text;
+        }
+      }
+      window.location.href = `/explanation?cohort=${cohort}`;
+    }
 
     async function loadModelCard() {
       try {
@@ -352,6 +368,32 @@
       // Badge keeps the MODEL's decision (override flow + fairness reason about it);
       // the amber flag marks when the lending outcome diverges via the gate.
       const badge = document.getElementById('decision-badge'); badge.textContent=d.decision; badge.className='badge badge-'+d.decision;
+      
+      const bureauBadge = document.getElementById('bureau-routing-badge');
+      if (bureauBadge) {
+        if (d.explanation_method === 'bureau-gating') {
+          bureauBadge.style.display = 'inline-block';
+          if (d.decision === 'APPROVE') {
+            bureauBadge.style.background = '#d1fae5';
+            bureauBadge.style.color = '#065f46';
+            bureauBadge.style.border = '1px solid #a7f3d0';
+            bureauBadge.textContent = 'Bureau Fast-Track';
+          } else {
+            bureauBadge.style.background = '#fee2e2';
+            bureauBadge.style.color = '#991b1b';
+            bureauBadge.style.border = '1px solid #fca5a5';
+            bureauBadge.textContent = 'Bureau Rejected';
+          }
+        } else {
+          // Alt-credit routed
+          bureauBadge.style.display = 'inline-block';
+          bureauBadge.style.background = '#dbeafe';
+          bureauBadge.style.color = '#1e40af';
+          bureauBadge.style.border = '1px solid #bfdbfe';
+          bureauBadge.textContent = 'Alt-Credit Routed: Bureau Thin-File';
+        }
+      }
+
       const gateFlag = document.getElementById('gate-flag');
       if (gateFlag) gateFlag.style.display = (d.funding_gap && d.funding_gap.gated) ? 'inline-block' : 'none';
       const cohortBadge = document.getElementById('cohort-badge');
@@ -446,6 +488,10 @@
     }
 
     function renderFacets(facets) {
+      const titleEl = document.getElementById('facet-chart-title');
+      if (titleEl) {
+        titleEl.textContent = `${facets.length}-Facet Profile`;
+      }
       const labels = facets.map(p=>p.label);
       const vals = facets.map(p=>p.score);
       if (radarChart) radarChart.destroy();
@@ -505,6 +551,17 @@
       const withData = conf.facets_with_data ?? '—';
       const total = conf.facets_total ?? 5;
       document.getElementById('pl-sources').textContent = `${withData}/${total} active`;
+
+      const sourcesDesc = document.getElementById('pl-sources-desc');
+      if (sourcesDesc) {
+        sourcesDesc.textContent = `${total} expected sources`;
+      }
+      const sourcesList = document.getElementById('pl-sources-list');
+      if (sourcesList) {
+        const labels = (d.facet_scores || []).map(f => f.label);
+        sourcesList.textContent = labels.length ? labels.join(' · ') : 'Telecom · e-comm · geo · psychometric · cash-flow';
+      }
+
       document.getElementById('pl-pd').textContent = (d.probability_of_default*100).toFixed(1)+'%';
       document.getElementById('pl-score').textContent = d.credit_score;
       const dec = document.getElementById('pl-decision');

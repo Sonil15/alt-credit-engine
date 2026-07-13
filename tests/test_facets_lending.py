@@ -146,18 +146,17 @@ def test_cohort_aware_scoring():
     # 3. Farmer Cohort
     row_farmer = pd.Series({"cohort_code": 4.0, "harvest_income_spike": 5.0})
     farmer_facets = compute_facet_scores(row_farmer, stats)
-    assert len(farmer_facets) == 3
+    assert len(farmer_facets) == 4
     assert any(p["key"] == "agricultural_seasonality" for p in farmer_facets)
+    assert any(p["key"] == "business_credentials" for p in farmer_facets)
 
 
 def test_optional_facets_and_confidence_offset():
     pop = _population()
     stats = compute_norm_stats(pop)
 
-    # Farmer cohort: only expected data (agricultural_seasonality, location_stability, psychometric_character)
-    # Expected facets for Farmer have 14 features total:
-    # location_stability (2), psychometric_character (10), agricultural_seasonality (2) -> 14 features
-    # Let's provide a subset: only 12 features out of 14 (say, missing location_stability which has 2 features)
+    # Farmer cohort: expected facets include agricultural_seasonality (2), location_stability (2), psychometric_character (10), and business_credentials (5) -> 19 features
+    # Let's provide a subset: only 12 features out of 19 (missing location_stability and business_credentials)
     row_farmer_no_opt = pd.Series({
         "cohort_code": 4.0,  # Farmer
         "harvest_income_spike": 5.0,
@@ -173,6 +172,7 @@ def test_optional_facets_and_confidence_offset():
         "cognitive_reflection": 0.9,
         "resourcefulness": 0.9,
         # missing location_stability features (spatial_variance_score, anchor_count)
+        # missing business_credentials features
     })
     farmer_facets_no_opt = compute_facet_scores(row_farmer_no_opt, stats)
     # Should not include spending_behaviour since it's not expected and not provided
@@ -180,10 +180,10 @@ def test_optional_facets_and_confidence_offset():
 
     conf_no_opt = compute_confidence(farmer_facets_no_opt, cohort="Farmer")
     # Features with data = 12 (agricultural_seasonality: 2, psychometric_character: 10)
-    # Expected features = 14 (including 2 from location_stability)
-    # confidence pct should be round(100 * 12 / 14) = 85.7%
-    assert conf_no_opt["confidence_pct"] == 85.7
-    assert conf_no_opt["features_total"] == 14
+    # Expected features = 19 (including 2 from location_stability + 5 from business_credentials)
+    # confidence pct should be round(100 * 12 / 19) = 63.2%
+    assert conf_no_opt["confidence_pct"] == 63.2
+    assert conf_no_opt["features_total"] == 19
 
     # Farmer cohort with optional data: same expected features, but now also provides e-commerce (spending_behaviour)
     # spending_behaviour has 3 features: necessity_ratio, avg_merchant_rating, monthly_spend_volatility
@@ -213,10 +213,10 @@ def test_optional_facets_and_confidence_offset():
 
     conf_with_opt = compute_confidence(farmer_facets_with_opt, cohort="Farmer")
     # Features with data = 12 (expected) + 3 (optional) = 15
-    # Expected features (denominator) = 14
-    # confidence pct = min(100.0, round(100 * 15 / 14, 1)) = 100.0% (offsetting the missing location data!)
-    assert conf_with_opt["confidence_pct"] == 100.0
-    assert conf_with_opt["features_total"] == 14
+    # Expected features (denominator) = 19
+    # confidence pct = round(100 * 15 / 19, 1) = 78.9%
+    assert conf_with_opt["confidence_pct"] == 78.9
+    assert conf_with_opt["features_total"] == 19
 
 
 def test_hybrid_confidence_logic():
@@ -259,3 +259,78 @@ def test_hybrid_confidence_logic():
     assert conf_psych["features_with_data"] == 1
     # confidence_pct = 100 * 1 / 15 = 6.7
     assert conf_psych["confidence_pct"] == 6.7
+
+
+def test_homemaker_dynamic_business_expectation():
+    pop = _population()
+    stats = compute_norm_stats(pop)
+
+    # 1. Homemaker without business purpose:
+    # expected facets: telecom_reliability (2), location_stability (2), psychometric_character (10), household_reliability (2) -> 16 features.
+    row = pd.Series({
+        "cohort_code": 5.0,  # Homemaker
+        "utility_payment_consistency": 0.95,
+        "grocery_spend_stability": 0.95,
+        # location stability
+        "spatial_variance_score": 0.1,
+        "anchor_count": 5.0,
+        # psychometric
+        "conscientiousness": 0.9,
+        "locus_of_control": 0.9,
+        "financial_self_efficacy": 0.9,
+        "present_bias": 0.1,
+        "debt_attitude": 0.9,
+        "risk_tolerance": 0.1,
+        "delayed_gratification": 0.9,
+        "honesty": 0.9,
+        "cognitive_reflection": 0.9,
+        "resourcefulness": 0.9,
+        # telecom
+        "avg_days_late": 1.0,
+        "missed_payments_count": 0.0,
+    })
+
+    # expect_business_profile = False
+    facets = compute_facet_scores(row, stats, cohort="Homemaker", expect_business_profile=False)
+    conf = compute_confidence(facets, cohort="Homemaker", expect_business_profile=False)
+    assert conf["features_total"] == 16
+    assert conf["confidence_pct"] == 100.0
+
+    # 2. Homemaker with business purpose:
+    # expected facets should include business_credentials (5) -> 21 features.
+    # Because we didn't provide business credentials, confidence should drop.
+    facets_biz = compute_facet_scores(row, stats, cohort="Homemaker", expect_business_profile=True)
+    conf_biz = compute_confidence(facets_biz, cohort="Homemaker", expect_business_profile=True)
+    assert conf_biz["features_total"] == 21
+    assert conf_biz["confidence_pct"] == round(100 * 16 / 21, 1)  # 76.2%
+
+
+def test_msme_dynamic_capacity_multipliers():
+    from convergence.lending import get_msme_capacity_multiplier
+
+    # Verify Farmer: digital ratio 0.20 -> 1/0.20 = 5.0 -> capped at 3.0
+    assert get_msme_capacity_multiplier("Farmer") == 3.0
+
+    # Verify Vendor: digital ratio 0.40 -> 1/0.40 = 2.5
+    assert get_msme_capacity_multiplier("Vendor") == 2.5
+
+    # Verify Homemaker: same expected digital ratio as Vendor -> 0.40 -> 2.5
+    assert get_msme_capacity_multiplier("Homemaker") == 2.5
+
+    # Verify GigWorker: digital ratio 0.80 -> 1/0.80 = 1.25
+    assert get_msme_capacity_multiplier("GigWorker") == 1.25
+
+    # Verify Default/Unknown cohort (e.g. None or Salaried)
+    assert get_msme_capacity_multiplier(None) == 1.5
+    assert get_msme_capacity_multiplier("Salaried") == 1.5
+
+    # Test recommendation logic incorporates this
+    row_farmer = pd.Series({"monthly_income_mean": 20000.0, "borrower_type": 1.0})
+    terms_farmer = recommend_terms(0.1, 700, "APPROVE", row_farmer, cohort="Farmer")
+    
+    row_gig = pd.Series({"monthly_income_mean": 20000.0, "borrower_type": 1.0})
+    terms_gig = recommend_terms(0.1, 700, "APPROVE", row_gig, cohort="GigWorker")
+
+    # Farmer has higher capacity due to lower digital ratio (3x vs 1.25x), so higher max loan amount
+    assert terms_farmer["max_loan_amount"] > terms_gig["max_loan_amount"]
+

@@ -40,7 +40,9 @@ from core.model_cache import (
     get_model_version,
 )
 from models_ai.conformal import apply_conformal_gate, conformal_report
-from models.db_models import ScoreDecision
+from models.db_models import ScoreDecision, BorrowerAccount
+from sqlalchemy import select
+from convergence.lending import _emi
 from models_ai.catboost_model import get_feature_matrix_for_user
 from models_ai.constants import FEATURE_COLUMNS
 from models_ai.ebm_model import ebm_contributions, ebm_mean_contributions
@@ -304,8 +306,18 @@ def _build_payload(
 
     cohort = cohort_enum.value if hasattr(cohort_enum, "value") else str(cohort_enum)
 
-    facet_scores = compute_facet_scores(user_row, norm_stats, cohort=cohort_enum)
-    confidence = compute_confidence(facet_scores, cohort=cohort_enum)
+    expect_business_profile = business_features_applicable(
+        cohort,
+        intake.get("loan_purpose") if intake else None,
+        has_business_profile=False,
+    )
+
+    facet_scores = compute_facet_scores(
+        user_row, norm_stats, cohort=cohort_enum, expect_business_profile=expect_business_profile
+    )
+    confidence = compute_confidence(
+        facet_scores, cohort=cohort_enum, expect_business_profile=expect_business_profile
+    )
     confidence["cohort"] = str(cohort)
 
     credit_score = pd_to_credit_score(probability_of_default)
@@ -377,7 +389,7 @@ def _build_payload(
             f"Consent withdrawn for data source(s): {', '.join(revoked_scopes)}"
         )
 
-    lending = recommend_terms(probability_of_default, credit_score, decision, user_row)
+    lending = recommend_terms(probability_of_default, credit_score, decision, user_row, cohort=cohort)
 
     # Affordability gate, lending-policy overlay AFTER the model decision.
     # `decision` stays the model's call (fairness parity slices on it);
@@ -440,7 +452,114 @@ def _build_payload(
 
 
 async def score_user(session: AsyncSession, user_id: str, *, persist: bool = True) -> dict[str, Any]:
-    """Compute full credit score payload for a single user."""
+    """Compute full credit score payload for a single user, routing through CIBIL gate if set."""
+    # First check the user's CIBIL score in BorrowerAccount
+    result = await session.execute(
+        select(BorrowerAccount).where(BorrowerAccount.user_id == UUID(str(user_id)))
+    )
+    account = result.scalar_one_or_none()
+    
+    if account and account.cibil_score is not None and account.cibil_score != -1:
+        cibil = account.cibil_score
+        intake_row = await fetch_latest_intake(session, user_id)
+        intake = intake_to_dict(intake_row) if intake_row else None
+        
+        if cibil >= 750:
+            # Prime fast-track
+            req_amount = intake.get("requested_amount", 100000.0) if intake else 100000.0
+            loan_purpose = intake.get("loan_purpose", "personal") if intake else "personal"
+            emi_val = round(_emi(req_amount, 11.0, 36), 2)
+            payload = {
+                "user_id": str(user_id),
+                "credit_score": cibil,
+                "probability_of_default": 0.01,
+                "decision": "APPROVE",
+                "approval_likelihood": "High",
+                "actionable_insights": ["Tip: Maintain your excellent credit record by continuing to pay all bills on time."],
+                "auto_reject": False,
+                "reject_reason": None,
+                "feature_drivers": [],
+                "reason_codes": [f"Fast-track approved via prime bureau history (CIBIL score: {cibil})"],
+                "reason_codes_text": f"Fast-track approved via prime bureau history (CIBIL score: {cibil})",
+                "base_points": 750.0,
+                "factor_points": {},
+                "feature_trace": {},
+                "facet_scores": [],
+                "confidence": {"confidence_pct": 100.0, "thin_file": False, "missing_sources": [], "cohort": "Salaried"},
+                "confidence_pct": 100.0,
+                "thin_file": False,
+                "lending": {
+                    "eligible": True,
+                    "max_loan_amount": req_amount,
+                    "interest_rate_pct": 11.0,
+                    "tenure_months": 36,
+                    "monthly_emi": emi_val,
+                    "borrower_type": "individual",
+                    "rationale": f"Fast-track approved via prime bureau history (CIBIL score: {cibil}). Risk-priced at 11.0% p.a. over 36 months.",
+                },
+                "requested_amount": req_amount,
+                "loan_purpose": loan_purpose,
+                "loan_purpose_other_text": intake.get("loan_purpose_other_text") if intake else None,
+                "purpose_consistent": True,
+                "final_outcome": "APPROVE",
+                "funding_gap": {"gated": False},
+                "panel": {"hard_conflict": False, "unanimous": True},
+                "conformal": {"prediction_set": ["APPROVE"], "abstain": False, "enabled": False},
+                "explanation_method": "bureau-gating",
+                "model_version": "bureau-gate-1.0",
+                "is_simulated": True,
+            }
+            if persist:
+                await _persist_decision(session, payload)
+            return payload
+        elif cibil < 600:
+            # Subprime reject
+            req_amount = intake.get("requested_amount", 0.0) if intake else 0.0
+            loan_purpose = intake.get("loan_purpose") if intake else None
+            payload = {
+                "user_id": str(user_id),
+                "credit_score": cibil,
+                "probability_of_default": 0.99,
+                "decision": "REJECT",
+                "approval_likelihood": "Needs Review",
+                "actionable_insights": ["Tip: Address past defaults and outstanding dues to rebuild your credit history."],
+                "auto_reject": True,
+                "reject_reason": f"Rejected due to poor bureau history (CIBIL score: {cibil})",
+                "feature_drivers": [],
+                "reason_codes": [f"Rejected due to poor bureau history (CIBIL score: {cibil})"],
+                "reason_codes_text": f"Rejected due to poor bureau history (CIBIL score: {cibil})",
+                "base_points": 300.0,
+                "factor_points": {},
+                "feature_trace": {},
+                "facet_scores": [],
+                "confidence": {"confidence_pct": 100.0, "thin_file": False, "missing_sources": [], "cohort": "Salaried"},
+                "confidence_pct": 100.0,
+                "thin_file": False,
+                "lending": {
+                    "eligible": False,
+                    "max_loan_amount": 0.0,
+                    "interest_rate_pct": None,
+                    "tenure_months": None,
+                    "monthly_emi": 0.0,
+                    "borrower_type": "individual",
+                    "rationale": f"Rejected due to adverse bureau history (CIBIL score: {cibil}).",
+                },
+                "requested_amount": req_amount,
+                "loan_purpose": loan_purpose,
+                "loan_purpose_other_text": intake.get("loan_purpose_other_text") if intake else None,
+                "purpose_consistent": None,
+                "final_outcome": "REJECT",
+                "funding_gap": {"gated": False},
+                "panel": {"hard_conflict": False, "unanimous": True},
+                "conformal": {"prediction_set": ["REJECT"], "abstain": False, "enabled": False},
+                "explanation_method": "bureau-gating",
+                "model_version": "bureau-gate-1.0",
+                "is_simulated": True,
+            }
+            if persist:
+                await _persist_decision(session, payload)
+            return payload
+
     wide = await fetch_features_wide(session)
     if wide.empty:
         raise ValueError(f"User {user_id} not found in ml_features")
@@ -491,53 +610,158 @@ async def score_user(session: AsyncSession, user_id: str, *, persist: bool = Tru
 
 
 async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
-    """Score every user with features in the database."""
-    wide = await fetch_features_wide(session)
-    if wide.empty:
-        return []
+    """Score every user (both alt-credit and bureau-gated) in the database."""
+    # Fetch all borrower accounts to identify bureau-gated users
+    accounts_res = await session.execute(select(BorrowerAccount))
+    accounts = accounts_res.scalars().all()
+    account_map = {str(a.user_id): a for a in accounts}
 
-    norm_stats = compute_norm_stats(wide)
+    wide = await fetch_features_wide(session)
+    # Get all users who have features OR are bureau-gated
+    user_ids_with_features = set(wide["user_id"].astype(str)) if not wide.empty else set()
+    bureau_gated_user_ids = {uid for uid, acc in account_map.items() if acc.cibil_score is not None and acc.cibil_score != -1}
+    all_target_users = user_ids_with_features.union(bureau_gated_user_ids)
+
+    norm_stats = compute_norm_stats(wide) if not wide.empty else {}
     champion = get_cached_champion()
     challengers = get_cached_challengers()
-    # Typical-applicant reference, computed once over the full population (see
-    # _champion_contributions); shared across every borrower in the portfolio.
-    baseline_contrib = ebm_mean_contributions(champion, wide)
+    baseline_contrib = ebm_mean_contributions(champion, wide) if not wide.empty else {}
     intakes = await fetch_all_latest_intakes(session)
     from api.routes.consent import get_revoked_scopes
 
     results = []
-    for _, row in wide.iterrows():
-        user_id = str(row["user_id"])
+    for user_id in all_target_users:
         try:
-            user_wide = wide[wide["user_id"].astype(str) == user_id].copy()
-            revoked_scopes = get_revoked_scopes(user_id)
-            if revoked_scopes:
-                for scope in revoked_scopes:
-                    features_to_mask = SCOPE_TO_FEATURES.get(scope, [])
-                    for feat in features_to_mask:
-                        if feat in user_wide.columns:
-                            user_wide[feat] = np.nan
+            account = account_map.get(user_id)
+            if account and account.cibil_score is not None and account.cibil_score != -1:
+                cibil = account.cibil_score
+                intake = intakes.get(user_id)
+                
+                if cibil >= 750:
+                    req_amount = intake.get("requested_amount", 100000.0) if intake else 100000.0
+                    loan_purpose = intake.get("loan_purpose", "personal") if intake else "personal"
+                    emi_val = round(_emi(req_amount, 11.0, 36), 2)
+                    result = {
+                        "user_id": str(user_id),
+                        "credit_score": cibil,
+                        "probability_of_default": 0.01,
+                        "decision": "APPROVE",
+                        "approval_likelihood": "High",
+                        "actionable_insights": ["Tip: Maintain your excellent credit record by continuing to pay all bills on time."],
+                        "auto_reject": False,
+                        "reject_reason": None,
+                        "feature_drivers": [],
+                        "reason_codes": [f"Fast-track approved via prime bureau history (CIBIL score: {cibil})"],
+                        "reason_codes_text": f"Fast-track approved via prime bureau history (CIBIL score: {cibil})",
+                        "base_points": 750.0,
+                        "factor_points": {},
+                        "feature_trace": {},
+                        "facet_scores": [],
+                        "confidence": {"confidence_pct": 100.0, "thin_file": False, "missing_sources": [], "cohort": "Salaried"},
+                        "confidence_pct": 100.0,
+                        "thin_file": False,
+                        "lending": {
+                            "eligible": True,
+                            "max_loan_amount": req_amount,
+                            "interest_rate_pct": 11.0,
+                            "tenure_months": 36,
+                            "monthly_emi": emi_val,
+                            "borrower_type": "individual",
+                            "rationale": f"Fast-track approved via prime bureau history (CIBIL score: {cibil}). Risk-priced at 11.0% p.a. over 36 months.",
+                        },
+                        "requested_amount": req_amount,
+                        "loan_purpose": loan_purpose,
+                        "loan_purpose_other_text": intake.get("loan_purpose_other_text") if intake else None,
+                        "purpose_consistent": True,
+                        "final_outcome": "APPROVE",
+                        "funding_gap": {"gated": False},
+                        "panel": {"hard_conflict": False, "unanimous": True},
+                        "conformal": {"prediction_set": ["APPROVE"], "abstain": False, "enabled": False},
+                        "explanation_method": "bureau-gating",
+                        "model_version": "bureau-gate-1.0",
+                        "is_simulated": True,
+                    }
+                    await _persist_decision(session, result)
+                    results.append(result)
+                    continue
+                elif cibil < 600:
+                    req_amount = intake.get("requested_amount", 0.0) if intake else 0.0
+                    loan_purpose = intake.get("loan_purpose") if intake else None
+                    result = {
+                        "user_id": str(user_id),
+                        "credit_score": cibil,
+                        "probability_of_default": 0.99,
+                        "decision": "REJECT",
+                        "approval_likelihood": "Needs Review",
+                        "actionable_insights": ["Tip: Address past defaults and outstanding dues to rebuild your credit history."],
+                        "auto_reject": True,
+                        "reject_reason": f"Rejected due to poor bureau history (CIBIL score: {cibil})",
+                        "feature_drivers": [],
+                        "reason_codes": [f"Rejected due to poor bureau history (CIBIL score: {cibil})"],
+                        "reason_codes_text": f"Rejected due to poor bureau history (CIBIL score: {cibil})",
+                        "base_points": 300.0,
+                        "factor_points": {},
+                        "feature_trace": {},
+                        "facet_scores": [],
+                        "confidence": {"confidence_pct": 100.0, "thin_file": False, "missing_sources": [], "cohort": "Salaried"},
+                        "confidence_pct": 100.0,
+                        "thin_file": False,
+                        "lending": {
+                            "eligible": False,
+                            "max_loan_amount": 0.0,
+                            "interest_rate_pct": None,
+                            "tenure_months": None,
+                            "monthly_emi": 0.0,
+                            "borrower_type": "individual",
+                            "rationale": f"Rejected due to adverse bureau history (CIBIL score: {cibil}).",
+                        },
+                        "requested_amount": req_amount,
+                        "loan_purpose": loan_purpose,
+                        "loan_purpose_other_text": intake.get("loan_purpose_other_text") if intake else None,
+                        "purpose_consistent": None,
+                        "final_outcome": "REJECT",
+                        "funding_gap": {"gated": False},
+                        "panel": {"hard_conflict": False, "unanimous": True},
+                        "conformal": {"prediction_set": ["REJECT"], "abstain": False, "enabled": False},
+                        "explanation_method": "bureau-gating",
+                        "model_version": "bureau-gate-1.0",
+                        "is_simulated": True,
+                    }
+                    await _persist_decision(session, result)
+                    results.append(result)
+                    continue
 
-            pd_row = champion_predict_pd(champion, user_wide)
-            probability_of_default = safe_float(pd_row.iloc[0]["probability_of_default"])
-            feature_row = get_feature_matrix_for_user(user_wide, user_id)
+            if user_id in user_ids_with_features:
+                user_wide = wide[wide["user_id"].astype(str) == user_id].copy()
+                revoked_scopes = get_revoked_scopes(user_id)
+                if revoked_scopes:
+                    for scope in revoked_scopes:
+                        features_to_mask = SCOPE_TO_FEATURES.get(scope, [])
+                        for feat in features_to_mask:
+                            if feat in user_wide.columns:
+                                user_wide[feat] = np.nan
 
-            result = _build_payload(
-                user_id=user_id,
-                user_row=user_wide.iloc[0],
-                feature_row=feature_row,
-                probability_of_default=probability_of_default,
-                champion=champion,
-                challengers=challengers,
-                norm_stats=norm_stats,
-                baseline_contrib=baseline_contrib,
-                revoked_scopes=revoked_scopes,
-                intake=intakes.get(user_id),
-            )
-            await _persist_decision(session, result)
-            results.append(result)
+                pd_row = champion_predict_pd(champion, user_wide)
+                probability_of_default = safe_float(pd_row.iloc[0]["probability_of_default"])
+                feature_row = get_feature_matrix_for_user(user_wide, user_id)
+
+                result = _build_payload(
+                    user_id=user_id,
+                    user_row=user_wide.iloc[0],
+                    feature_row=feature_row,
+                    probability_of_default=probability_of_default,
+                    champion=champion,
+                    challengers=challengers,
+                    norm_stats=norm_stats,
+                    baseline_contrib=baseline_contrib,
+                    revoked_scopes=revoked_scopes,
+                    intake=intakes.get(user_id),
+                )
+                await _persist_decision(session, result)
+                results.append(result)
         except Exception:
             logger.exception("Failed to score user %s", user_id)
+            
     await trim_pending_letter_queue(session)
     return results
 

@@ -52,12 +52,19 @@ async def get_account_by_login(db: AsyncSession, login_id: str) -> BorrowerAccou
     return result.scalar_one_or_none()
 
 
-async def create_account(db: AsyncSession, login_id: str, password: str) -> BorrowerAccount:
+async def create_account(db: AsyncSession, login_id: str, password: str, cibil_score: int | None = -1) -> BorrowerAccount:
     """Create a new borrower account, raising 409 if the login is taken."""
     if await get_account_by_login(db, login_id) is not None:
         raise HTTPException(status_code=409, detail="That login ID is already taken.")
     pw_hash, salt = hash_password(password)
-    account = BorrowerAccount(login_id=login_id, password_hash=pw_hash, password_salt=salt)
+    # Default to -1 (No History) if not provided or None
+    cibil_val = cibil_score if cibil_score is not None else -1
+    account = BorrowerAccount(
+        login_id=login_id,
+        password_hash=pw_hash,
+        password_salt=salt,
+        cibil_score=cibil_val,
+    )
     db.add(account)
     await db.commit()
     await db.refresh(account)

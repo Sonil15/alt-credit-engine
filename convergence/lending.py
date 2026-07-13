@@ -25,8 +25,23 @@ RISK_SPREAD = 20.0  # premium fully applied as PD -> 1
 MAX_FOIR = 0.45
 MIN_FOIR = 0.10
 
-# MSME cash-flow credits understate true turnover; scale repayment capacity up.
-MSME_CAPACITY_MULTIPLIER = 1.5
+def get_msme_capacity_multiplier(cohort: str | None) -> float:
+    """Calculate MSME capacity multiplier based on expected digital ratio of the cohort."""
+    if not cohort:
+        return 1.5
+    
+    if cohort == "Farmer":
+        expected_digital_ratio = 0.20
+    elif cohort in ("Vendor", "Homemaker"):
+        expected_digital_ratio = 0.40
+    elif cohort in ("GigWorker", "Student"):
+        expected_digital_ratio = 0.80
+    else:
+        return 1.5
+
+    # Multiplier is the inverse of the digital ratio, capped at 3.0 for safety.
+    return min(1.0 / expected_digital_ratio, 3.0)
+
 
 
 def _round_to(value: float, step: int) -> float:
@@ -75,13 +90,15 @@ def recommend_terms(
     credit_score: int,
     decision: str,
     row: pd.Series,
+    cohort: str | None = None,
 ) -> dict:
     """Recommend loan terms. Returns eligible=False for rejected applicants."""
     pd_value = max(0.0, min(1.0, safe_float(probability_of_default)))
     monthly_income = safe_float(row.get("monthly_income_mean", 0.0))
     is_msme = safe_float(row.get("borrower_type", 0.0)) >= 0.5
     if is_msme:
-        monthly_income *= MSME_CAPACITY_MULTIPLIER
+        monthly_income *= get_msme_capacity_multiplier(cohort)
+
 
     if decision == "REJECT" or monthly_income <= 0:
         return {

@@ -351,3 +351,182 @@ body {
     box-shadow: 0 25px 50px rgba(0,0,0,0.5);
   }
 }
+
+/* Mock Integration Gateway Overlay inside the phone container */
+.phone {
+  position: relative; /* Make sure absolute children are relative to this */
+}
+
+.mock-overlay {
+  position: absolute;
+  inset: 0;
+  background: #0f172a;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-lg);
+  color: #f8fafc;
+  overflow-y: auto;
+}
+
+.mock-overlay.hidden {
+  display: none !important;
+}
+
+.gateway-header {
+  text-align: center;
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid #334155;
+}
+
+.gateway-header h2 {
+  font-size: 18px;
+  margin: 0;
+  color: #f8fafc;
+}
+
+.gateway-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: var(--space-lg) 0;
+  width: 100%;
+}
+
+.gateway-view {
+  display: none;
+  width: 100%;
+}
+
+.gateway-view.active {
+  display: block;
+}
+
+/* Specific view layouts */
+.mock-form-group {
+  margin-bottom: var(--space-md);
+  width: 100%;
+}
+
+.mock-form-group label {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mock-input {
+  width: 100%;
+  padding: 12px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: var(--border-radius-md);
+  color: white;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.mock-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.mock-logo {
+  font-size: 32px;
+  margin-bottom: var(--space-md);
+  text-align: center;
+}
+
+.mock-title {
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: var(--space-md);
+  color: #e2e8f0;
+}
+
+.mock-desc {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.5;
+  text-align: center;
+  margin-bottom: var(--space-lg);
+}
+
+/* Loading/Success details */
+.gateway-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #334155;
+  border-top: 4px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--space-md);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.success-check {
+  font-size: 48px;
+  color: #10b981;
+  animation: bounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  margin-bottom: var(--space-md);
+  text-align: center;
+}
+
+@keyframes bounce {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.1); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1.0); opacity: 1; }
+}
+
+.gateway-footer {
+  padding-top: var(--space-md);
+  border-top: 1px solid #334155;
+  text-align: center;
+  width: 100%;
+}
+
+.gateway-progress-steps {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 10px;
+  color: #64748b;
+  width: 100%;
+}
+
+.gateway-progress-step {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #1e293b;
+}
+
+.gateway-progress-step.active {
+  background: var(--primary);
+  color: white;
+}
+
+.gateway-progress-step.completed {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+

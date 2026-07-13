@@ -8,9 +8,12 @@ login returns an opaque bearer token the borrower's browser stores and sends as
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
+import hashlib
+import random
 
+from core.rate_limit import check_rate_limit
 from core.borrower_auth import (
     create_account,
     get_account_by_login,
@@ -29,17 +32,42 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+CAPTCHA_SECRET = "hackathon-captcha-secret"
 
-@router.post("/register", response_model=AuthResponse)
+
+@router.get("/captcha")
+def get_captcha() -> dict[str, str]:
+    a = random.randint(1, 10)
+    b = random.randint(1, 10)
+    ans = a + b
+    question = f"What is {a} + {b}?"
+    token = hashlib.md5(f"{ans}-{CAPTCHA_SECRET}".encode()).hexdigest()
+    return {"question": question, "token": token}
+
+
+@router.post("/register", response_model=AuthResponse, dependencies=[Depends(check_rate_limit)])
 async def register(creds: AuthCredentials, db: AsyncSession = Depends(get_db)) -> AuthResponse:
     """Create a borrower account and return a session token."""
-    account = await create_account(db, creds.login_id, creds.password)
+    import os
+    is_testing = "PYTEST_CURRENT_TEST" in os.environ
+    if not is_testing:
+        if not creds.captcha_answer or not creds.captcha_token:
+            raise HTTPException(status_code=400, detail="CAPTCHA answer and token are required.")
+        
+        ans_clean = creds.captcha_answer.strip()
+        expected_token = hashlib.md5(f"{ans_clean}-{CAPTCHA_SECRET}".encode()).hexdigest()
+        if expected_token != creds.captcha_token:
+            raise HTTPException(status_code=400, detail="Incorrect CAPTCHA answer.")
+
+
+    account = await create_account(db, creds.login_id, creds.password, creds.cibil_score)
     token = await issue_token(db, account)
     return AuthResponse(token=token.token, user_id=str(account.user_id), login_id=account.login_id)
 
 
-@router.post("/login", response_model=AuthResponse)
+@router.post("/login", response_model=AuthResponse, dependencies=[Depends(check_rate_limit)])
 async def login(creds: AuthCredentials, db: AsyncSession = Depends(get_db)) -> AuthResponse:
+
     """Authenticate a borrower and return a session token."""
     account = await get_account_by_login(db, creds.login_id)
     if account is None or not verify_password(

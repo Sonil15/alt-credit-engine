@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alt-Credit: E2E Decision Audit Trail</title>
+  <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/dashboard.css?v=1.0.0">
+  <style>
+    .explanation-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-xl) var(--space-md);
+    }
+    
+    .demo-controls {
+      background: var(--white);
+      border-radius: var(--border-radius-xl);
+      padding: var(--space-lg);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      margin-bottom: var(--space-xl);
+      border: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .selector-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cohort-select {
+      padding: 10px 16px;
+      font-size: 15px;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--border-radius-md);
+      background-color: var(--white);
+      color: var(--text-dark);
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      transition: border-color var(--transition-fast);
+    }
+
+    .cohort-select:focus {
+      border-color: var(--primary);
+    }
+
+    .disclaimer-banner {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      padding: 12px 18px;
+      border-radius: var(--border-radius-md);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .step-card {
+      background: var(--white);
+      border-radius: var(--border-radius-xl);
+      padding: var(--space-xl);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      margin-bottom: var(--space-xl);
+      border: 1px solid #e2e8f0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .step-badge {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: var(--primary);
+      color: var(--white);
+      padding: 6px 16px;
+      border-bottom-right-radius: var(--border-radius-xl);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .step-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+
+    .step-description {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .code-viewer {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 16px;
+      border-radius: var(--border-radius-md);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-x: auto;
+      max-height: 350px;
+    }
+
+    .vault-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .vault-tab-btn {
+      padding: 6px 12px;
+      border-radius: var(--border-radius-sm);
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-slate);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .vault-tab-btn.active {
+      background: var(--primary);
+      color: var(--white);
+      border-color: var(--primary);
+    }
+
+    .audit-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    .audit-table th, .audit-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .audit-table th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    .audit-table tr:hover {
+      background: #f8fafc;
+    }
+
+    .rule-pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .rule-pass { background: #dcfce7; color: #15803d; }
+    .rule-fail { background: #fee2e2; color: #b91c1c; }
+
+    .formula-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--border-radius-md);
+      padding: 16px;
+      font-family: ui-monospace, monospace;
+      font-size: 14px;
+      color: var(--text-dark);
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .comp-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--border-radius-md);
+      padding: 16px;
+    }
+
+    .comp-title {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .comp-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    .progress-bar-container {
+      background: #e2e8f0;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="app-header-left">
+      <h1><a href="/dashboard" style="color: inherit; text-decoration: none;">Alt-Credit Decision Explainer</a> <span class="sub">E2E Audit Trail Visualization</span></h1>
+    </div>
+    <div class="app-header-right">
+      <a href="/dashboard">Dashboard</a>
+      <a href="/">Home</a>
+    </div>
+  </header>
+
+  <div class="explanation-container">
+    <div class="demo-controls">
+      <div class="selector-group">
+        <label for="cohort-select" style="font-weight: 700; font-size: 15px; color: var(--text-dark);">Demo Cohort:</label>
+        <select id="cohort-select" class="cohort-select" onchange="loadDemoCohort(this.value)">
+          <option value="Salaried">Salaried</option>
+          <option value="GigWorker">Gig Worker</option>
+          <option value="Student">Student</option>
+          <option value="Vendor">Vendor</option>
+          <option value="Farmer">Farmer</option>
+          <option value="Homemaker">Homemaker</option>
+        </select>
+      </div>
+      <div class="disclaimer-banner">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18Z" stroke="#166534" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 6V10" stroke="#166534" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 14H10.01" stroke="#166534" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span><strong>White-Label Demo:</strong> All displayed raw data and profiles are generated synthetically. No real applicant PII is decrypted or exposed.</span>
+      </div>
+    </div>
+
+    <div id="loading-spinner" style="display:none; text-align:center; padding: 48px;">
+      <div style="display:inline-block; width:48px; height:48px; border-radius:50%; border:4px solid #e2e8f0; border-top-color:#2563eb; animation:spin 0.8s linear infinite;"></div>
+      <p style="margin-top:14px; color:var(--text-muted);">Processing E2E audit trail for selected cohort...</p>
+    </div>
+
+    <div id="steps-content">
+      
+      <!-- STEP 1: Intake & LLM Extraction -->
+      <div class="step-card">
+        <div class="step-badge">Step 1</div>
+        <h2 class="step-title">Intake & LLM Business Extraction</h2>
+        <p class="step-description">The borrower initiates the journey by declaring their intent. For self-employed or micro-business cohorts (Vendors, Farmers, Gig Workers), free-text business descriptions are parsed using LLM algorithms to extract structured profiles, establishing base parameters for calculations.</p>
+        
+        <div class="comparison-grid">
+          <div class="comp-card" style="grid-column: span 2;">
+            <div class="comp-title">Raw Intake Text (Borrower Statement)</div>
+            <div id="step1-raw-text" style="font-style: italic; color: var(--text-slate); margin-top: 6px;">—</div>
+          </div>
+          <div class="comp-card">
+            <div class="comp-title">Intake Metadata</div>
+            <div style="margin-top: 6px; font-size: 13px;">
+              <div><strong>Cohort:</strong> <span id="step1-cohort">—</span></div>
+              <div><strong>Requested Amount:</strong> <span id="step1-amount">—</span></div>
+              <div><strong>Purpose:</strong> <span id="step1-purpose">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Extracted Structured Business Profile (JSON)</div>
+          <pre id="step1-extracted-json" class="code-viewer">—</pre>
+        </div>
+      </div>
+
+      <!-- STEP 2: Alternative Data Ingestion -->
+      <div class="step-card">
+        <div class="step-badge">Step 2</div>
+        <h2 class="step-title">Alternative Data Ingestion (Secure Zero-Trust Vault)</h2>
+        <p class="step-description">The borrower provides consent to pull alternative data (Telecom billing, E-commerce transactions, GPS points, Bank statements, and Psychometric survey logs). Data is immediately encrypted via AES-256-GCM and stored in a zero-trust vault. Below is the decrypted raw payload showing exactly what entered the scoring engine.</p>
+        
+        <div class="vault-tabs" id="vault-tabs">
+          <!-- Populated dynamically -->
+        </div>
+        <pre id="step2-vault-json" class="code-viewer">—</pre>
+      </div>
+
+      <!-- STEP 3: Feature Engineering -->
+      <div class="step-card">
+        <div class="step-badge">Step 3</div>
+        <h2 class="step-title">Feature Engineering (Econometric & Statistical Feature Store)</h2>
+        <p class="step-description">Raw data streams are transformed into analytical inputs. Econometric features (e.g. trend slopes, account resilience, and ADF stationarity tests on transaction series) are combined with statistical features (e.g., average billing delays and geolocation consistency metrics) to produce the model feature vector.</p>
+        
+        <div style="overflow-x: auto;">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Data Source</th>
+                <th>Feature Name</th>
+                <th>Calculated Value</th>
+                <th>Processing Engine</th>
+                <th>Description / Direction</th>
+              </tr>
+            </thead>
+            <tbody id="step3-feature-table">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- STEP 4: Auto-Reject Rules -->
+      <div class="step-card">
+        <div class="step-badge">Step 4</div>
+        <h2 class="step-title">Auto-Reject & Hard Policy Validation</h2>
+        <p class="step-description">Before executing machine learning predictions, the feature vector runs through policy rules. Red flags (such as high location instability combined with zero baseline income, or severe telecom defaults) trigger immediate rejection, bypassing the model score.</p>
+        
+        <div class="comparison-grid">
+          <div class="comp-card">
+            <div class="comp-title">Geographic Instability Check</div>
+            <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between;">
+              <span id="step4-check-geo-detail" style="font-size: 13px;">—</span>
+              <span id="step4-check-geo-status" class="rule-pill">—</span>
+            </div>
+          </div>
+          <div class="comp-card">
+            <div class="comp-title">Telecom Repayment Check</div>
+            <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between;">
+              <span id="step4-check-telecom-detail" style="font-size: 13px;">—</span>
+              <span id="step4-check-telecom-status" class="rule-pill">—</span>
+            </div>
+          </div>
+          <div class="comp-card">
+            <div class="comp-title">Validation Outcome</div>
+            <div id="step4-overall-status" style="font-size: 18px; font-weight: 800; margin-top: 4px;">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5: EBM Scoring -->
+      <div class="step-card">
+        <div class="step-badge">Step 5</div>
+        <h2 class="step-title">Explainable Boosting Machine (EBM) Scorecard</h2>
+        <p class="step-description">The core champion model is a glass-box Explainable Boosting Machine. It calculates predictions additively. Each feature's shape function defines a score contribution in log-odds. The log-odds are translated directly into credit score points, allowing exact tracing of how the final score is reached.</p>
+        
+        <div style="overflow-x: auto; margin-bottom: var(--space-md);">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Feature Label</th>
+                <th>Extracted Value</th>
+                <th>Model Contribution (Log-odds)</th>
+                <th>Scorecard Points</th>
+                <th>Impact</th>
+              </tr>
+            </thead>
+            <tbody id="step5-ebm-table">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="formula-box" id="step5-formula">
+          Base Points (—) + Sum of Feature Points (—) = Alternate Credit Score: —
+        </div>
+      </div>
+
+      <!-- STEP 6: Conformal Prediction & Challengers -->
+      <div class="step-card">
+        <div class="step-badge">Step 6</div>
+        <h2 class="step-title">Conformal Prediction & Multi-Model Panel Audit</h2>
+        <p class="step-description">To avoid false trust, the system executes two challenger models (CatBoost and Logistic Regression) alongside the EBM champion. A conformal prediction gate evaluates uncertainty. If the challengers disagree with the champion, or the conformal prediction set contains high variance, the decision is routed to manual review.</p>
+        
+        <div class="comparison-grid">
+          <div class="comp-card">
+            <div class="comp-title">EBM Champion PD</div>
+            <div class="comp-value" id="step6-champion-pd">—</div>
+          </div>
+          <div class="comp-card">
+            <div class="comp-title">CatBoost Challenger PD</div>
+            <div class="comp-value" id="step6-catboost-pd">—</div>
+          </div>
+          <div class="comp-card">
+            <div class="comp-title">LogReg Challenger PD</div>
+            <div class="comp-value" id="step6-logreg-pd">—</div>
+          </div>
+        </div>
+
+        <div class="comparison-grid">
+          <div class="comp-card">
+            <div class="comp-title">Conformal Uncertainty Gate</div>
+            <div style="margin-top: 6px; font-size: 13px;">
+              <div><strong>Conformal Prediction Set:</strong> <span id="step6-conformal-set">—</span></div>
+              <div><strong>Abstain Triggered:</strong> <span id="step6-conformal-abstain">—</span></div>
+            </div>
+          </div>
+          <div class="comp-card" style="grid-column: span 2;">
+            <div class="comp-title">Panel Consensus Verdict</div>
+            <div id="step6-consensus-verdict" style="font-size: 15px; font-weight: 700; margin-top: 6px; color: var(--text-dark);">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 7: Affordability Gate -->
+      <div class="step-card">
+        <div class="step-badge">Step 7</div>
+        <h2 class="step-title">Affordability Gate & Lending Overlay</h2>
+        <p class="step-description">After model classification, a financial guardrail evaluates the applicant's request. It checks if the requested loan amount exceeds the EBM-approved maximum limit, which is calculated based on cashflow capacity. If there is a funding gap, the decision shifts to Review for a counter-offer.</p>
+        
+        <div class="comparison-grid">
+          <div class="comp-card">
+            <div class="comp-title">Requested Loan Amount</div>
+            <div class="comp-value" id="step7-requested-amt">—</div>
+          </div>
+          <div class="comp-card">
+            <div class="comp-title">Max Allowed capacity</div>
+            <div class="comp-value" id="step7-max-allowed">—</div>
+          </div>
+          <div class="comp-card">
+            <div class="comp-title">Affordability Gate Status</div>
+            <div class="comp-value" id="step7-gate-status">—</div>
+          </div>
+        </div>
+        
+        <div class="comp-card" style="background: #f8fafc; border: 1px solid #e2e8f0; margin-top: 12px; border-radius: var(--border-radius-md);">
+          <div class="comp-title">Affordability Rationale</div>
+          <div id="step7-lending-rationale" style="font-size: 14px; margin-top: 6px;">—</div>
+        </div>
+      </div>
+
+      <!-- STEP 8: Dashboard Outputs -->
+      <div class="step-card">
+        <div class="step-badge">Step 8</div>
+        <h2 class="step-title">Translation to Bank LOS Dashboard Components</h2>
+        <p class="step-description">The resulting calculations populate the Bank Loan Origination System (LOS) dashboard. The alternative credit score is mapped into qualitative facet scores (Financial Health, Location, Telecom) for a visual radar chart, along with actionable insights and adverse action codes.</p>
+        
+        <div class="two-col" style="margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+          <div>
+            <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--text-dark);">Dashboard Radar Facets (Qualitative)</h3>
+            <div id="step8-facets-list">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+          <div>
+            <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--text-dark);">Actionable Audit Insights</h3>
+            <ul id="step8-insights-list" style="padding-left: 20px; font-size: 13px; color: var(--text-slate);">
+              <!-- Populated dynamically -->
+            </ul>
+            
+            <h3 style="font-size: 15px; font-weight: 700; margin-top: 20px; margin-bottom: 10px; color: var(--text-dark);">Adverse Action Reason Codes</h3>
+            <div id="step8-reasons-container" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--border-radius-md); padding: 12px; font-size: 13px;">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let activeRawTab = '';
+    let currentRawData = {};
+
+    window.onload = function() {
+      // Get cohort from URL if present, otherwise default to Salaried
+      const urlParams = new URLSearchParams(window.location.search);
+      const cohortParam = urlParams.get('cohort') || 'Salaried';
+      
+      // Select appropriate value in dropdown
+      const select = document.getElementById('cohort-select');
+      if (select) {
+        select.value = cohortParam;
+      }
+      
+      loadDemoCohort(cohortParam);
+    };
+
+    async function loadDemoCohort(cohort) {
+      document.getElementById('loading-spinner').style.display = 'block';
+      document.getElementById('steps-content').style.display = 'none';
+
+      try {
+        const response = await fetch(`/score/demo/audit_trail?cohort=${cohort}`);
+        if (!response.ok) {
+          throw new Error('Failed to load demo data');
+        }
+        const data = await response.json();
+        renderAuditTrail(data);
+        
+        document.getElementById('loading-spinner').style.display = 'none';
+        document.getElementById('steps-content').style.display = 'block';
+      } catch (err) {
+        console.error(err);
+        alert('Error loading audit trail. Make sure the backend is running and the database is seeded.');
+        document.getElementById('loading-spinner').style.display = 'none';
+      }
+    }
+
+    function renderAuditTrail(data) {
+      const scoreResult = data.score_result;
+      const rawData = data.raw_data;
+      currentRawData = rawData;
+
+      // --- STEP 1 ---
+      // Get the plain text description from SecureVault intake if exists
+      const intakeDesc = rawData.intake ? rawData.intake.business_description : '—';
+      document.getElementById('step1-raw-text').textContent = `"${intakeDesc}"`;
+      document.getElementById('step1-cohort').textContent = scoreResult.confidence.cohort || data.cohort;
+      document.getElementById('step1-amount').textContent = scoreResult.requested_amount ? `₹${scoreResult.requested_amount.toLocaleString('en-IN')}` : '₹0';
+      document.getElementById('step1-purpose').textContent = scoreResult.loan_purpose || 'N/A';
+      
+      // Business profile JSON
+      let profileObj = null;
+      // Extract from raw intake or score result
+      if (scoreResult.lending && scoreResult.lending.borrower_type === 'msme') {
+        // Try to construct business profile from features
+        profileObj = {};
+        const features = scoreResult.feature_trace.by_source || [];
+        features.forEach(src => {
+          src.signals.forEach(sig => {
+            if (['business_vintage_years', 'turnover_income_consistency'].includes(sig.feature)) {
+              profileObj[sig.feature] = sig.value;
+            }
+          });
+        });
+      }
+      
+      // Actually we have the exact JSON in DEMO_INTAKE_PROFILES
+      // Let's use the returned cohort configuration for structured representation
+      const cohortObj = document.getElementById('cohort-select').value;
+      const staticIntakes = {
+        "Salaried": null,
+        "GigWorker": {
+          "sector": "Delivery / Logistics", "years_in_business": 2.0, "monthly_turnover": 25000.0, "employees": 0, "seasonality": "medium", "udyam_number": "UDYAM-MH-01-0012345", "udyam_vintage_years": 1.5, "years_informal": 0.5
+        },
+        "Student": null,
+        "Vendor": {
+          "sector": "Food Service / Tea Stall", "years_in_business": 5.0, "monthly_turnover": 45000.0, "employees": 1, "seasonality": "low", "udyam_number": "UDYAM-DL-02-0056789", "udyam_vintage_years": 4.0, "years_informal": 1.0
+        },
+        "Farmer": {
+          "sector": "Agriculture / Rice Farming", "years_in_business": 10.0, "monthly_turnover": 30000.0, "employees": 0, "seasonality": "high", "udyam_number": null, "udyam_vintage_years": null, "years_informal": 10.0
+        },
+        "Homemaker": null
+      };
+
+      const extractedProfile = staticIntakes[cohortObj];
+      document.getElementById('step1-extracted-json').textContent = extractedProfile ? JSON.stringify(extractedProfile, null, 2) : 'No business profile extracted (Not applicable for this cohort)';
+
+      // --- STEP 2 ---
+      // Build vault tabs
+      const tabsContainer = document.getElementById('vault-tabs');
+      tabsContainer.innerHTML = '';
+      
+      const vaultKeys = Object.keys(rawData).filter(k => k !== 'intake');
+      if (vaultKeys.length > 0) {
+        vaultKeys.forEach((key, idx) => {
+          const btn = document.createElement('button');
+          btn.className = `vault-tab-btn ${idx === 0 ? 'active' : ''}`;
+          btn.textContent = key.toUpperCase();
+          btn.onclick = () => selectVaultTab(key, btn);
+          tabsContainer.appendChild(btn);
+        });
+        // Select first tab
+        selectVaultTab(vaultKeys[0]);
+      } else {
+        document.getElementById('step2-vault-json').textContent = 'No raw vaults ingested.';
+      }
+
+      // --- STEP 3 ---
+      // Build feature table
+      const featureTable = document.getElementById('step3-feature-table');
+      featureTable.innerHTML = '';
+
+      const traceSources = scoreResult.feature_trace.by_source || [];
+      traceSources.forEach(src => {
+        src.signals.forEach(sig => {
+          const tr = document.createElement('tr');
+          
+          const tdSource = document.createElement('td');
+          tdSource.textContent = src.source;
+          tr.appendChild(tdSource);
+
+          const tdName = document.createElement('td');
+          tdName.innerHTML = `<code>${sig.feature}</code>`;
+          tr.appendChild(tdName);
+
+          const tdVal = document.createElement('td');
+          tdVal.textContent = sig.fmt === 'currency' ? `₹${sig.value.toLocaleString('en-IN')}` : sig.value;
+          tr.appendChild(tdVal);
+
+          const tdEngine = document.createElement('td');
+          tdEngine.innerHTML = `<span class="badge badge-PENDING" style="font-size: 11px;">${src.engine.toUpperCase()}</span>`;
+          tr.appendChild(tdEngine);
+
+          const tdDesc = document.createElement('td');
+          tdDesc.textContent = sig.label;
+          tr.appendChild(tdDesc);
+
+          featureTable.appendChild(tr);
+        });
+      });
+
+      // --- STEP 4 ---
+      // Red flags auto rejects
+      // Retrieve some feature values to show details
+      let missedCount = 0;
+      let spatialScore = 0;
+      let incomeMean = 0;
+
+      traceSources.forEach(src => {
+        src.signals.forEach(sig => {
+          if (sig.feature === 'missed_payments_count') missedCount = sig.value;
+          if (sig.feature === 'spatial_variance_score') spatialScore = sig.value;
+          if (sig.feature === 'monthly_income_mean') incomeMean = sig.value;
+        });
+      });
+
+      const isGeoInstability = (spatialScore > 50.0 && incomeMean <= 0);
+      const isTelecomDefault = (data.cohort === 'Salaried' && missedCount >= 5);
+
+      document.getElementById('step4-check-geo-detail').textContent = `Spatial Variance: ${spatialScore}, Income: ₹${incomeMean}`;
+      const geoPill = document.getElementById('step4-check-geo-status');
+      geoPill.textContent = isGeoInstability ? 'REJECT' : 'PASS';
+      geoPill.className = `rule-pill ${isGeoInstability ? 'rule-fail' : 'rule-pass'}`;
+
+      document.getElementById('step4-check-telecom-detail').textContent = `Missed Payments: ${missedCount}`;
+      const telecomPill = document.getElementById('step4-check-telecom-status');
+      telecomPill.textContent = isTelecomDefault ? 'REJECT' : 'PASS';
+      telecomPill.className = `rule-pill ${isTelecomDefault ? 'rule-fail' : 'rule-pass'}`;
+
+      const validationStatus = document.getElementById('step4-overall-status');
+      if (scoreResult.auto_reject) {
+        validationStatus.textContent = 'AUTO-REJECT';
+        validationStatus.style.color = '#dc2626';
+      } else {
+        validationStatus.textContent = 'PASSED';
+        validationStatus.style.color = '#16a34a';
+      }
+
+      // --- STEP 5 ---
+      // EBM Scorecard Table
+      const ebmTable = document.getElementById('step5-ebm-table');
+      ebmTable.innerHTML = '';
+      
+      let sumOfPoints = 0;
+      traceSources.forEach(src => {
+        src.signals.forEach(sig => {
+          const points = scoreResult.factor_points[sig.feature] || 0;
+          sumOfPoints += points;
+
+          const tr = document.createElement('tr');
+
+          const tdLabel = document.createElement('td');
+          tdLabel.textContent = sig.label;
+          tr.appendChild(tdLabel);
+
+          const tdVal = document.createElement('td');
+          tdVal.textContent = sig.value;
+          tr.appendChild(tdVal);
+
+          // EBM intercept is centered logodds contribution
+          const tdLogOdds = document.createElement('td');
+          tdLogOdds.textContent = (points / 50).toFixed(4); // approximation
+          tr.appendChild(tdLogOdds);
+
+          const tdPoints = document.createElement('td');
+          tdPoints.textContent = points >= 0 ? `+${points.toFixed(1)}` : points.toFixed(1);
+          tdPoints.style.fontWeight = 'bold';
+          tdPoints.style.color = points >= 0 ? '#16a34a' : '#dc2626';
+          tr.appendChild(tdPoints);
+
+          const tdImpact = document.createElement('td');
+          tdImpact.textContent = points >= 0 ? 'Raises Score' : 'Lowers Score';
+          tdImpact.style.color = points >= 0 ? '#16a34a' : '#dc2626';
+          tr.appendChild(tdImpact);
+
+          ebmTable.appendChild(tr);
+        });
+      });
+
+      const roundedScore = Math.round(scoreResult.credit_score);
+      const roundedBase = Math.round(scoreResult.base_points);
+      
+      document.getElementById('step5-formula').innerHTML = 
+        `Base Points (<b>${roundedBase}</b>) + Sum of Feature Points (<b>${sumOfPoints >= 0 ? '+' : ''}${sumOfPoints.toFixed(1)}</b>) = Alternate Credit Score: <span style="color: #2563eb; font-weight: 800;">${roundedScore}</span>`;
+
+      // --- STEP 6 ---
+      // Conformal Prediction and Panel Agreement
+      const roundedChampPd = (scoreResult.probability_of_default * 100).toFixed(2) + '%';
+      document.getElementById('step6-champion-pd').textContent = roundedChampPd;
+      
+      // Challengers
+      const panel = scoreResult.panel || {};
+      const cbPdVal = panel.challenger_pds && panel.challenger_pds.catboost ? (panel.challenger_pds.catboost * 100).toFixed(2) + '%' : roundedChampPd;
+      const lrPdVal = panel.challenger_pds && panel.challenger_pds.logistic ? (panel.challenger_pds.logistic * 100).toFixed(2) + '%' : roundedChampPd;
+
+      document.getElementById('step6-catboost-pd').textContent = cbPdVal;
+      document.getElementById('step6-logreg-pd').textContent = lrPdVal;
+
+      // Conformal
+      const conformal = scoreResult.conformal || {};
+      document.getElementById('step6-conformal-set').textContent = conformal.prediction_set ? JSON.stringify(conformal.prediction_set) : '["APPROVE"]';
+      document.getElementById('step6-conformal-abstain').textContent = conformal.abstain ? 'YES (Triggered Review)' : 'NO';
+
+      // Consensus verdict text
+      let consensusText = '';
+      if (panel.hard_conflict) {
+        consensusText = '⚠️ Hard conflict detected between models. Decision routed to manual review.';
+      } else if (!panel.unanimous) {
+        consensusText = '⚠️ contested decision (panel is not unanimous). Decision routed to manual review.';
+      } else {
+        consensusText = '✅ Unanimous panel agreement. Champion decision upheld.';
+      }
+      document.getElementById('step6-consensus-verdict').textContent = consensusText;
+
+      // --- STEP 7 ---
+      // Affordability Gate
+      const requestedAmt = scoreResult.requested_amount || 0;
+      const maxAllowed = scoreResult.lending && scoreResult.lending.max_loan_amount ? scoreResult.lending.max_loan_amount : 0;
+      
+      document.getElementById('step7-requested-amt').textContent = `₹${requestedAmt.toLocaleString('en-IN')}`;
+      document.getElementById('step7-max-allowed').textContent = `₹${maxAllowed.toLocaleString('en-IN')}`;
+      
+      const gap = scoreResult.funding_gap || {};
+      const gateStatus = document.getElementById('step7-gate-status');
+      if (gap.gated) {
+        gateStatus.textContent = 'REVIEW';
+        gateStatus.style.color = '#dc2626';
+      } else {
+        gateStatus.textContent = 'PASSED';
+        gateStatus.style.color = '#16a34a';
+      }
+
+      document.getElementById('step7-lending-rationale').textContent = scoreResult.lending && scoreResult.lending.rationale ? scoreResult.lending.rationale : 'No lending evaluation available.';
+
+      // --- STEP 8 ---
+      // Dashboard facets
+      const facetList = document.getElementById('step8-facets-list');
+      facetList.innerHTML = '';
+      
+      const facetScores = scoreResult.facet_scores || [];
+      facetScores.forEach(fac => {
+        const item = document.createElement('div');
+        item.style.marginBottom = '12px';
+        
+        const labelRow = document.createElement('div');
+        labelRow.style.display = 'flex';
+        labelRow.style.justifyContent = 'space-between';
+        labelRow.style.fontSize = '13px';
+        labelRow.style.fontWeight = '700';
+        labelRow.innerHTML = `<span>${fac.label}</span> <span>${Math.round(fac.score)}/100</span>`;
+        item.appendChild(labelRow);
+
+        const progressContainer = document.createElement('div');
+        progressContainer.className = 'progress-bar-container';
+        
+        const progressFill = document.createElement('div');
+        progressFill.className = 'progress-bar-fill';
+        progressFill.style.width = `${fac.score}%`;
+        // Color coding facets
+        const fScore = fac.score;
+        progressFill.style.backgroundColor = fScore >= 75 ? '#16a34a' : fScore >= 50 ? '#22c55e' : fScore >= 35 ? '#eab308' : '#dc2626';
+        
+        progressContainer.appendChild(progressFill);
+        item.appendChild(progressContainer);
+
+        facetList.appendChild(item);
+      });
+
+      // Insights
+      const insightsList = document.getElementById('step8-insights-list');
+      insightsList.innerHTML = '';
+      const insights = scoreResult.actionable_insights || [];
+      insights.forEach(ins => {
+        const li = document.createElement('li');
+        li.textContent = ins;
+        li.style.marginBottom = '6px';
+        insightsList.appendChild(li);
+      });
+
+      // Reason codes Adverse Actions
+      const reasonsContainer = document.getElementById('step8-reasons-container');
+      reasonsContainer.innerHTML = '';
+      const reasons = scoreResult.reason_codes || [];
+      if (reasons.length > 0) {
+        reasons.forEach(r => {
+          const div = document.createElement('div');
+          div.style.marginBottom = '4px';
+          div.style.color = '#991b1b';
+          div.innerHTML = `• ${r}`;
+          reasonsContainer.appendChild(div);
+        });
+      } else {
+        reasonsContainer.innerHTML = '<span style="color: #64748b;">No adverse action codes. Applicant represents minimal risk profile.</span>';
+      }
+    }
+
+    function selectVaultTab(key, btn) {
+      // Toggle button active class
+      const btns = document.querySelectorAll('.vault-tab-btn');
+      btns.forEach(b => b.classList.remove('active'));
+      
+      if (btn) {
+        btn.classList.add('active');
+      } else {
+        // Find matching button to activate
+        const buttons = document.querySelectorAll('.vault-tab-btn');
+        buttons.forEach(b => {
+          if (b.textContent === key.toUpperCase()) b.classList.add('active');
+        });
+      }
+
+      // Display JSON
+      const jsonContent = currentRawData[key];
+      document.getElementById('step2-vault-json').textContent = JSON.stringify(jsonContent, null, 2);
+    }
+  </script>
+</body>
+</html>

@@ -156,6 +156,9 @@ class BusinessProfile(BaseModel):
     monthly_turnover: float | None = Field(default=None, ge=0)
     seasonality: str | None = None  # low | medium | high
     employees: int | None = Field(default=None, ge=0, le=10000)
+    udyam_number: str | None = None
+    udyam_vintage_years: float | None = Field(default=None, ge=0, le=80)
+    years_informal: float | None = Field(default=None, ge=0, le=80)
 
     @field_validator("seasonality")
     @classmethod
@@ -422,6 +425,11 @@ class AuthCredentials(BaseModel):
 
     login_id: str = Field(min_length=3, max_length=100)
     password: str = Field(min_length=6, max_length=200)
+    cibil_score: int | None = Field(default=None)
+    captcha_answer: str | None = Field(default=None)
+    captcha_token: str | None = Field(default=None)
+
+
 
     @field_validator("login_id")
     @classmethod

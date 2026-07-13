@@ -34,6 +34,16 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
+from sqlalchemy import text
+
+
 async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # SQLite: Alter table if column is missing.
+        # This acts as a lightweight automatic schema migration.
+        try:
+            await conn.execute(text("ALTER TABLE borrower_accounts ADD COLUMN cibil_score INTEGER DEFAULT -1"))
+        except Exception:
+            # If the column already exists, this command fails, which we gracefully ignore.
+            pass

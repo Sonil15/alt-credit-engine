@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alt-Credit: eKYC Register</title>
+  <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/login.css?v=1.0.1">
+  <script src="/static/translations.js?v=1.0.4"></script>
+  <script src="/static/auth.js?v=1.0.0"></script>
+  <style>
+    /* Wizard steps style */
+    .steps-indicator {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .steps-indicator::before {
+      content: "";
+      position: absolute;
+      top: 15px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #e2e8f0;
+      z-index: 1;
+    }
+    .step-pill {
+      position: relative;
+      z-index: 2;
+      background: #f8fafc;
+      border: 2px solid #cbd5e1;
+      color: #64748b;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13.5px;
+      font-weight: 700;
+      transition: all 0.3s ease;
+    }
+    .step-pill.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--white);
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
+    }
+    .step-pill.completed {
+      background: #d1fae5;
+      border-color: #059669;
+      color: #059669;
+    }
+    .step-label {
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 6px;
+      text-align: center;
+      width: 80px;
+      color: var(--text-muted);
+    }
+    .step-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+    .step-wrapper.active .step-label {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+    .step-content {
+      display: none;
+    }
+    .step-content.active {
+      display: block;
+      animation: fadeIn 0.4s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .success-card {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+      padding: 12px;
+      border-radius: var(--border-radius-md);
+      font-size: 14px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .otp-input-group {
+      margin-top: var(--space-md);
+      animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown {
+      from { height: 0; opacity: 0; overflow: hidden; }
+      to { height: auto; opacity: 1; }
+    }
+    .timer-text {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: var(--space-xs);
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="status-bar" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <a href="/login" style="color: var(--text-muted); text-decoration: none; font-weight: 500;">← <span data-i18n="register-topbar-login">Sign In</span></a>
+      </div>
+      <div id="language-selector-root"></div>
+    </div>
+
+    <div class="login-stage">
+      <div class="login-card">
+        <!-- Brand rail -->
+        <aside class="login-brand">
+          <span class="brand-badge" data-i18n="register-hero-badge">Identity eKYC</span>
+          <h2 class="brand-title" data-i18n="register-hero-title">Verify Your Identity</h2>
+          <p class="brand-sub" data-i18n="register-hero-sub">We use Aadhaar eKYC to link your assessment to a verified legal identity, preventing fraud and protecting your data.</p>
+          <ul class="brand-benefits">
+            <li><span class="tick">✓</span><span data-i18n="register-benefit-1">Compliant with RBI digital KYC rules for instant verification.</span></li>
+            <li><span class="tick">✓</span><span data-i18n="register-benefit-2">Protects your profile from unauthorized duplicates.</span></li>
+            <li><span class="tick">✓</span><span data-i18n="register-benefit-3">Allows a secure, single-sitting psychometric attempt every 30 days.</span></li>
+          </ul>
+        </aside>
+
+        <!-- Form panel -->
+        <main class="login-form">
+          <div class="steps-indicator">
+            <div class="step-wrapper active" id="step-ind-1">
+              <div class="step-pill active" id="pill-1">1</div>
+              <div class="step-label" data-i18n="register-step-ekyc">1. Aadhaar eKYC</div>
+            </div>
+            <div class="step-wrapper" id="step-ind-2">
+              <div class="step-pill" id="pill-2">2</div>
+              <div class="step-label">2. Liveness Match</div>
+            </div>
+            <div class="step-wrapper" id="step-ind-3">
+              <div class="step-pill" id="pill-3">3</div>
+              <div class="step-label" data-i18n="register-step-setup">3. Account Setup</div>
+            </div>
+          </div>
+
+          <p id="intro" class="auth-intro" style="min-height: auto; margin-bottom: 16px;" data-i18n="register-header-sub">
+            RBI KYC Compliant · Identity Verification</p>
+
+          <div id="error-box" class="auth-error"></div>
+
+          <!-- STEP 1: Aadhaar eKYC -->
+          <div id="step-1" class="step-content active">
+            <div class="form-group">
+              <label class="form-label" for="aadhaar-input" data-i18n="register-field-aadhaar">Aadhaar Number</label>
+              <input id="aadhaar-input" class="form-control" type="text" inputmode="numeric" maxlength="14" placeholder="12-digit Aadhaar (e.g. 1234 5678 9012)">
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+              <label class="form-label" for="cibil-select" data-i18n="register-field-cibil">Simulate Bureau History (CIBIL)</label>
+              <select id="cibil-select" class="form-control" style="width: 100%; border-radius: 8px; padding: 10px; background: #1e293b; color: #fff; border: 1px solid #334155;">
+                <option value="-1" data-i18n="cibil-option-ntc">New-To-Credit / Thin File (No CIBIL score)</option>
+                <option value="780" data-i18n="cibil-option-prime">Prime Credit Score (780)</option>
+                <option value="520" data-i18n="cibil-option-subprime">Subprime / Default History (520)</option>
+              </select>
+            </div>
+
+            <!-- CAPTCHA section -->
+            <div class="form-group" style="margin-top: 15px;">
+              <label class="form-label" for="captcha-input">Security Challenge (CAPTCHA)</label>
+              <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+                <div id="captcha-question" style="font-weight: bold; background: #1e293b; border: 1px solid #334155; padding: 8px 12px; border-radius: 6px; color: #38bdf8; font-size: 14px; letter-spacing: 1px; user-select: none;">Loading challenge...</div>
+                <button type="button" class="btn btn-secondary" onclick="loadCaptcha()" style="padding: 6px 12px; font-size: 12px; height: auto; background: #475569; border: none; color: #fff; border-radius: 6px; cursor: pointer;">↻ Refresh</button>
+              </div>
+              <input id="captcha-input" class="form-control" type="text" placeholder="Enter answer here">
+              <input id="captcha-token" type="hidden">
+            </div>
+
+            <button id="send-otp-btn" class="btn btn-primary auth-submit" onclick="sendOTP()" data-i18n="register-btn-send-otp" style="margin-top: 15px;">Send OTP</button>
+
+            <!-- OTP Input Section (Hidden initially) -->
+            <div id="otp-group" class="otp-input-group" style="display: none;">
+              <div class="form-group">
+                <label class="form-label" for="otp-input" data-i18n="register-field-otp">Enter 6-digit OTP</label>
+                <input id="otp-input" class="form-control" type="text" inputmode="numeric" maxlength="6" placeholder="•••••">
+                <div class="timer-text" id="otp-msg" data-i18n="register-otp-sent">OTP sent to your Aadhaar-registered mobile number.</div>
+              </div>
+              <button id="verify-otp-btn" class="btn btn-primary auth-submit" onclick="verifyOTP()" data-i18n="register-btn-verify-otp">Verify OTP</button>
+            </div>
+          </div>
+
+          <!-- STEP 2: Liveness Match -->
+          <div id="step-2" class="step-content">
+            <div class="success-card" style="margin-bottom: 15px;">
+              <span>🔒</span> <span id="aadhaar-verified-msg">Aadhaar Verified: Ravi Kumar ✅</span>
+            </div>
+            
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">
+              To prevent identity theft, please look at the camera and verify your liveness.
+            </p>
+
+            <div style="position: relative; width: 100%; aspect-ratio: 4/3; background: #0f172a; border: 2px solid #334155; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+              <!-- Camera simulation -->
+              <div id="camera-overlay" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 14px; text-align: center; padding: 20px;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 10px; color: #64748b;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span>Camera starting...</span>
+              </div>
+              <div id="camera-feed" style="display: none; width: 100%; height: 100%; position: relative; background: radial-gradient(circle, #334155 0%, #0f172a 100%);">
+                <!-- Glowing scanning line -->
+                <div id="scanning-line" style="position: absolute; left: 0; width: 100%; height: 2px; background: #22c55e; box-shadow: 0 0 8px #22c55e; animation: scan 2s linear infinite;"></div>
+                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+                  <div style="width: 140px; height: 180px; border: 2px dashed #3b82f6; border-radius: 50%; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 11px; font-weight: bold; text-transform: uppercase;">Align Face</div>
+                </div>
+              </div>
+            </div>
+
+            <style>
+              @keyframes scan {
+                0% { top: 0%; }
+                50% { top: 100%; }
+                100% { top: 0%; }
+              }
+            </style>
+
+            <button id="liveness-btn" class="btn btn-primary auth-submit" onclick="performLivenessCheck()">Verify Liveness</button>
+          </div>
+
+          <!-- STEP 3: Choose Username / Password -->
+          <div id="step-3" class="step-content">
+            <div class="success-card">
+              <span>🔒</span> <span id="success-message" data-i18n="register-verified-success">Identity Verified: Ravi Kumar ✅</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="login-id" data-i18n="register-field-loginid">Choose Login ID</label>
+              <input id="login-id" class="form-control" type="text" autocomplete="username" placeholder="e.g. ravi_kumar">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="password" data-i18n="register-field-password">Password</label>
+              <input id="password" class="form-control" type="password" autocomplete="new-password" placeholder="••••••••">
+              <span id="pw-hint" class="field-hint" data-i18n="login-pw-hint">At least 6 characters.</span>
+            </div>
+
+            <button id="submit-btn" class="btn btn-primary auth-submit" onclick="submitRegistration()" data-i18n="register-submit">Verify & Create Account</button>
+          </div>
+
+          <div class="auth-note">
+            <span class="lock">🔒</span>
+            <span data-i18n="login-privacy-note">Your assessments stay linked to your account and no one else can open them.</span>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const nextUrl = params.get('next') || '/apply';
+    let currentStep = 1;
+    let verifiedAadhaar = '';
+
+    // If already logged in, skip register
+    if (Auth.isLoggedIn()) {
+      window.location.replace(nextUrl);
+    }
+
+    function t(key, fallback) {
+      try {
+        const lang = getCurrentLanguage();
+        const d = ALTCREDIT_DICTIONARY;
+        return (d[lang] && d[lang][key]) || (d['en'] && d['en'][key]) || fallback;
+      } catch (_) { return fallback; }
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('error-box');
+      box.textContent = msg;
+      box.style.display = 'block';
+    }
+    function hideError() {
+      document.getElementById('error-box').style.display = 'none';
+    }
+
+    // Format Aadhaar text input: 1234 5678 9012
+    const aadhaarInput = document.getElementById('aadhaar-input');
+    aadhaarInput.addEventListener('input', (e) => {
+      let val = e.target.value.replace(/\D/g, '');
+      if (val.length > 12) val = val.slice(0, 12);
+      
+      let formatted = '';
+      for (let i = 0; i < val.length; i++) {
+        if (i > 0 && i % 4 === 0) formatted += ' ';
+        formatted += val[i];
+      }
+      e.target.value = formatted;
+    });
+
+    async function loadCaptcha() {
+      try {
+        const resp = await fetch('/auth/captcha');
+        const data = await resp.json();
+        document.getElementById('captcha-question').textContent = data.question;
+        document.getElementById('captcha-token').value = data.token;
+        document.getElementById('captcha-input').value = '';
+      } catch (err) {
+        document.getElementById('captcha-question').textContent = 'Error loading challenge';
+      }
+    }
+
+    async function sendOTP() {
+      hideError();
+      const rawAadhaar = aadhaarInput.value.replace(/\s/g, '');
+      if (rawAadhaar.length !== 12) {
+        showError(t('register-err-aadhaar', 'Please enter a valid 12-digit Aadhaar number.'));
+        return;
+      }
+
+      const captchaAns = document.getElementById('captcha-input').value.trim();
+      if (!captchaAns) {
+        showError('Please solve the security challenge (CAPTCHA).');
+        return;
+      }
+
+      const btn = document.getElementById('send-otp-btn');
+      btn.disabled = true;
+      btn.textContent = t('register-btn-sending-otp', 'Sending OTP…');
+
+      // Simulate network request to UIDAI
+      setTimeout(() => {
+        btn.style.display = 'none';
+        document.getElementById('otp-group').style.display = 'block';
+        document.getElementById('otp-input').focus();
+        // prefill default demo code
+        document.getElementById('otp-input').value = '123456';
+      }, 1200);
+    }
+
+    async function verifyOTP() {
+      hideError();
+      const otp = document.getElementById('otp-input').value.trim();
+      if (otp.length !== 6) {
+        showError(t('register-err-otp', 'Please enter the 6-digit OTP.'));
+        return;
+      }
+
+      // Demo OTP validation
+      if (otp !== '123456') {
+        showError(t('register-err-otp-invalid', "Invalid OTP. For demo purposes, try '123456'."));
+        return;
+      }
+
+      const btn = document.getElementById('verify-otp-btn');
+      btn.disabled = true;
+      btn.textContent = t('register-btn-verifying-otp', 'Verifying…');
+
+      setTimeout(() => {
+        verifiedAadhaar = aadhaarInput.value.replace(/\s/g, '');
+        // Move to step 2
+        goToStep(2);
+      }, 1000);
+    }
+
+    function startCameraMock() {
+      const overlay = document.getElementById('camera-overlay');
+      const feed = document.getElementById('camera-feed');
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        feed.style.display = 'block';
+      }, 1000);
+    }
+
+    async function performLivenessCheck() {
+      hideError();
+      const btn = document.getElementById('liveness-btn');
+      btn.disabled = true;
+      btn.textContent = 'Analyzing Face Liveness...';
+
+      setTimeout(() => {
+        btn.textContent = 'Face Match Success: 98.4% ✅';
+        btn.style.background = '#10b981';
+        btn.style.borderColor = '#10b981';
+        
+        setTimeout(() => {
+          goToStep(3);
+        }, 1200);
+      }, 2000);
+    }
+
+    function goToStep(step) {
+      currentStep = step;
+      document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+      document.getElementById('step-' + step).classList.add('active');
+
+      if (step === 2) {
+        document.getElementById('pill-1').classList.add('completed');
+        document.getElementById('pill-1').innerHTML = '✓';
+        document.getElementById('pill-2').classList.add('active');
+        document.getElementById('step-ind-2').classList.add('active');
+        startCameraMock();
+      } else if (step === 3) {
+        document.getElementById('pill-2').classList.add('completed');
+        document.getElementById('pill-2').innerHTML = '✓';
+        document.getElementById('pill-3').classList.add('active');
+        document.getElementById('step-ind-3').classList.add('active');
+        
+        // auto prefill a sample ID based on the Aadhaar name
+        document.getElementById('login-id').value = 'ravi_kumar';
+        document.getElementById('password').focus();
+      }
+    }
+
+    async function submitRegistration() {
+      hideError();
+      const loginId = document.getElementById('login-id').value.trim();
+      const password = document.getElementById('password').value;
+      if (loginId.length < 3) { showError(t('login-err-loginid', 'Login ID must be at least 3 characters.')); return; }
+      if (password.length < 6) { showError(t('login-err-password', 'Password must be at least 6 characters.')); return; }
+
+      const cibilVal = Number(document.getElementById('cibil-select').value);
+      const captchaAnswer = document.getElementById('captcha-input').value.trim();
+      const captchaToken = document.getElementById('captcha-token').value;
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      btn.textContent = t('register-creating', 'Creating account…');
+
+      try {
+        await Auth.register(loginId, password, cibilVal, captchaAnswer, captchaToken);
+        // Save verified Aadhaar status and details to simulate a real identity vault link
+        localStorage.setItem('altcredit_aadhaar_verified', 'true');
+        localStorage.setItem('altcredit_aadhaar_last4', verifiedAadhaar.slice(-4));
+        localStorage.setItem('altcredit_full_name', 'Ravi Kumar');
+        
+        window.location.assign(nextUrl);
+      } catch (err) {
+        showError(err.message || 'Something went wrong during registration.');
+        btn.disabled = false;
+        btn.textContent = originalText;
+        loadCaptcha();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadCaptcha();
+      if (typeof setupLanguageSelector === 'function') setupLanguageSelector('language-selector-root');
+    });
+  </script>
+</body>
+</html>

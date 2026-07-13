@@ -71,31 +71,31 @@ NARRATION_TEMPLATES = [
 STRESS_BY_THETA = [
     (
         0.2,
-        "I sometimes skip savings to buy things I want when I see a sale.",
+        "I had a sudden medical bill, so I just ignored my utility bills and delayed paying them to cover it.",
         "high",
         "rarely",
     ),
     (
         0.35,
-        "I tend to avoid checking my bank balance when I know expenses are high.",
+        "When my phone broke, I avoided checking my bank account and just put the repair cost on a credit card that I'll pay late.",
         "high",
         "never",
     ),
     (
         0.55,
-        "I worry about debt but try to pay creditors on time whenever possible.",
+        "I had a sudden medical expense; I worried about the debt but managed to pay it off slowly over the month.",
         "medium",
         "monthly",
     ),
     (
         0.75,
-        "When money is tight, I delay non-essential spending and focus on rent and groceries.",
+        "My laptop needed urgent repairs last month, so I cut back on eating out and used my savings to pay for it immediately.",
         "low",
         "monthly",
     ),
     (
         0.9,
-        "I prioritize paying my utility bills first before business inventory purchases.",
+        "I had an unexpected medical bill, but I prioritized paying it immediately from my emergency fund and adjusted my budget.",
         "low",
         "weekly",
     ),

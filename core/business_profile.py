@@ -56,7 +56,10 @@ BUSINESS_COHORTS = ("Vendor", "Farmer", "GigWorker")
 # explanations unless the borrower actually onboarded with a business profile.
 BUSINESS_MODEL_FEATURES: tuple[str, ...] = (
     "business_vintage_years",
+    "is_new_business",
     "turnover_income_consistency",
+    "has_udyam_registration",
+    "years_informal",
 )
 
 
@@ -326,7 +329,9 @@ async def extract_business_profile(text: str, language: str) -> tuple[dict[str, 
         "use null for anything not mentioned. Never guess or embellish. "
         "monthly_turnover is in Indian Rupees per month (convert lakh=100000, "
         "hazaar=1000; if they state a daily or yearly figure, convert to monthly). "
-        "seasonality reflects how seasonal their income is.\n"
+        "seasonality reflects how seasonal their income is. "
+        "If they state they are just starting out, planning a business, or haven't started yet, "
+        "set years_in_business to 0.\n"
         "Return ONLY JSON:\n"
         '{"sector": <string or null, one of retail/agriculture/services/food/manufacturing/other>, '
         '"years_in_business": <number or null>, '
@@ -398,22 +403,57 @@ async def fetch_all_latest_intakes(session: AsyncSession) -> dict[str, dict[str,
     return latest
 
 
-def turnover_income_consistency(declared_monthly: float, observed_monthly: float) -> float:
+def turnover_income_consistency(
+    declared_monthly: float,
+    observed_monthly: float,
+    cohort: str | None = None,
+    business_vintage_years: float | None = None,
+) -> float:
     """Agreement between declared turnover and observed cash-flow income, in [0, 1].
 
-    1.0 = the self-report matches what the data shows; near 0 = wildly apart.
-    The *consistency* earns points, never the claimed amount itself.
+    Tolerates cash-heavy operations by adjusting the expected digital footprint
+    based on the borrower's cohort (e.g. MSMEs, Vendors, Farmers).
+    1.0 = the self-report matches what the data shows (or is consistent with cash thresholds); near 0 = wildly apart.
     """
+    if business_vintage_years is not None and business_vintage_years < 0.5:
+        # Tier 1: Projection phase (<6 months), don't penalize consistency
+        return 1.0
+
     if declared_monthly <= 0 or observed_monthly <= 0:
         return 0.0
-    ratio = min(declared_monthly, observed_monthly) / max(declared_monthly, observed_monthly)
+
+    if declared_monthly > observed_monthly:
+        # Determine the expected ratio of declared turnover to be seen in the bank statement
+        if cohort == "Farmer":
+            expected_digital_ratio = 0.20
+        elif cohort in ("Vendor", "Homemaker"):
+            expected_digital_ratio = 0.40
+        elif cohort in ("GigWorker", "Student"):
+            expected_digital_ratio = 0.80
+        else:  # "Salaried" or default
+            expected_digital_ratio = 0.90
+
+        # Tier 2: Ramp-up phase (0.5 to 1.5 years), apply a 50% grace factor
+        if business_vintage_years is not None and business_vintage_years < 1.5:
+            expected_digital_ratio *= 0.5
+
+        expected_observed = declared_monthly * expected_digital_ratio
+        if observed_monthly >= expected_observed:
+            return 1.0
+        else:
+            ratio = observed_monthly / expected_observed
+    else:
+        # observed >= declared
+        ratio = declared_monthly / observed_monthly
+
     return round(max(0.0, min(1.0, ratio)), 4)
 
 
 async def upsert_intake_features(session: AsyncSession, user_id: str) -> None:
-    """Derive the two intake model features and upsert them into ml_features.
+    """Derive the intake model features and upsert them into ml_features.
 
     - ``business_vintage_years``: 0 means "no business / not stated".
+    - ``is_new_business``: 1.0 if vintage < 1.0 else 0.0.
     - ``turnover_income_consistency``: declared turnover vs observed
       ``monthly_income_mean``; 0 means "nothing to cross-check".
     Individuals without a business profile simply get no rows. The model's
@@ -428,11 +468,15 @@ async def upsert_intake_features(session: AsyncSession, user_id: str) -> None:
         return
 
     vintage = profile.get("years_in_business")
+    vintage_val = None
     if vintage is not None:
         try:
-            await upsert_feature(
-                session, user_id, "business_vintage_years", max(0.0, min(80.0, float(vintage)))
-            )
+            vintage_val = max(0.0, min(80.0, float(vintage)))
+            await upsert_feature(session, user_id, "business_vintage_years", vintage_val)
+            
+            # Upsert is_new_business
+            is_new = 1.0 if vintage_val < 1.0 else 0.0
+            await upsert_feature(session, user_id, "is_new_business", is_new)
         except (TypeError, ValueError):
             pass
 
@@ -452,5 +496,24 @@ async def upsert_intake_features(session: AsyncSession, user_id: str) -> None:
                     session,
                     user_id,
                     "turnover_income_consistency",
-                    turnover_income_consistency(declared_val, observed),
+                    turnover_income_consistency(
+                        declared_val,
+                        observed,
+                        cohort=intake.cohort,
+                        business_vintage_years=vintage_val,
+                    ),
                 )
+
+    udyam_num = profile.get("udyam_number")
+    has_udyam = 1.0 if udyam_num else 0.0
+    await upsert_feature(session, user_id, "has_udyam_registration", has_udyam)
+
+    yrs_informal = profile.get("years_informal")
+    if yrs_informal is not None:
+        try:
+            await upsert_feature(
+                session, user_id, "years_informal", max(0.0, min(80.0, float(yrs_informal)))
+            )
+        except (TypeError, ValueError):
+            pass
+

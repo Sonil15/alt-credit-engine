@@ -30,7 +30,10 @@ FEATURE_COLUMNS = [
     # Borrower onboarding, self-declared business profile (Vendor/Farmer).
     # Absent for individuals; fill_missing_features maps absent -> 0.0.
     "business_vintage_years",
+    "is_new_business",
     "turnover_income_consistency",
+    "has_udyam_registration",
+    "years_informal",
     # Cohort-specific facet features
     "upi_spend_consistency",
     "small_dues_payment_promptness",

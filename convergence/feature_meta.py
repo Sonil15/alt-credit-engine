@@ -60,7 +60,10 @@ FEATURE_META: dict[str, dict[str, str]] = {
     "trend_slope": {"label": "Normalized trend slope", "source": SOURCE_ECONOMETRIC, "fmt": "number", "direction": "high", "engine": ENGINE_ECONOMETRIC},
     # Borrower onboarding, self-declared, borrower-confirmed business profile.
     "business_vintage_years": {"label": "Years in business", "source": "Borrower onboarding, business profile", "fmt": "count", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "is_new_business": {"label": "New business status", "source": "Borrower onboarding, business profile", "fmt": "bool", "direction": "low", "engine": ENGINE_EXTRACTION},
     "turnover_income_consistency": {"label": "Consistency of reported income", "source": "Borrower onboarding, business profile", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "has_udyam_registration": {"label": "Udyam registration status", "source": "Borrower onboarding, business profile", "fmt": "bool", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "years_informal": {"label": "Years of informal operation", "source": "Borrower onboarding, business profile", "fmt": "count", "direction": "high", "engine": ENGINE_EXTRACTION},
 }
 
 # Order data sources appear in the grouped lineage view.

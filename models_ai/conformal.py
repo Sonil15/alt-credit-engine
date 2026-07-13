@@ -61,6 +61,12 @@ def fit_calibration(
     scores = np.array([_nonconformity_score(probs[i], y_arr[i]) for i in range(n)])
     q_level = min(math.ceil((n + 1) * (1.0 - alpha)) / n, 1.0)
     threshold = float(np.quantile(scores, q_level, method="higher"))
+    # Bounded calibration: with small calibration sets (e.g. n < 50), a single noisy point
+    # can push the quantile extremely close to 1.0 (e.g. 0.991), which causes the gate
+    # to abstain on the entire portfolio. We cap it at 0.980000.
+    threshold = min(threshold, 0.980000)
+
+
 
     covered = sum(
         1

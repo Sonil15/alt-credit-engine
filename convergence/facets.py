@@ -62,6 +62,7 @@ COHORT_EXPECTED_FACETS: dict[BorrowerCohort, list[str]] = {
         "location_stability",
         "cashflow_resilience",
         "psychometric_character",
+        "business_credentials",
     ],
     BorrowerCohort.STUDENT: [
         "location_stability",
@@ -72,11 +73,13 @@ COHORT_EXPECTED_FACETS: dict[BorrowerCohort, list[str]] = {
         "location_stability",
         "psychometric_character",
         "vendor_transaction_velocity",
+        "business_credentials",
     ],
     BorrowerCohort.FARMER: [
         "location_stability",
         "psychometric_character",
         "agricultural_seasonality",
+        "business_credentials",
     ],
     BorrowerCohort.HOMEMAKER: [
         "telecom_reliability",
@@ -182,6 +185,18 @@ FACETS: tuple[Facet, ...] = (
             ("grocery_spend_stability", "high", 0.4),
         ),
     ),
+    Facet(
+        key="business_credentials",
+        label="Business Credentials",
+        source="Borrower onboarding, business profile",
+        features=(
+            ("business_vintage_years", "high", 0.3),
+            ("turnover_income_consistency", "high", 0.4),
+            ("has_udyam_registration", "high", 0.1),
+            ("years_informal", "high", 0.1),
+            ("is_new_business", "low", 0.1),
+        ),
+    ),
 )
 
 ALL_FACET_FEATURES = [feat for facet in FACETS for feat, _, _ in facet.features]
@@ -237,6 +252,7 @@ def compute_facet_scores(
     row: pd.Series,
     norm_stats: dict[str, tuple[float, float]],
     cohort: BorrowerCohort | str | None = None,
+    expect_business_profile: bool = False,
 ) -> list[dict]:
     """Return a list of facet dicts (score 0-100, grade, data presence)."""
     if cohort is None:
@@ -258,7 +274,10 @@ def compute_facet_scores(
         except ValueError:
             cohort = BorrowerCohort.SALARIED
 
-    expected_keys = COHORT_EXPECTED_FACETS.get(cohort, COHORT_EXPECTED_FACETS[BorrowerCohort.SALARIED])
+    expected_keys = list(COHORT_EXPECTED_FACETS.get(cohort, COHORT_EXPECTED_FACETS[BorrowerCohort.SALARIED]))
+    if expect_business_profile and "business_credentials" not in expected_keys:
+        expected_keys.append("business_credentials")
+
     filtered_facets = [
         p for p in FACETS
         if p.key in expected_keys or _facet_has_data(row, p.features)
@@ -323,6 +342,7 @@ def compute_facet_scores(
 def compute_confidence(
     facet_scores: list[dict],
     cohort: BorrowerCohort | str | None = None,
+    expect_business_profile: bool = False,
 ) -> dict:
     """Data-sufficiency / confidence from how many features are backed by real data."""
     total_facets = len(facet_scores) or 1
@@ -345,7 +365,10 @@ def compute_confidence(
                 cohort = BorrowerCohort(cohort)
             except ValueError:
                 cohort = BorrowerCohort.SALARIED
-        expected_keys = COHORT_EXPECTED_FACETS.get(cohort, COHORT_EXPECTED_FACETS[BorrowerCohort.SALARIED])
+        expected_keys = list(COHORT_EXPECTED_FACETS.get(cohort, COHORT_EXPECTED_FACETS[BorrowerCohort.SALARIED]))
+        if expect_business_profile and "business_credentials" not in expected_keys:
+            expected_keys.append("business_credentials")
+
         expected_facets = [p for p in FACETS if p.key in expected_keys]
         denominator = sum(len(p.features) for p in expected_facets)
     else:

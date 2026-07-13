@@ -48,10 +48,27 @@ async def borrower_login(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "login.html", {"request": request})
 
 
+@router.get("/register", response_class=HTMLResponse)
+async def borrower_register(request: Request) -> HTMLResponse:
+    """Borrower registration page with Aadhaar eKYC verification."""
+    return templates.TemplateResponse(request, "register.html", {"request": request})
+
+
+
 @router.get("/borrower", response_class=HTMLResponse)
 async def borrower_result(request: Request) -> HTMLResponse:
     """Borrower-only score result page (session-authenticated)."""
     return templates.TemplateResponse(request, "borrower.html", {"request": request})
+
+
+@router.get("/explanation", response_class=HTMLResponse)
+async def score_explanation(request: Request, user_id: str | None = None) -> HTMLResponse:
+    """End-to-End Decision Audit Trail page."""
+    return templates.TemplateResponse(
+        request,
+        "explanation.html",
+        {"request": request, "user_id": user_id or ""},
+    )
 
 
 @router.get("/dashboard", response_class=HTMLResponse)

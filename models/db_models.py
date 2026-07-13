@@ -125,6 +125,7 @@ class BorrowerAccount(Base):
     login_id: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
     password_salt: Mapped[str] = mapped_column(String(64), nullable=False)
+    cibil_score: Mapped[int | None] = mapped_column(Integer, nullable=True, default=-1)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

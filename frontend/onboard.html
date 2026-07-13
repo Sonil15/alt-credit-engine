@@ -29,6 +29,7 @@
     <div class="content">
       <div style="display: flex; justify-content: flex-end; margin-bottom: 15px; gap: 10px; font-size: 13px;">
         <span id="account-chip" style="display:none; align-items:center; gap:10px;">
+          <span id="aadhaar-badge" style="display:none; background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 999px; font-weight: 600; font-size: 11px;" data-i18n="onboard-aadhaar-verified">Aadhaar Verified</span>
           <span style="color:#cbd5e1;">👤 <strong id="account-name"></strong></span>
         </span>
       </div>
@@ -77,6 +78,20 @@
         <h3 data-i18n="onboard-business-title">About your business</h3>
         <p class="business-hint" data-i18n="onboard-business-desc">Describe your business: what you do, for how long, and roughly what you earn each month.</p>
         <textarea id="business-text" rows="4"></textarea>
+
+        <!-- Udyam Verification Block -->
+        <div class="udyam-verification-card" style="margin-top: 15px; margin-bottom: 15px; padding: 15px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc;">
+          <label for="udyam-input" style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px;" data-i18n="onboard-udyam-label">Udyam Registration Number (Optional)</label>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input id="udyam-input" type="text" placeholder="UDYAM-XX-00-0000000" style="flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+            <button type="button" id="udyam-verify-btn" onclick="verifyUdyam()" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 500; font-size: 13px; cursor: pointer;" data-i18n="onboard-udyam-verify-btn">Verify</button>
+          </div>
+          <div id="udyam-badge" style="display: none; margin-top: 8px; color: #15803d; font-weight: 600; font-size: 13px; align-items: center; gap: 5px;">
+            <span data-i18n="onboard-udyam-verified">Udyam Verified ✅</span>
+            <span id="udyam-vintage-badge" style="font-size: 11px; color: #166534; background: #dcfce7; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 999px;">3 yrs</span>
+          </div>
+        </div>
+
         <div class="business-actions">
           <button type="button" class="analyze-btn" id="analyze-btn" onclick="analyzeBusiness()">
             <span data-i18n="onboard-analyze-btn">Analyze my business</span>
@@ -156,6 +171,34 @@
     };
     let businessCohorts = ['Vendor', 'Farmer', 'GigWorker'];
     let extraction = { method: 'none', confidence: null };
+    let verifiedUdyamNumber = null;
+    let udyamVintageYears = null;
+
+    async function verifyUdyam() {
+      clearError();
+      const input = document.getElementById('udyam-input');
+      const val = input.value.trim().toUpperCase();
+      // Udyam Registration Number format: UDYAM-XX-00-0000000 (19 chars)
+      const udyamRegex = /^UDYAM-[A-Z]{2}-\d{2}-\d{7}$/;
+      if (!udyamRegex.test(val)) {
+        showError(t('onboard-udyam-invalid', 'Please enter a valid Udyam Registration Number (e.g. UDYAM-DL-01-1234567).'));
+        return;
+      }
+      const btn = document.getElementById('udyam-verify-btn');
+      btn.disabled = true;
+      btn.textContent = t('onboard-udyam-verifying', 'Verifying...');
+      
+      // Simulate verification API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      verifiedUdyamNumber = val;
+      udyamVintageYears = 3.0; // Mock vintage from registry
+      
+      btn.style.display = 'none';
+      input.disabled = true;
+      document.getElementById('udyam-badge').style.display = 'flex';
+      document.getElementById('udyam-vintage-badge').textContent = udyamVintageYears + ' ' + t('onboard-udyam-years-suffix', 'yrs vintage');
+    }
 
     function t(key, fallback) {
       try {
@@ -295,6 +338,11 @@
           monthly_turnover: numOrNull('field-turnover'),
           seasonality: document.getElementById('field-seasonality').value || null,
           employees: numOrNull('field-employees'),
+          udyam_number: verifiedUdyamNumber,
+          udyam_vintage_years: udyamVintageYears,
+          years_informal: (verifiedUdyamNumber && numOrNull('field-years') !== null)
+            ? Math.max(0, numOrNull('field-years') - (udyamVintageYears || 0))
+            : null
         };
         if (Object.values(profile).some(v => v !== null)) body.business_profile = profile;
       }
@@ -340,6 +388,7 @@
     if (account) {
       document.getElementById('account-name').textContent = account.login_id;
       document.getElementById('account-chip').style.display = 'inline-flex';
+      document.getElementById('aadhaar-badge').style.display = 'inline-block';
     }
 
     function applyLocalTexts() {

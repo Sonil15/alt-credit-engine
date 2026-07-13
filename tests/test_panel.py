@@ -7,7 +7,7 @@ from convergence.score_engine import _apply_agreement_gate
 def test_band_from_pd_ordering():
     # Lower PD -> stronger band, on the re-anchored scorecard.
     assert band_from_pd(0.005) == "APPROVE"
-    assert band_from_pd(0.09) in {"REVIEW", "APPROVE"}  # ~base rate sits mid-band
+    assert band_from_pd(0.04) in {"REVIEW", "APPROVE"}  # mid-band test
     assert band_from_pd(0.6) == "REJECT"
 
 

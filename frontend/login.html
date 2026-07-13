@@ -35,10 +35,7 @@
 
         <!-- Form panel -->
         <main class="login-form">
-          <div class="auth-tabs" role="tablist">
-            <button id="tab-login" class="auth-tab active" onclick="switchMode('login')" data-i18n="login-tab-signin">Sign In</button>
-            <button id="tab-register" class="auth-tab" onclick="switchMode('register')" data-i18n="login-tab-create">Create Account</button>
-          </div>
+          <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;" data-i18n="login-heading">Sign In</h2>
 
           <p id="intro" class="auth-intro" data-i18n="login-intro-signin">
             Sign in with your login ID and password to view and protect your credit assessments.</p>
@@ -57,6 +54,11 @@
           </div>
 
           <button id="submit-btn" class="btn btn-primary auth-submit" onclick="submitForm()" data-i18n="login-submit-signin">Sign In</button>
+
+          <div style="text-align: center; margin-top: 15px; margin-bottom: 15px; font-size: 14px;">
+            <span data-i18n="login-no-account" style="color: var(--text-muted);">New to Alt-Credit?</span>
+            <a id="register-link" href="/register" style="color: var(--primary); text-decoration: none; font-weight: 600;" data-i18n="login-link-register">Create a verified account →</a>
+          </div>
 
           <div class="auth-note">
             <span class="lock">🔒</span>
@@ -85,25 +87,6 @@
       } catch (_) { return fallback; }
     }
 
-    function switchMode(m) {
-      mode = m;
-      document.getElementById('tab-login').classList.toggle('active', m === 'login');
-      document.getElementById('tab-register').classList.toggle('active', m === 'register');
-
-      // Keep data-i18n in sync with the mode so language switching stays correct.
-      const intro = document.getElementById('intro');
-      const submit = document.getElementById('submit-btn');
-      const introKey = 'login-intro-' + (m === 'register' ? 'create' : 'signin');
-      const submitKey = 'login-submit-' + (m === 'register' ? 'create' : 'signin');
-      intro.setAttribute('data-i18n', introKey);
-      submit.setAttribute('data-i18n', submitKey);
-      intro.textContent = t(introKey, intro.textContent);
-      submit.textContent = t(submitKey, submit.textContent);
-
-      document.getElementById('password').setAttribute('autocomplete', m === 'register' ? 'new-password' : 'current-password');
-      hideError();
-    }
-
     function showError(msg) {
       const box = document.getElementById('error-box');
       box.textContent = msg;
@@ -125,11 +108,7 @@
       const original = btn.textContent;
       btn.textContent = '…';
       try {
-        if (mode === 'register') {
-          await Auth.register(loginId, password);
-        } else {
-          await Auth.login(loginId, password);
-        }
+        await Auth.login(loginId, password);
         window.location.assign(nextUrl);
       } catch (err) {
         showError(err.message || 'Something went wrong.');
@@ -142,7 +121,9 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       if (typeof setupLanguageSelector === 'function') setupLanguageSelector('language-selector-root');
-      switchMode(params.get('mode') === 'register' ? 'register' : 'login');
+      if (params.get('mode') === 'register') {
+        window.location.replace('/register' + window.location.search);
+      }
     });
   </script>
 </body>

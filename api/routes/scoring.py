@@ -222,3 +222,210 @@ async def log_decision_override(
         await db.rollback()
         logger.exception("Failed to log override")
         raise HTTPException(status_code=500, detail="Failed to log override") from exc
+
+
+from fastapi import Query
+
+DEMO_INTAKE_PROFILES = {
+    "Salaried": {
+        "business_description": "I am a software engineer looking for a loan to buy a new laptop for my work and online certifications.",
+        "cohort": "Salaried",
+        "loan_purpose": "device_equipment",
+        "loan_purpose_other_text": None,
+        "requested_amount": 45000.0,
+        "business_profile": None,
+        "extraction_method": "none",
+        "extraction_confidence": None,
+    },
+    "GigWorker": {
+        "business_description": "I am a delivery rider working for a major food delivery app. I have been in this profession for 2 years. I want to buy an electric two-wheeler to cut down on fuel costs and make more deliveries.",
+        "cohort": "GigWorker",
+        "loan_purpose": "device_equipment",
+        "loan_purpose_other_text": None,
+        "requested_amount": 80000.0,
+        "business_profile": {
+            "sector": "Delivery / Logistics",
+            "years_in_business": 2.0,
+            "monthly_turnover": 25000.0,
+            "employees": 0,
+            "seasonality": "medium",
+            "udyam_number": "UDYAM-MH-01-0012345",
+            "udyam_vintage_years": 1.5,
+            "years_informal": 0.5
+        },
+        "extraction_method": "llm",
+        "extraction_confidence": 0.88,
+    },
+    "Student": {
+        "business_description": "I am a college student studying computer applications. I want to take a professional data science course to boost my job prospects.",
+        "cohort": "Student",
+        "loan_purpose": "skill_course",
+        "loan_purpose_other_text": None,
+        "requested_amount": 15000.0,
+        "business_profile": None,
+        "extraction_method": "none",
+        "extraction_confidence": None,
+    },
+    "Vendor": {
+        "business_description": "I run a small fast food joint near the railway station. I have been in this business for 5 years and have a steady flow of customers. I want to buy a refrigerator and expand the shop capacity.",
+        "cohort": "Vendor",
+        "loan_purpose": "shop_expansion",
+        "loan_purpose_other_text": None,
+        "requested_amount": 60000.0,
+        "business_profile": {
+            "sector": "Food Service / Tea Stall",
+            "years_in_business": 5.0,
+            "monthly_turnover": 45000.0,
+            "employees": 1,
+            "seasonality": "low",
+            "udyam_number": "UDYAM-DL-02-0056789",
+            "udyam_vintage_years": 4.0,
+            "years_informal": 1.0
+        },
+        "extraction_method": "llm",
+        "extraction_confidence": 0.95,
+    },
+    "Farmer": {
+        "business_description": "I am a rice farmer cultivating paddy on my 2-acre field. I want to buy high-yield seeds and fertilizers for the upcoming crop cycle.",
+        "cohort": "Farmer",
+        "loan_purpose": "input_purchase",
+        "loan_purpose_other_text": None,
+        "requested_amount": 35000.0,
+        "business_profile": {
+            "sector": "Agriculture / Rice Farming",
+            "years_in_business": 10.0,
+            "monthly_turnover": 30000.0,
+            "employees": 0,
+            "seasonality": "high",
+            "udyam_number": None,
+            "udyam_vintage_years": None,
+            "years_informal": 10.0
+        },
+        "extraction_method": "llm",
+        "extraction_confidence": 0.90,
+    },
+    "Homemaker": {
+        "business_description": "I manage our household. I need a personal loan to pay for home repairs and some medical treatments for my family.",
+        "cohort": "Homemaker",
+        "loan_purpose": "medical",
+        "loan_purpose_other_text": None,
+        "requested_amount": 25000.0,
+        "business_profile": None,
+        "extraction_method": "none",
+        "extraction_confidence": None,
+    }
+}
+
+
+@router.get("/demo/audit_trail")
+async def get_demo_audit_trail(
+    cohort: str = Query(..., description="The cohort to demo: Salaried, GigWorker, Student, Vendor, Farmer, Homemaker"),
+    db: AsyncSession = Depends(get_db)
+):
+    from models.db_models import MLFeature, SecureVault, ApplicationIntake
+    from core.security import get_encryptor
+    from sqlalchemy import select
+    import json
+    
+    if cohort not in DEMO_INTAKE_PROFILES:
+        raise HTTPException(status_code=400, detail=f"Invalid cohort: {cohort}")
+        
+    cohort_codes = {
+        "Salaried": 0.0,
+        "GigWorker": 1.0,
+        "Student": 2.0,
+        "Vendor": 3.0,
+        "Farmer": 4.0,
+        "Homemaker": 5.0,
+    }
+    cohort_code_val = cohort_codes[cohort]
+    
+    # 1. Find a seeded user of this cohort
+    stmt = select(MLFeature.user_id).where(
+        MLFeature.feature_name == "cohort_code",
+        MLFeature.feature_value == cohort_code_val
+    ).limit(1)
+    result = await db.execute(stmt)
+    user_uuid = result.scalar_one_or_none()
+    
+    if not user_uuid:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"No seeded users found for cohort '{cohort}'. Please seed the database first."
+        )
+        
+    # 2. Check and insert mock ApplicationIntake if not exists
+    mock_data = DEMO_INTAKE_PROFILES[cohort]
+    intake_stmt = select(ApplicationIntake).where(ApplicationIntake.user_id == user_uuid)
+    intake_result = await db.execute(intake_stmt)
+    intake_row = intake_result.scalar_one_or_none()
+    
+    if not intake_row:
+        profile_json = None
+        if mock_data["business_profile"]:
+            profile_json = json.dumps(mock_data["business_profile"])
+            
+        intake_row = ApplicationIntake(
+            user_id=user_uuid,
+            cohort=mock_data["cohort"],
+            loan_purpose=mock_data["loan_purpose"],
+            loan_purpose_other_text=mock_data["loan_purpose_other_text"],
+            requested_amount=mock_data["requested_amount"],
+            business_profile_json=profile_json,
+            extraction_method=mock_data["extraction_method"],
+            extraction_confidence=mock_data["extraction_confidence"]
+        )
+        db.add(intake_row)
+        await db.commit()
+        await db.refresh(intake_row)
+        
+    # 3. Check and insert mock SecureVault intake description if not exists
+    vault_intake_stmt = select(SecureVault).where(
+        SecureVault.user_id == user_uuid,
+        SecureVault.data_type == "intake"
+    )
+    vault_intake_res = await db.execute(vault_intake_stmt)
+    vault_intake_row = vault_intake_res.scalar_one_or_none()
+    
+    if not vault_intake_row:
+        encryptor = get_encryptor()
+        vault_intake_row = SecureVault(
+            user_id=user_uuid,
+            data_type="intake",
+            encrypted_payload=encryptor.encrypt(
+                json.dumps({
+                    "business_description": mock_data["business_description"],
+                    "cohort": mock_data["cohort"]
+                })
+            )
+        )
+        db.add(vault_intake_row)
+        await db.commit()
+
+    # 4. Fetch and decrypt all SecureVault records for this user
+    encryptor = get_encryptor()
+    vault_stmt = select(SecureVault).where(SecureVault.user_id == user_uuid)
+    vault_result = await db.execute(vault_stmt)
+    vault_records = vault_result.scalars().all()
+    
+    raw_data = {}
+    for record in vault_records:
+        try:
+            decrypted = encryptor.decrypt(record.encrypted_payload)
+            raw_data[record.data_type] = json.loads(decrypted)
+        except Exception as exc:
+            logger.error(f"Failed to decrypt vault record {record.id}: {exc}")
+
+    # 5. Run the scoring engine on the user to get the final E2E result
+    try:
+        score_payload = await score_user(db, str(user_uuid), persist=False)
+    except Exception as exc:
+        logger.exception(f"Scoring failed for demo user {user_uuid}")
+        raise HTTPException(status_code=500, detail=f"Scoring engine error: {exc}")
+
+    return {
+        "user_id": str(user_uuid),
+        "cohort": cohort,
+        "raw_data": raw_data,
+        "score_result": score_payload
+    }
