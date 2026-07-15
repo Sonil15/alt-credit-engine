@@ -75,12 +75,12 @@ To win over credit-risk officers, regulators, and data protection authorities, t
 ## Section 2: Data Ingestion, Security, & Consent (DPDP Compliance)
 
 ### 1. Cryptographic Security & Vault Ingestion
-* **Files:** [`core/security.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/core/security.py), [`models/db_models.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/models/db_models.py) (SecureVault), [`api/routes/ingestion.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/api/routes/ingestion.py)
+* **Files:** [`core/security.py`](file:///Users/sonil/Desktop/alt-credit-engine/core/security.py), [`models/db_models.py`](file:///Users/sonil/Desktop/alt-credit-engine/models/db_models.py) (SecureVault), [`api/routes/ingestion.py`](file:///Users/sonil/Desktop/alt-credit-engine/api/routes/ingestion.py)
 * **What it does:**
   Raw financial payloads (utility invoices, geolocations, statements) are encrypted at the API boundary using **AES-256-GCM** before database write. The decryption keys are separated in memory. Decrypted data is never exposed directly; background tasks extract anonymous numbers into derived features, leaving the original payloads isolated.
 
 ### 2. Cascading Consent Revocation (DPDP Act 2023)
-* **File:** [`api/routes/consent.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/api/routes/consent.py), [`convergence/score_engine.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/convergence/score_engine.py)
+* **File:** [`api/routes/consent.py`](file:///Users/sonil/Desktop/alt-credit-engine/api/routes/consent.py), [`convergence/score_engine.py`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/score_engine.py)
 * **What it does:**
   Borrowers act as Data Principals, and the platform operates as a Data Fiduciary. If a borrower revokes a specific data scope (e.g., `telecom`), the system performs a **cascading purge** of the raw encrypted vault files and all derived model features. Unchecked scopes are blocked from model calculations. A survey-only applicant will have other features masked out, and the model's reason codes will flag `Consent withdrawn for data source(s)` instead of defaulting to zeros.
 * **Audit Trail Retention:** Under RBI regulations, score records (`ScoreDecision`) are retained for 5 years in an anonymized state, while the raw personal payloads in `SecureVault` are immediately deleted upon an erasure request (DPDP Act §17).
@@ -90,19 +90,19 @@ To win over credit-risk officers, regulators, and data protection authorities, t
 ## Section 3: Data Preprocessing & Feature Extraction
 
 ### 1. Telecom Cleaning
-* **File:** [`preprocessing/clean_telecom.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/preprocessing/clean_telecom.py)
+* **File:** [`preprocessing/clean_telecom.py`](file:///Users/sonil/Desktop/alt-credit-engine/preprocessing/clean_telecom.py)
 * **What it does:**
   Extracts bill payment consistency. Delayed payments are calculated relative to due dates:
   $$\text{delta} = \text{payment\_date} - \text{due\_date}$$
   Payments with $\text{delta} \le 3$ days are marked as on-time. Delays beyond this grace period accumulate to output `avg_days_late` and `missed_payments_count`.
 
 ### 2. E-Commerce Volatility
-* **File:** [`preprocessing/clean_ecommerce.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/preprocessing/clean_ecommerce.py)
+* **File:** [`preprocessing/clean_ecommerce.py`](file:///Users/sonil/Desktop/alt-credit-engine/preprocessing/clean_ecommerce.py)
 * **What it does:**
   Splits order costs into Necessity (groceries, utilities, health, education) and Discretionary spend. It calculates `necessity_ratio` and checks monthly spend variation (`monthly_spend_volatility`) to measure household stability.
 
 ### 3. Geolocation & Spatial Variance (DBSCAN & Haversine)
-* **File:** [`preprocessing/clean_geo.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/preprocessing/clean_geo.py)
+* **File:** [`preprocessing/clean_geo.py`](file:///Users/sonil/Desktop/alt-credit-engine/preprocessing/clean_geo.py)
 * **What it does:**
   1. **DBSCAN Clustering:** Groups coordinates into dense clusters (using $\epsilon = 0.01$, corresponding to a radius of $\approx 1.1\text{ km}$) to identify "anchors" (home, work, shop).
   2. **Haversine Distance:** Calculates the distance between check-ins and anchor centroids:
@@ -113,7 +113,7 @@ To win over credit-risk officers, regulators, and data protection authorities, t
      $$H = -\sum_{i=1}^K p_i \log_2(p_i)$$
 
 ### 4. Borrower Onboarding & Business Profile Extraction
-* **File:** [`core/business_profile.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/core/business_profile.py)
+* **File:** [`core/business_profile.py`](file:///Users/sonil/Desktop/alt-credit-engine/core/business_profile.py)
 * **What it does:**
   Extracts structured metrics from a borrower's self-reported business description (for merchants, farmers, and gig workers) using LLM parsing, falling back to a deterministic regex parser when Groq is offline.
 * **Math & Consistency Equation:**
@@ -126,7 +126,7 @@ To win over credit-risk officers, regulators, and data protection authorities, t
 
 ## Section 4: Engine A — Time-Series Econometric Analysis
 
-* **File:** [`models_econometric/ecm_model.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/models_econometric/ecm_model.py)
+* **File:** [`models_econometric/ecm_model.py`](file:///Users/sonil/Desktop/alt-credit-engine/models_econometric/ecm_model.py)
 * **What it does:**
   Processes bank net cash flows (or utility payment rates) to isolate growth trends from short-term volatility, resolving the "Increasing Salary Paradox".
 
@@ -168,7 +168,7 @@ $$\Delta y_t^{\text{detrended}} = \alpha_0 + \gamma \left(y_{t-1}^{\text{detrend
 ## Section 5: Behavioral Assessment & Psychometric Scoring
 
 ### 1. Item Bank & State Machine
-* **Files:** [`psychometric/bank.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/psychometric/bank.py), [`psychometric/session.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/psychometric/session.py)
+* **Files:** [`psychometric/bank.py`](file:///Users/sonil/Desktop/alt-credit-engine/psychometric/bank.py), [`psychometric/session.py`](file:///Users/sonil/Desktop/alt-credit-engine/psychometric/session.py)
 * **What it does:**
   Manages the intake survey session. To prevent gamification and rehearsal, the system enforces a rate limit: **a borrower is capped at 1 application per 30 days**.
 * **Audio Accessibility:** We integrate with Sarvam AI for natural Hindi/Bengali speech synthesis (`bulbul` voices). If the call fails, the portal falls back to the device's voice.
@@ -176,7 +176,7 @@ $$\Delta y_t^{\text{detrended}} = \alpha_0 + \gamma \left(y_{t-1}^{\text{detrend
 * **Natural TTS Dates:** The rate limit error (429) returns a formatted date (e.g., "5 August 2026" / "5 अगस्त 2026") so that TTS reads it naturally instead of spelling out ISO digits.
 
 ### 2. Multi-lingual Text Scoring
-* **File:** [`psychometric/scoring.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/psychometric/scoring.py)
+* **File:** [`psychometric/scoring.py`](file:///Users/sonil/Desktop/alt-credit-engine/psychometric/scoring.py)
 * **What it does:**
   Evaluates responsibility, not sentiment. Transcripts of spoken answers are sent to Groq (`llama-3.1-8b-instant`). The LLM reads Indic/English code-mixed transliterations (e.g., "रेंट", "इंटरेस्ट") natively.
 * **Offline Fallback Engine:** If Groq is offline, a local keyword engine scores the text. It uses Indic word lists and scans for negation particles (`not`, `never`, `nahi`, `na`, `mat`) within a sliding window of $\pm 2$ words.
@@ -188,7 +188,7 @@ $$\Delta y_t^{\text{detrended}} = \alpha_0 + \gamma \left(y_{t-1}^{\text{detrend
 ## Section 6: Engine B — AI Model Panel & Conformal Safety Net
 
 ### 1. Cohort-Aware Imputation Profile
-* **File:** [`models_ai/imputation.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/models_ai/imputation.py)
+* **File:** [`models_ai/imputation.py`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/imputation.py)
 * **What it does:**
   Thin-file borrowers are missing entire data sources by design. Zero-filling these missing values would act as a penalty. This module replaces missing values with the median of the borrower's **own cohort** (calculated at training time).
 * **Imputation Logic:**
@@ -197,14 +197,14 @@ $$\Delta y_t^{\text{detrended}} = \alpha_0 + \gamma \left(y_{t-1}^{\text{detrend
   3. If the feature is structurally not applicable (e.g., business vintage for a salaried individual), the median is undefined, and it remains a neutral `0.0`.
 
 ### 2. Explainable Boosting Machine (EBM)
-* **File:** [`models_ai/ebm_model.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/models_ai/ebm_model.py)
+* **File:** [`models_ai/ebm_model.py`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/ebm_model.py)
 * **What it does:**
   The champion model is a generalized additive model (GAM). It calculates default probability without complex feature interactions:
   $$\text{logit}(PD) = \ln\left(\frac{PD}{1 - PD}\right) = \beta_0^{\text{corrected}} + \sum_{i=1}^D f_i(x_i)$$
   Because it is additive, the exact risk weights ($f_i(x_i)$) can be plotted as curves and audited.
 
 ### 3. Post-Hoc Temperature Scaling (Calibration)
-* **File:** [`models_ai/tempering.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/models_ai/tempering.py)
+* **File:** [`models_ai/tempering.py`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/tempering.py)
 * **What it does:**
   EBM models can become overconfident (predicting default probabilities very close to $0.0$ or $1.0$). We divide the raw logits by a temperature parameter $T \ge 1$ to damp this overconfidence and calibrate the probabilities.
 * **Brier Score Minimization:**
@@ -213,7 +213,7 @@ $$\Delta y_t^{\text{detrended}} = \alpha_0 + \gamma \left(y_{t-1}^{\text{detrend
   The EBM shape curves are scaled: $f_i^{\text{tempered}}(x_i) = f_i(x_i) / T_{\text{ebm}}$.
 
 ### 4. Split Conformal Prediction (Abstention Gate)
-* **File:** [`models_ai/conformal.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/models_ai/conformal.py)
+* **File:** [`models_ai/conformal.py`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/conformal.py)
 * **What it does:**
   1. Let $D_{\text{cal}} = \{(x_i, y_i)\}_{i=1}^n$ be a held-out calibration set (25% of training data).
   2. Compute nonconformity scores for the calibration set:
@@ -228,7 +228,7 @@ $$\Delta y_t^{\text{detrended}} = \alpha_0 + \gamma \left(y_{t-1}^{\text{detrend
      The prediction set contains **both** labels ($C(x) = \{\text{no\_default}, \text{default}\}$). The system abstains (`abstain = True`) and overrides any automatic approval, routing the application to manual review.
 
 ### 5. Validation & Performance Tracking
-* **Files:** [`models_ai/validation.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/models_ai/validation.py), [`models_ai/ensemble.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/models_ai/ensemble.py)
+* **Files:** [`models_ai/validation.py`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/validation.py), [`models_ai/ensemble.py`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/ensemble.py)
 * **What it does:**
   Evaluates panel classifiers using Stratified K-Fold Cross-Validation.
 * **Validation Metrics:**
@@ -244,7 +244,7 @@ $$\Delta y_t^{\text{detrended}} = \alpha_0 + \gamma \left(y_{t-1}^{\text{detrend
 To satisfy regulatory explainability requirements, credit scores must reconcile exactly with their score driver tables. The Alt-Credit engine implements a mathematically exact points conversion that shifts log-odds EBM terms into additive scorecard points.
 
 ### 1. Actuarial Scorecard Scaling (Points-to-Double-the-Odds)
-* **File:** [`convergence/scorecard.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/convergence/scorecard.py)
+* **File:** [`convergence/scorecard.py`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/scorecard.py)
 * **What it does:**
   Converts the EBM model's default probabilities and log-odds contributions into a standard credit score.
 * **Mathematical Transformations:**
@@ -308,8 +308,16 @@ Rounding yields **614**. The points reconcile to the score exactly.
 
 ## Section 8: Convergence, Scorecard, & Decisioning
 
-### 1. Model Committee Agreement Gate
-* **File:** [`convergence/panel.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/convergence/panel.py)
+### 1. Bureau-Aware Pre-Screening Gate
+* **File:** [`convergence/score_engine.py`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/score_engine.py)
+* **What it does:**
+  Before executing feature store data fetches, econometric detrending, or running any alternative credit models, the engine inspects the borrower's traditional CIBIL score if available (cibil_score is not None and not -1).
+  * **Prime Fast-Track:** If the CIBIL score is $\ge 750$, the application is immediately approved (`APPROVE`) with a default probability of 0.01 and a fast-track interest rate of 11.0% over 36 months.
+  * **Subprime Auto-Reject:** If the CIBIL score is $< 600$, the application is immediately rejected (`REJECT`) with a default probability of 0.99, bypassing all models.
+  * **Alternative Routing Fallback:** If the CIBIL score is between 600 and 749, or is missing/thin-file (`-1` or None), the application is routed to the alternate credit scorecard pipeline.
+
+### 2. Model Committee Agreement Gate
+* **File:** [`convergence/panel.py`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/panel.py)
 * **What it does:**
   Implements the agreement rules for the model committee:
   * **APPROVE Cutoff:** Credit score $\ge 650$.
@@ -318,8 +326,8 @@ Rounding yields **614**. The points reconcile to the score exactly.
     1. **Hard Conflict:** If the champion (EBM) approves but any challenger (CatBoost or Logistic) rejects (or vice versa), the application is routed to `REVIEW`.
     2. **Contested APPROVE:** If the champion approves but the challengers are not unanimous in their approval, the application is routed to `REVIEW`.
 
-### 2. Actuarial Lending Terms
-* **File:** [`convergence/lending.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/convergence/lending.py)
+### 3. Actuarial Lending Terms
+* **File:** [`convergence/lending.py`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/lending.py)
 * **What it does:**
   Computes loan terms based on the borrower's risk profile:
   * **Risk-Based Interest Rate:**
@@ -335,16 +343,16 @@ Rounding yields **614**. The points reconcile to the score exactly.
     * **Maximum Loan Principal ($P$) for Tenure $N$:**
       $$P = \text{Income}_{\text{adjusted}} \cdot \text{FOIR} \cdot \frac{(1 + r)^N - 1}{r(1 + r)^N} \quad (\text{where } r = \text{rate}/1200)$$
 
-### 3. Post-Decision Affordability Gate
-* **File:** [`convergence/lending.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/convergence/lending.py)
+### 4. Post-Decision Affordability Gate
+* **File:** [`convergence/lending.py`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/lending.py)
 * **What it does:**
   A post-decision policy overlay. If the EBM champion approves the loan, but the requested loan amount exceeds the maximum serviceable principal ($P$):
   1. The auto-approval is blocked (`gated = True`).
   2. The final lending outcome is set to `REVIEW`.
   3. The audit trail stores both the model's call and the final outcome separately, ensuring policy overrides do not bias the core risk model.
 
-### 4. Deterministic Adverse-Action Letters
-* **File:** [`convergence/decision_letter.py`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/convergence/decision_letter.py)
+### 5. Deterministic Adverse-Action Letters
+* **File:** [`convergence/decision_letter.py`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/decision_letter.py)
 * **What it does:**
   Rejections and review cases queue for a loan officer, who reviews and signs the letter. Approvals are auto-issued.
 * **Deterministic Drafting:** The letter is drafted **deterministically** from the same reason codes the model produced (never by an LLM) to prevent hallucinations.
@@ -430,7 +438,7 @@ graph TD
     C -->|Template Render| H[Multilingual KFS Letter]
 ```
 
-### 1. Bank Officer Dashboard Elements ([`dashboard.html`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/frontend/dashboard.html))
+### 1. Bank Officer Dashboard Elements ([`dashboard.html`](file:///Users/sonil/Desktop/alt-credit-engine/frontend/dashboard.html))
 * **Portfolio Metrics:**
   * **Total Borrowers:** `COUNT(ScoreDecision)`.
   * **Approval Rate:** `Approvals / Total Scored` (under the model decision, ignoring post-decision affordability gates).
@@ -471,7 +479,7 @@ graph TD
 
 ---
 
-### 2. Borrower Portal Elements ([`borrower.html`](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/frontend/borrower.html))
+### 2. Borrower Portal Elements ([`borrower.html`](file:///Users/sonil/Desktop/alt-credit-engine/frontend/borrower.html))
 * **Credit Score Gauge:** Displays the borrower's 300–900 score and approval likelihood badge (`Strong` / `Moderate` / `High Risk`).
 * **Funding Gap Alert:** Displays an amber warning if the loan is approved but the requested amount exceeds the max serviceable principal:
   $$\text{Requested Amount} > \text{Max Loan Amount}$$
@@ -553,3 +561,32 @@ To illustrate the model's operation, let's walk through three different borrower
 * **Red Flags Gate:**
   * The system checks the red-flag rules. Because the borrower is salaried and has $\ge 5$ missed payments (`missed_payments_count = 6`), the red-flag rule triggers.
   * **Verdict:** Immediate **auto-rejection** before running the ML models. The default probability is set to $1.0$, the score is clamped to $300$, and the reason code is recorded: *"Auto-reject: excessive missed telecom payments"*.
+
+---
+
+### Case D: Prime Bureau Borrower (Fast-Track Approved)
+* **Intake details:** Micro-merchant, requests ₹150,000 for business expansion.
+* **Ingestion:** Registered account includes a traditional bureau history with a CIBIL score of 780.
+* **Bureau-Aware Routing Gate:**
+  * The engine checks if the CIBIL score is present and valid.
+  * Since `cibil_score = 780` ($\ge 750$), the prime fast-track logic triggers.
+  * **Verdict:** Immediate **auto-approval** (`APPROVE`) bypassing the entire alternative credit preprocessing and ML scoring pipelines.
+* **Lending Recommendation:**
+  * Interest rate: Mapped to a prime risk rate of 11.0% p.a.
+  * Tenure: Set to 36 months.
+  * Monthly EMI: Calculated as ₹5,116 based on the ₹150,000 principal at 11% interest.
+  * Rationale: *"Fast-track approved via prime bureau history (CIBIL score: 780). Risk-priced at 11.0% p.a. over 36 months."*
+
+---
+
+### Case E: Subprime Bureau Borrower (Immediate Rejection)
+* **Intake details:** Retail vendor, requests ₹100,000.
+* **Ingestion:** Registered account includes a traditional bureau history with a CIBIL score of 520.
+* **Bureau-Aware Routing Gate:**
+  * The engine checks if the CIBIL score is present and valid.
+  * Since `cibil_score = 520` ($< 600$), the subprime auto-reject logic triggers.
+  * **Verdict:** Immediate **rejection** (`REJECT`), bypassing all alternative credit model runs.
+* **Lending Recommendation:**
+  * Eligible: False.
+  * Max Loan Amount: 0.0.
+  * Rationale: *"Rejected due to adverse bureau history (CIBIL score: 520)."*

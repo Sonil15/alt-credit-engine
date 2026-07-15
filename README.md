@@ -190,14 +190,77 @@ Example: a ratio of `0.44` means the least-approved group is approved at only 44
 
 Implemented in [`convergence/fairness.py`](convergence/fairness.py); threshold `DISPARATE_IMPACT_THRESHOLD = 0.8`.
 
-## Model Panel & Conformal Abstention Gate (Review routing)
+## Bureau-Aware Routing & Operational Safety Gates
 
-To improve reliability, auditability, and protect against over-confident model decisions, the system implements an ensemble panel of diverse models alongside split conformal prediction:
+To ensure institutional compliance and reliability, the system evaluates applications through a sequential process: first checking traditional bureau history, and fallback to the alternative credit scorecard which is guarded by a multi-layered safety net of **4 Operational Gates**.
 
-1. **Explainable Boosting Machine (EBM) Champion:** The primary decision maker. EBM is an intrinsically interpretable glass-box model where each feature's contribution is modeled via a readable curve ($f(x) = \beta_0 + \sum f_i(x_i)$). It provides exact, additive point contributions for each feature, eliminating the need for post-hoc approximation tools (like SHAP).
-2. **Challenger Models:** A CatBoost model (accuracy benchmark) and a Logistic/WoE model (different function family) serve as independent validators to check if structurally different models agree with the champion.
-3. **The Agreement Gate:** Compares the champion's decision band against the challengers. Hard conflicts (e.g. one model approves and another rejects) or contested approvals (champion approves but panel is not unanimous) route the applicant to manual `REVIEW` instead of silent auto-approval.
-4. **Conformal Abstention:** Employs split conformal prediction to construct a statistical `{no_default, default}` prediction set. If both outcomes are plausible at the significance level ($\alpha = 0.10$), the model abstains and routes the case to `REVIEW`.
+```mermaid
+graph TD
+    Start[Borrower Application] --> Bureau[Bureau-Aware Routing Gate]
+    Bureau -->|CIBIL Score >= 750| Approve[Fast-track APPROVE]
+    Bureau -->|CIBIL Score < 600| Reject[Immediate REJECT]
+    Bureau -->|Thin-File / No History / 600 <= CIBIL < 750| AltCredit[Alternate Credit Scorecard]
+    
+    AltCredit -->|Alternative Score >= 650?| Gate1[Gate 1: Data Confidence Check]
+    AltCredit -->|Alternative Score < 650?| Review[Route to REVIEW / REJECT]
+    
+    Gate1 -->|Confidence >= 60%| Gate2[Gate 2: Challenger Panel Agreement]
+    Gate1 -->|Confidence < 60%| Review
+    
+    Gate2 -->|Unanimous & No Hard Conflict| Gate3[Gate 3: Conformal Prediction Set]
+    Gate2 -->|Disagreement / Conflict| Review
+    
+    Gate3 -->|Ambiguous Set: default, no_default| Review
+    Gate3 -->|Single Set: no_default| Gate4[Gate 4: Affordability Gate]
+    
+    Gate4 -->|Requested <= Max Serviceable| AutoApprove[Auto-Approve]
+    Gate4 -->|Requested > Max Serviceable| Review
+```
+
+### Bureau-Aware Routing (Pre-Screening Gate)
+* **Goal:** Intelligently screens applicants to fast-track traditional prime credit holders, auto-reject subprime files, and route thin-file/no-history borrowers to the alternative scoring engine.
+* **Condition:** Checks traditional bureau credit score if available (CIBIL score $\neq -1$ and not null).
+  * `cibil_score >= 750`: Fast-track auto-approval (`APPROVE`) at 11% p.a. interest over 36 months, bypassing alternative scoring.
+  * `cibil_score < 600`: Immediate rejection (`REJECT`), bypassing alternative scoring.
+  * Missing CIBIL score (`-1` or null) or thin/borderline file (`600 <= cibil_score < 750`): Fallback to full alternative credit scoring pipeline.
+* **Implementation:**
+  * [`convergence/score_engine.py::score_user`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/score_engine.py#L454) queries the `BorrowerAccount` record for CIBIL history and applies these routing logic before initializing feature extraction or model runs.
+
+### The 4 Operational Safety Gates
+
+#### 1. Data-Sufficiency / Thin-File Check (Gate 1)
+* **Goal:** Abstains from auto-approving borrowers who submit extremely sparse alternative data payloads.
+* **Condition:** `confidence_pct < 60.0` (defined as `LOW_CONFIDENCE_PCT` in [`convergence/score_engine.py`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/score_engine.py)).
+* **Implementation:**
+  * [`convergence/facets.py::compute_confidence`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/facets.py#L342) scans the active alternative data facets (telecom, e-commerce, cash flow, psychometrics) for non-null values.
+  * It divides `features_with_data` by `denominator` (the total expected features for that specific cohort).
+  * If this ratio falls below 60.0%, the decision returned by `_decision_from_score` is automatically forced from `APPROVE` to `REVIEW`.
+
+#### 2. Challenger Ensemble Agreement Check (Gate 2)
+* **Goal:** Abstain if the primary model's decision is contested by challenger models from different families.
+* **Condition:** Either a "hard conflict" exists, or an `APPROVE` call lacks panel unanimity.
+* **Implementation:**
+  * [`convergence/score_engine.py::compute_agreement`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/score_engine.py#L327) compares the output of the EBM champion with CatBoost and Logistic Regression challengers.
+  * A **Hard Conflict** occurs if one model predicts `APPROVE` while another predicts `REJECT`.
+  * Non-unanimous approval occurs if the EBM champion predicts `APPROVE`, but the CatBoost or Logistic Regression models suggest `REVIEW` or `REJECT`.
+  * Both conditions override an auto-decision and route the case to `REVIEW`.
+
+#### 3. Conformal Prediction Set Check (Gate 3)
+* **Goal:** Abstain if the model's calculated Probability of Default ($PD^*$) falls in a region of high statistical uncertainty.
+* **Condition:** $1 - q \le PD^* \le q$ (where $q$ is the nonconformity quantile threshold learned on a held-out calibration set at a 90% confidence level, $\alpha = 0.10$).
+* **Implementation:**
+  * In [`models_ai/conformal.py`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/conformal.py), we calculate nonconformity scores on a calibration dataset: $S_i = 1 - p(y_i \mid x_i)$.
+  * We extract the threshold $q$ as the $(1 - \alpha)$-quantile of these scores (typically capped at $0.98$ to prevent extreme noise from blocking all loans).
+  * At scoring time, if $PD^*$ satisfies both $PD^*$ $\le q$ (include `no_default` in prediction set) and $PD^*$ $\ge 1-q$ (include `default` in prediction set), the set contains both labels.
+  * [`apply_conformal_gate`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/conformal.py#L103) changes the outcome to `REVIEW` if `abstain` is True and the tentative decision was `APPROVE`.
+
+#### 4. Affordability Gate Check (Gate 4)
+* **Goal:** Post-decision lending-policy overlay that prevents auto-approving a loan value that exceeds the borrower's serviceable limit.
+* **Condition:** Requested loan amount > Max Serviceable Amount.
+* **Implementation:**
+  * In [`convergence/lending.py::evaluate_funding_gap`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/lending.py#L141), we calculate the borrower's maximum serviceable loan principal based on their FOIR (Fixed Obligation to Income Ratio) and assessed monthly income.
+  * If the model approves the risk profile but the requested amount is higher than the max serviceable principal, `evaluate_funding_gap` returns `gated: True`, which changes `final_outcome` to `REVIEW` with an explicit counter-offer recommendation.
+
 
 ### Model Performance Metrics (from `/score/model/card`)
 

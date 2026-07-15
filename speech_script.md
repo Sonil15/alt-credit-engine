@@ -114,14 +114,16 @@ short sentences, one idea at a time.
 ---
 
 ## Slide 7: Actuarial Convergence — The PDO Scorecard Transformation
-**Visual Cues:** EBM Raw PD (centered on the cohort typical applicant) → PDO Scaling Constants (`BASE_SCORE=600`, `BASE_ODDS=10.0`, `PDO=50`) → Final 300–900 Credit Score, with the PDO conversion equations. Bottom: Regulatory Compliance — KFS reason-code mapping and the Affordability Gate.
+**Visual Cues:** EBM Raw PD (centered on the cohort typical applicant) → PDO Scaling Constants (`BASE_SCORE=600`, `BASE_ODDS=10.0`, `PDO=50`) → Final 300–900 Credit Score, with the PDO conversion equations. Bottom: Regulatory Compliance — Bureau-Aware pre-screening routing (CIBIL), KFS reason-code mapping, and the Affordability Gate.
 
 * **Gauri:**
   "Credit officers don't want a machine-learning probability. They want a number between 300 and 900 that behaves the way a credit score is supposed to.
 
   So we run a standard actuarial conversion — the same Points-to-Double-the-Odds method behind traditional scorecards. We take the EBM's raw probability of default, anchor a base score of 600 at base odds of ten-to-one, and set fifty points to double the odds. That gives us a clean, calibrated score. And notice — the raw probability is centered on the *cohort typical applicant*, so a factor only counts as a strength when you're genuinely better than your peers, not against some flattering artificial baseline.
 
-  The bottom half is where this pays off for compliance. Because the EBM is additive, the adverse-action drivers are sorted by their *exact* mathematical feature weight — so the Key Fact Statement reason codes are accurate by construction, not guessed. And the Affordability Gate sits on top as a post-decision overlay: if an approved borrower asks for more than they can safely service, the engine routes to human review with a counter-offer. That deliberately keeps loan-amount policy *out* of the risk model — the model assesses risk, and affordability is a separate, human-owned decision."
+  The bottom half is where this pays off for compliance. Because the EBM is additive, the adverse-action drivers are sorted by their *exact* mathematical feature weight — so the Key Fact Statement reason codes are accurate by construction, not guessed. And the Affordability Gate sits on top as a post-decision overlay: if an approved borrower asks for more than they can safely service, the engine routes to human review with a counter-offer. That deliberately keeps loan-amount policy *out* of the risk model — the model assesses risk, and affordability is a separate, human-owned decision.
+
+  And crucially, we don't try to replace the credit bureau entirely. We pre-screen applicants with a Bureau-Aware Routing Gate: prime credit files get fast-tracked for approval, subprime files get rejected immediately, and only the thin-file or no-history borrowers are routed to our alternate credit engine. This makes our approach highly practical and easy for any bank to adopt."
 
 ---
 

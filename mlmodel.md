@@ -63,6 +63,8 @@ there's nothing left to narrate. The explanation is the model.*
 This is hierarchical, not democratic. The champion decides, the challengers audit.
 It is also standard bank **model-risk-management practice** (champion/challenger).
 
+- **Bureau-Aware Routing (CIBIL pre-screening):** Prior to invoking the ML model panel, the scoring path evaluates traditional credit history. Prime files (CIBIL score $\ge 750$) bypass the EBM and get fast-track approved, subprime files (CIBIL score $< 600$) bypass the panel and get auto-rejected, and thin-file / no-history borrowers are routed to the alternative credit model. This ensures we do not replace traditional scoring but capture the "No History" drop-offs.
+
 ### Why not "keep CatBoost as champion, add agreement only"?
 That keeps the black box as the decider and SHAP as the explanation, i.e. it does
 not change the thing Critique A objected to. It only wraps a confidence meter
@@ -168,9 +170,7 @@ or explain anything.
   challengers on one split and writes a combined model card.
 - `convergence/panel.py`, `band_from_pd()` and `compute_agreement()` (the panel
   report: each model's PD/band, unanimity, hard-conflict, dispersion).
-- `convergence/score_engine.py`, score + explanation now from EBM; `_apply_agreement_gate`
-  routes genuinely-conflicted cases to REVIEW; conformal abstention gates contested
-  auto-approvals; payload gains `panel`, `conformal`, and `explanation_method`.
+- `convergence/score_engine.py`, score + explanation now from EBM; intercepts scoring with traditional CIBIL score pre-screening (fast-track approvals for $\ge 750$, auto-rejects for $< 600$, fallback for alternative scoring); `_apply_agreement_gate` routes genuinely-conflicted cases to REVIEW; conformal abstention gates contested auto-approvals; payload gains `panel`, `conformal`, and `explanation_method`.
 - `core/model_cache.py`, caches champion + challengers + conformal calibration (SHAP explainer removed).
 - `models/pydantic_schemas.py`, `CreditScoreResponse` gains `panel`, `conformal`, `explanation_method`.
 - `models_ai/conformal.py`, split conformal calibration + prediction-set abstention.
