@@ -470,13 +470,6 @@ Copy this block for each feature:
 - **Differentiator:** Traditional platforms use rigid, monolithic checklists for confidence scoring, which either penalizes non-business users or lets business users pass without verifying their business. We isolate onboarding business metrics (like vintage or Udyam status) into a standalone `Business Credentials` facet and dynamically toggle its expectation based on the cohort and loan purpose.
 - **Demo moment:** Show a Student getting 100% confidence with just location and psychometric data. Then, show a Homemaker borrowing for 'household' expenses keeping a high confidence score, but if they switch their loan purpose to 'small_home_business', their expected denominator dynamically shifts to require Business Credentials—instantly flagging a 'thin file' if they leave the business section blank.
 
-### Interactive Mock Sourcing Gateway (India Stack Integrations)
-- **Judge problem it answers:** "How do you actually fetch this alternative data in the real world? Is it practical, secure, and compliant, or is it just a theoretical dashboard simulation?"
-- **Pitch line:** "We mock a real-world integration of India's Digital Public Infrastructure (DigiLocker, Account Aggregator, BBPS, PM-Kisan) directly inside the consent gateway, forcing interactive user verification (OTP validation, Aadhaar inputs) instead of cosmetic simulations."
-- **Differentiator:** Most hackathon projects simulate consent with simple checkboxes. We implement the complete, sequential redirect flow for the checked scopes (e.g. DigiLocker offline KYC + Setu AA bank statement fetch with a mock OTP validation), matching real-world fintech UX.
-- **Demo moment:** Check the boxes for "Bank cash flow" and "Utility bills", click Grant Consent, and watch the gateway overlay intercept the flow, stepping through DigiLocker KYC, Setu AA OTP verification (requiring OTP '1234'), and BBPS bill retrieval interactively.
-- **Honest caveat:** The integrations are high-fidelity mock simulations running entirely client-side rather than connecting to real, paid government sandbox APIs, ensuring offline reliability during live demos.
-
 ### Visual CAPTCHA Bot Protection & IP Rate Limiting
 - **Judge problem it answers:** "In alternate credit platforms, what stops malicious actors from running automated scripts to mass-register fake identities or spam your auth endpoints?"
 - **Pitch line:** "We secure our gateways with a client-side visual CAPTCHA matched to backend cryptographic signatures, coupled with strict IP-based rate limiting to shut down automated bot traffic at the door."
