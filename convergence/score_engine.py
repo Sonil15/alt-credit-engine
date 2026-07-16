@@ -286,11 +286,6 @@ def _build_payload(
     intake: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble the full score payload for a single user (no DB I/O)."""
-    auto_reject, reject_reason = check_red_flags(user_row)
-    champion_pd = probability_of_default  # raw champion PD, used for panel agreement
-    if auto_reject:
-        probability_of_default = 1.0
-
     # Resolve cohort early
     if "cohort_code" in user_row:
         code = safe_float(user_row.get("cohort_code", 0.0))
@@ -307,10 +302,34 @@ def _build_payload(
 
     cohort = cohort_enum.value if hasattr(cohort_enum, "value") else str(cohort_enum)
 
+    # Apply cohort score range bounds
+    COHORT_SCORE_RANGES = {
+        "Student": (330, 720),
+        "Homemaker": (360, 730),
+        "Farmer": (330, 800),
+        "Vendor": (330, 850),
+        "Salaried": (400, 850),
+        "GigWorker": (350, 760),
+    }
+    raw_score = pd_to_credit_score(probability_of_default)
+    min_score, max_score = COHORT_SCORE_RANGES.get(cohort, (300, 900))
+    credit_score = max(min_score, min(max_score, raw_score))
+
+    cohort_adjustment = credit_score - raw_score
+    if cohort_adjustment != 0:
+        from convergence.scorecard import SCORE_OFFSET, PDO_FACTOR, log_odds_to_pd
+        log_odds_calibrated = (SCORE_OFFSET - credit_score) / PDO_FACTOR
+        probability_of_default = log_odds_to_pd(log_odds_calibrated)
+
+    auto_reject, reject_reason = check_red_flags(user_row)
+    champion_pd = probability_of_default  # raw champion PD, used for panel agreement
+    if auto_reject:
+        probability_of_default = 1.0
+
     expect_business_profile = business_features_applicable(
         cohort,
         intake.get("loan_purpose") if intake else None,
-        has_business_profile=False,
+        has_business_profile=bool(intake.get("has_business_profile")) if intake else False,
     )
 
     facet_scores = compute_facet_scores(
@@ -341,6 +360,8 @@ def _build_payload(
     contributions, base_value = _champion_contributions(champion, feature_row, baseline_contrib)
     base_points = safe_round(expected_value_to_base_points(base_value), 1)
     factor_points = {item["feature"]: item["points"] for item in contributions}
+    if cohort_adjustment != 0:
+        factor_points["cohort_adjustment"] = cohort_adjustment
 
     # Never explain the score with data the borrower didn't consent to: drop every
     # feature belonging to a revoked scope from the driver lists and the lineage trace.

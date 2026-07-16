@@ -64,15 +64,13 @@ Copy this block for each feature:
 
 ### Glass-box EBM champion (replaced CatBoost + SHAP)
 - **Judge problem it answers:** "Post-hoc explanations (SHAP) narrate a black box: the
-  *decider* is still opaque. Can a risk officer or regulator actually audit the model?"
+  *decider* is still opaque. Can a risk officer or regulator actually audit the model? And what stops the model from learning nonsensical patterns from small/noisy data, like missed bill payments helping a score?"
 - **Pitch line:** "Our decision model isn't explained after the fact: its decision
-  function *is* the explanation. There's nothing left to narrate."
+  function *is* the explanation. By enforcing strict, business-logical monotonic constraints, we guarantee that credit-lowering events (like missed bills) can never spuriously improve a borrower's score."
 - **Differentiator:** Most teams ship a gradient-boosting black box + a SHAP chart. We
-  moved the *decider* to an intrinsically interpretable model at **zero measured accuracy
-  cost** (cross-validated AUC 0.753 vs 0.733, statistically indistinguishable on
-  synthetic data).
+  moved the *decider* to an intrinsically interpretable model with **mathematically enforced monotonicity** (e.g. missed payments can only ever hurt or be neutral), which actually improved out-of-fold generalization (cross-validated AUC increased from 0.667 to 0.716).
 - **Demo moment:** Open a shape-function curve on the dashboard, "this line *is* the
-  model; read the risk straight off the axis; a risk officer can hand-edit a wrong curve."
+  model; read the risk straight off the axis; a risk officer can hand-edit a wrong curve. Notice that $0$ missed payments is guaranteed to have a neutral or positive impact, never negative."
 - **Honest caveat:** On ~100 synthetic rows we show *equivalence*, not superiority: the
   point is transparency is free, not that glass-box beats the black box.
 
@@ -97,11 +95,11 @@ Copy this block for each feature:
 - **Honest caveat:** With ~18 calibration rows the guarantee is structurally correct but
   empirically noisy on synthetic data, say so before a judge asks.
 
-### Honest scorecard re-anchoring
-- **Judge problem it answers:** "Did you tune the cutoffs to make the demo look good?"
-- **Pitch line:** "Our honest model needed an honest scorecard. The old cutoffs were propped up by an uncalibrated, over-confident black box, so we re-anchored to the real ~13% default rate and applied mathematical intercept calibration."
-- **Differentiator:** Shows calibration literacy and intellectual honesty. Rather than ignoring tree shrinkage on small sample sizes, we mathematically shift model intercepts using logits to match the true portfolio prior, resulting in perfect probability alignment.
-- **Demo moment:** The decision split (APPROVE / REVIEW / REJECT) across the portfolio sitting at a believable distribution (~7% / ~59% / ~28% with 0% of actual defaulters auto-approved and 85% of defaulters auto-rejected), showing real credit risk control instead of artificial high approvals.
+### Honest scorecard re-anchoring & numerical prior shift calibration
+- **Judge problem it answers:** "Did you tune the cutoffs or models to make the demo look good? And what stops the EBM champion from overfitting small datasets and saturating all credit scores at exactly 300 or 900?"
+- **Pitch line:** "Our honest model needed an honest scorecard. We resolved the extreme score saturation (300/900 splits) by correcting the math of prior probability calibration and aligning model training capacity with cross-validation."
+- **Differentiator:** Most teams ignore class-weight prior calibration or use naive log-odds average shifts that collapse on saturated small-sample predictions. We implemented a numerically exact **binary search solver** that matches the average predicted default probability to the actual population default rate ($12.3\%$). We also aligned EBM training to use the full `X_train` training split ($84$ rows) to match the CV fold size. This allows the temperature scaling optimizer to fit a healthy, robust temperature ($T \approx 2.64$) rather than defaulting to $T = 1.0$. Together, this yielded a **$15.7\%$ boost in holdout AUC** and a **$5.9\%$ boost in CV AUC**, while generating a realistic, balanced credit score distribution.
+- **Demo moment:** The portfolio's credit score distribution showing a clean, realistic spread from `438` to `881` (mean `650.6`, standard dev `95.8`) with **zero** artificial 900s, only one chronic defaulter at 300, and our thin-file applicant with poor facet-wise performance receiving a logical `664` (`REVIEW`) instead of an auto-approved `900`.
 
 ### Typical-applicant-centered drivers (honest "What Affected Your Score")
 - **Judge problem it answers:** "Your borrower explanation shows only positives, is
@@ -461,10 +459,10 @@ Copy this block for each feature:
 - **Honest caveat:** While this protects new entrepreneurs, a lack of bank transaction history is inherently riskier. The engine offsets this by relying more heavily on the psychometric evaluation and Udyam identity verification.
 
 ### Business-Profile Aware Confidence Scoring (Cohort-Driven Data Sufficiency)
-- **Judge problem it answers:** "How do you ensure you aren't unfairly penalizing non-business profiles (students, salaried workers) for lacking business metrics, while still holding MSMEs to high data-sufficiency standards?"
-- **Pitch line:** "We dynamically scale our expected data-sufficiency criteria based on who the borrower is and why they are borrowing: a student is never penalized for lacking a business profile, while a homemaker starting a business is dynamically held to business-profile standards."
-- **Differentiator:** Traditional platforms use rigid, monolithic checklists for confidence scoring, which either penalizes non-business users or lets business users pass without verifying their business. We isolate onboarding business metrics (like vintage or Udyam status) into a standalone `Business Credentials` facet and dynamically toggle its expectation based on the cohort and loan purpose.
-- **Demo moment:** Show a Student getting 100% confidence with just location and psychometric data. Then, show a Homemaker borrowing for 'household' expenses keeping a high confidence score, but if they switch their loan purpose to 'small_home_business', their expected denominator dynamically shifts to require Business Credentials—instantly flagging a 'thin file' if they leave the business section blank.
+- **Judge problem it answers:** "How do you ensure you aren't unfairly penalizing non-business profiles (students, salaried workers) or individual gig workers for lacking formal corporate registration details (like Udyam numbers or business vintage)?"
+- **Pitch line:** "We dynamically scale our expected data-sufficiency criteria based on who the borrower is: a student is never penalized for lacking business credentials, while a gig worker only displays them if they choose to submit a business profile, preventing unfair thin-file penalties."
+- **Differentiator:** Traditional platforms use rigid, monolithic checklists for confidence scoring, which penalize informal/gig profiles for missing business registry data. We isolate onboarding business metrics into a standalone `Business Credentials` facet and dynamically toggle its expectation: Vendors/Farmers always require it; Students/Salaried never do; and Gig Workers/Homemakers only expect it when a business profile or business purpose is actively declared.
+- **Demo moment:** Show a Gig Worker who didn't submit a business profile getting a clean 5-facet profile and a `100%` confidence score (no thin-file flag). Then show that if they do submit a business profile, the `Business Credentials` facet dynamically activates to display their business vintage and turnover consistency without lowering their score.
 
 ### Visual CAPTCHA Bot Protection & IP Rate Limiting
 - **Judge problem it answers:** "In alternate credit platforms, what stops malicious actors from running automated scripts to mass-register fake identities or spam your auth endpoints?"
@@ -483,6 +481,12 @@ Copy this block for each feature:
 - **Pitch line:** "We check the velocity and uniqueness of onboarding credentials across all platform identities, instantly rejecting any application that attempts to reuse a verified business credential."
 - **Differentiator:** Traditional credit scoring only checks if the credential is valid. We perform cross-borrower network checking: if a business ID (Udyam) is already associated with another identity, the intake submission is rejected immediately (HTTP 400), halting organized loan stacking.
 - **Demo moment:** Submit an application for Ravi Kumar with a verified Udyam number. Then register another user and attempt to submit the same Udyam number during onboarding—the system will block it with a clear 'Velocity Check Failed' alert.
+
+### Safety Gate Review Explanations
+- **Judge problem it answers:** "If a borrower has a high credit score that passes the approval threshold, why are they still flagged for human review? How do you prevent silent, high-risk auto-approvals when models disagree or data is sparse?"
+- **Pitch line:** "We expose the exact institutional safety gate (conformal prediction, model panel conflict, affordability constraints, or low data confidence) that triggered a manual review block on high-scoring applications directly on the officer's dashboard."
+- **Differentiator:** Traditional credit systems hide the reason behind policy/system overrides, leading to confusion and audit gaps for credit officers. We surface the exact pipeline stage (e.g., Challenger panel disagreement, Conformal abstention, Affordability limit, or Thin-file status) that intercepted the approval, allowing officers to verify the safety trigger instantly.
+- **Demo moment:** Click on a borrower with a score of 710 that is flagged as `REVIEW` in the dashboard list. An orange alert block immediately appears in the main score panel highlighting: `"Review Flag Reason: Model panel disagreement: champion (EBM) and challengers did not reach consensus, routed to manual review"`.
 
 ### E2E Decision Audit Trail (Score Explainer)
 - **Judge problem it answers:** "Your multi-model, multi-stage architecture has many moving parts (LLM extraction, Econometrics, EBM scorecard, Conformal bounds, Affordability gates). How can a regulator or risk officer audit the exact step-by-step translation from a borrower's raw inputs to their final score and loan offer?"

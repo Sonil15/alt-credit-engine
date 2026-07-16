@@ -46,9 +46,28 @@ def train_ebm(df: pd.DataFrame, label_series: pd.Series) -> ExplainableBoostingC
     if y.nunique() < 2:
         raise ValueError("Need both default and non-default labels for training")
 
+    from convergence.feature_meta import FEATURE_META
+
+    # Enforce monotone constraints based on FEATURE_META direction
+    constraints = []
+    for col in FEATURE_COLUMNS:
+        meta = FEATURE_META.get(col)
+        if meta:
+            direction = meta.get("direction")
+            if direction == "high":
+                constraints.append(-1)  # larger value helps score -> lowers default probability
+            elif direction == "low":
+                constraints.append(1)   # larger value hurts score -> raises default probability
+            else:
+                constraints.append(0)
+        else:
+            constraints.append(0)
+
     model = ExplainableBoostingClassifier(
         feature_names=FEATURE_COLUMNS,
         interactions=0,  # pure additive: one term per feature -> publishable points
+        monotone_constraints=constraints,
+        min_samples_leaf=8,
         random_state=CATBOOST_RANDOM_SEED,
     )
     model.fit(features, y, sample_weight=compute_sample_weight("balanced", y))

@@ -64,6 +64,16 @@ FEATURE_META: dict[str, dict[str, str]] = {
     "turnover_income_consistency": {"label": "Consistency of reported income", "source": "Borrower onboarding, business profile", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
     "has_udyam_registration": {"label": "Udyam registration status", "source": "Borrower onboarding, business profile", "fmt": "bool", "direction": "high", "engine": ENGINE_EXTRACTION},
     "years_informal": {"label": "Years of informal operation", "source": "Borrower onboarding, business profile", "fmt": "count", "direction": "high", "engine": ENGINE_EXTRACTION},
+    # Cohort-specific features
+    "upi_spend_consistency": {"label": "UPI spend consistency", "source": "UPI expenses & small dues history", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "small_dues_payment_promptness": {"label": "Small dues payment promptness", "source": "UPI expenses & small dues history", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "e_wallet_topup_frequency": {"label": "E-wallet top-up frequency", "source": "UPI expenses & small dues history", "fmt": "count", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "daily_transaction_count": {"label": "Daily transaction count", "source": "Micro-enterprise UPI/payment volumes", "fmt": "count", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "average_ticket_size": {"label": "Average ticket size", "source": "Micro-enterprise UPI/payment volumes", "fmt": "rupee", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "harvest_income_spike": {"label": "Harvest income spike", "source": "Farming cycles & input purchases", "fmt": "rupee", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "input_purchase_consistency": {"label": "Input purchase consistency", "source": "Farming cycles & input purchases", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "utility_payment_consistency": {"label": "Utility payment consistency", "source": "Electricity/Water/Gas & Groceries", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "grocery_spend_stability": {"label": "Grocery spend stability", "source": "Electricity/Water/Gas & Groceries", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
 }
 
 # Order data sources appear in the grouped lineage view.
@@ -75,13 +85,20 @@ SOURCE_ORDER = [
     "Geolocation consistency",
     "Psychometric assessment",
     "Borrower onboarding, business profile",
+    "UPI expenses & small dues history",
+    "Micro-enterprise UPI/payment volumes",
+    "Farming cycles & input purchases",
+    "Electricity/Water/Gas & Groceries",
 ]
 
 TOP_DRIVERS_COUNT = 8
 
 
 def _signal(feature: str, value: float, points: float) -> dict[str, object]:
+    from convergence.scorecard import PDO_FACTOR
     meta = FEATURE_META[feature]
+    # Reconstruct log-odds contribution from scorecard points
+    logodds = -safe_float(points) / PDO_FACTOR if points != 0 else 0.0
     return {
         "feature": feature,
         "label": meta["label"],
@@ -91,6 +108,7 @@ def _signal(feature: str, value: float, points: float) -> dict[str, object]:
         "engine": meta["engine"],
         "value": round(safe_float(value), 4),
         "points": round(safe_float(points), 1),
+        "logodds": round(logodds, 4),
     }
 
 
@@ -117,6 +135,22 @@ def build_feature_trace(
         for feature in FEATURE_COLUMNS
         if feature in FEATURE_META and feature not in exclude_features
     ]
+
+    if "cohort_adjustment" in factor_points and abs(safe_float(factor_points["cohort_adjustment"])) > 1e-9:
+        from convergence.scorecard import PDO_FACTOR
+        adj_pts = safe_float(factor_points["cohort_adjustment"])
+        logodds = -adj_pts / PDO_FACTOR
+        signals.append({
+            "feature": "cohort_adjustment",
+            "label": "Cohort-level risk cap adjustment",
+            "source": "Borrower onboarding, business profile",
+            "fmt": "number",
+            "direction": "low" if adj_pts < 0 else "high",
+            "engine": "extraction",
+            "value": 0.0,
+            "points": round(adj_pts, 1),
+            "logodds": round(logodds, 4),
+        })
 
     # Lead with what *hurt* the score (negative points), strongest first, then fill
     # the remaining slots with the strongest positive drivers. This guarantees a

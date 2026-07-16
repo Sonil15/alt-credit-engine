@@ -116,6 +116,10 @@
                 </div>
               </div>
               <div id="reject-reason" style="color:#dc2626;font-size:13px;margin-top:12px;"></div>
+              <div class="reason-box" id="review-reason-box" style="display:none; font-size:13px; margin-top:12px; padding:12px; border-radius:8px;">
+                <strong style="display:block; margin-bottom:4px; font-weight:700;">⚠️ Review Flag Reason:</strong>
+                <span id="review-reason-text"></span>
+              </div>
               <div style="margin-top:12px;font-size:11px;color:#94a3b8;font-family:ui-monospace,monospace;" id="display-user-id"></div>
             </div>
           </div>
@@ -345,6 +349,11 @@
         const users = await resp.json();
         const chips = document.getElementById('user-chips'); chips.innerHTML='';
         users.sort((a,b)=>b.credit_score-a.credit_score).forEach(u => {
+          const isReview = u.decision === 'REVIEW' || (u.funding_gap && u.funding_gap.gated);
+          const passesThreshold = u.credit_score >= approveScore;
+          const gatedBadge = (passesThreshold && isReview) 
+            ? `<span style="margin-left: 8px; background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; display: inline-block; vertical-align: middle;">Gated Review</span>`
+            : '';
           const chip = document.createElement('div');
           chip.className = `user-chip chip-${u.decision}`;
           chip.innerHTML = `
@@ -352,6 +361,7 @@
             <span style="margin-left: 8px; color: #475569; font-size: 11px; font-weight: 600; background: #f1f5f9; padding: 2px 8px; border-radius: 12px; border: 1px solid #e2e8f0; display: inline-block;">${u.cohort || 'Salaried'}</span>
             <span style="margin-left: 16px; font-size: 13px; font-weight: 600;">Score: <strong style="color: ${scoreColor(u.credit_score)}">${u.credit_score}</strong></span>
             <span class="badge badge-${u.decision}" style="margin-left: 16px; padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 6px; display: inline-block;">${u.decision}</span>
+            ${gatedBadge}
           `;
           chip.title = u.user_id;
           chip.onclick = () => { document.getElementById('user-id-input').value=u.user_id; renderScore(u); window.scrollTo({top:0,behavior:'smooth'}); };
@@ -409,6 +419,30 @@
         cohortBadge.textContent = 'Salaried';
       }
       document.getElementById('reject-reason').textContent = d.reject_reason||'';
+      
+      const reviewBox = document.getElementById('review-reason-box');
+      const reviewText = document.getElementById('review-reason-text');
+      if (reviewBox && reviewText) {
+        const isReview = d.decision === 'REVIEW' || (d.funding_gap && d.funding_gap.gated);
+        const passesThreshold = d.credit_score >= approveScore;
+        if (passesThreshold && isReview) {
+          let mainReason = "Flagged for manual review due to institutional safety gates.";
+          const reasons = d.reason_codes || [];
+          for (const r of reasons) {
+            if (r.includes("Model panel disagreement") || 
+                r.includes("Conformal abstention") || 
+                r.includes("Affordability gate") || 
+                r.includes("Thin-file")) {
+              mainReason = r;
+              break;
+            }
+          }
+          reviewText.textContent = mainReason;
+          reviewBox.style.display = 'block';
+        } else {
+          reviewBox.style.display = 'none';
+        }
+      }
       const thin = document.getElementById('thin-flag'); thin.style.display = d.thin_file ? 'inline-block':'none';
       const sim = document.getElementById('simulated-badge');
       if (sim) {
@@ -507,12 +541,19 @@
           backgroundColor:'rgba(37,99,235,0.18)', borderColor:'#2563eb', pointBackgroundColor:'#2563eb' }] },
         options:{ scales:{ r:{ suggestedMin:0, suggestedMax:100, ticks:{stepSize:25} } }, plugins:{legend:{display:false}} }
       });
-      document.getElementById('facet-list').innerHTML = facets.map(p => `
+      document.getElementById('facet-list').innerHTML = facets.map(p => {
+        const hasData = p.has_data !== false;
+        const widthVal = hasData ? p.score : 0;
+        const colorVal = hasData ? facetColor(p.score) : '#94a3b8';
+        const scoreText = hasData ? p.score.toFixed(0) : 'N/A';
+        const gradeText = hasData ? p.grade : 'Missing';
+        return `
         <div class="facet-row">
           <div class="facet-name"><div class="n">${p.label}</div><div class="s">${p.source||''}</div></div>
-          <div class="facet-track"><div class="facet-fill" style="width:${p.score}%;background:${facetColor(p.score)}"></div></div>
-          <div class="facet-val"><span class="g" style="color:${facetColor(p.score)}">${p.score.toFixed(0)}</span> · ${p.grade}</div>
-        </div>`).join('');
+          <div class="facet-track"><div class="facet-fill" style="width:${widthVal}%;background:${colorVal}"></div></div>
+          <div class="facet-val"><span class="g" style="color:${colorVal}">${scoreText}</span> · ${gradeText}</div>
+        </div>`;
+      }).join('');
     }
 
     function renderEbmDrivers(drivers) {

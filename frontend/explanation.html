@@ -685,7 +685,7 @@
 
           // EBM intercept is centered logodds contribution
           const tdLogOdds = document.createElement('td');
-          tdLogOdds.textContent = (points / 50).toFixed(4); // approximation
+          tdLogOdds.textContent = sig.logodds !== undefined ? sig.logodds.toFixed(4) : (points / 50).toFixed(4);
           tr.appendChild(tdLogOdds);
 
           const tdPoints = document.createElement('td');
@@ -718,7 +718,8 @@
         tr.appendChild(tdVal);
 
         const tdLogOdds = document.createElement('td');
-        tdLogOdds.textContent = (hiddenPoints / 50).toFixed(4); // approximation
+        const hiddenLogOdds = -hiddenPoints / (50 / Math.log(2));
+        tdLogOdds.textContent = hiddenLogOdds.toFixed(4);
         tr.appendChild(tdLogOdds);
 
         const tdPoints = document.createElement('td');
@@ -800,12 +801,19 @@
         const item = document.createElement('div');
         item.style.marginBottom = '12px';
         
+        const hasData = fac.has_data !== false;
+        const scoreVal = hasData ? Math.round(fac.score) + '/100' : 'N/A';
+        const widthVal = hasData ? fac.score : 0;
+        const colorVal = hasData ? (fac.score >= 75 ? '#16a34a' : fac.score >= 50 ? '#22c55e' : fac.score >= 35 ? '#eab308' : '#dc2626') : '#94a3b8';
+        const labelColor = hasData ? 'var(--text-dark)' : '#64748b';
+
         const labelRow = document.createElement('div');
         labelRow.style.display = 'flex';
         labelRow.style.justifyContent = 'space-between';
         labelRow.style.fontSize = '13px';
         labelRow.style.fontWeight = '700';
-        labelRow.innerHTML = `<span>${fac.label}</span> <span>${Math.round(fac.score)}/100</span>`;
+        labelRow.style.color = labelColor;
+        labelRow.innerHTML = `<span>${fac.label}</span> <span>${scoreVal}</span>`;
         item.appendChild(labelRow);
 
         const progressContainer = document.createElement('div');
@@ -813,10 +821,8 @@
         
         const progressFill = document.createElement('div');
         progressFill.className = 'progress-bar-fill';
-        progressFill.style.width = `${fac.score}%`;
-        // Color coding facets
-        const fScore = fac.score;
-        progressFill.style.backgroundColor = fScore >= 75 ? '#16a34a' : fScore >= 50 ? '#22c55e' : fScore >= 35 ? '#eab308' : '#dc2626';
+        progressFill.style.width = `${widthVal}%`;
+        progressFill.style.backgroundColor = colorVal;
         
         progressContainer.appendChild(progressFill);
         item.appendChild(progressContainer);

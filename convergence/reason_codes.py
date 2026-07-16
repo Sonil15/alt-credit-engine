@@ -26,6 +26,16 @@ FEATURE_REASON_MAP: dict[str, str] = {
     "distinct_pin_codes": "Multiple delivery addresses",
     "business_vintage_years": "Limited business operating history",
     "turnover_income_consistency": "Declared income does not match observed cash flow",
+    # Cohort-specific features reason codes
+    "upi_spend_consistency": "Inconsistent UPI spending patterns",
+    "small_dues_payment_promptness": "Delays in small dues repayment",
+    "e_wallet_topup_frequency": "Infrequent digital wallet usage",
+    "daily_transaction_count": "Low business transaction volume",
+    "average_ticket_size": "Small average ticket size",
+    "harvest_income_spike": "Weak harvest income cycles",
+    "input_purchase_consistency": "Irregular agricultural input purchases",
+    "utility_payment_consistency": "Inconsistent utility bill payments",
+    "grocery_spend_stability": "Unstable household spending patterns",
 }
 
 

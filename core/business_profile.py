@@ -71,17 +71,18 @@ def business_features_applicable(
 ) -> bool:
     """Whether business-profile features belong in borrower-facing explanations.
 
-    Mirrors the onboarding UI: Vendor/Farmer/GigWorker always collect a business
-    profile; Homemaker does when the purpose is ``small_home_business``; any cohort
-    that submitted a confirmed profile counts too. A student borrowing for a laptop
-    should never see "years in business" in their reasons or tips.
+    Mirrors the onboarding UI: Vendor/Farmer always collect a business profile;
+    GigWorker collects optionally; Homemaker does when the purpose is
+    ``small_home_business``; any cohort that submitted a confirmed profile counts too.
     """
     if has_business_profile:
         return True
     if not cohort:
         return False
-    if cohort in BUSINESS_COHORTS:
+    if cohort in ("Vendor", "Farmer"):
         return True
+    if cohort == "GigWorker":
+        return has_business_profile
     return cohort == "Homemaker" and loan_purpose == "small_home_business"
 
 

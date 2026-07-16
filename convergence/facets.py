@@ -62,7 +62,6 @@ COHORT_EXPECTED_FACETS: dict[BorrowerCohort, list[str]] = {
         "location_stability",
         "cashflow_resilience",
         "psychometric_character",
-        "business_credentials",
     ],
     BorrowerCohort.STUDENT: [
         "location_stability",

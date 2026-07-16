@@ -114,12 +114,12 @@ async def train_all_from_db(session: AsyncSession) -> dict[str, Any]:
     y_cal = y_cal.reset_index(drop=True)
 
     # --- champion: EBM ---
-    ebm = train_ebm(X_fit, y_fit)
+    ebm = train_ebm(X_train, y_train)
     # Honest confidence: damp the champion's saturated small-sample logits with a
     # temperature fitted on OUT-OF-FOLD predictions (see _champion_cv_diagnostics),
     # BEFORE fitting conformal, so the abstention threshold is learned on the same
     # PD scale that serves scores.
-    cv_metrics, oof_margins, oof_labels = _champion_cv_diagnostics(features, labels)
+    cv_metrics, oof_margins, oof_labels = _champion_cv_diagnostics(X_train, y_train)
     ebm_intercept = float(np.ravel(ebm.intercept_)[0])
     t_ebm = (
         fit_temperature(oof_margins, oof_labels, ebm_intercept) if len(oof_margins) else 1.0
