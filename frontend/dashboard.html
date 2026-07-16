@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Alt-Credit: Bank LOS Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
-  <link rel="stylesheet" href="/static/css/dashboard.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/global.css?v=1.0.3">
+  <link rel="stylesheet" href="/static/css/dashboard.css?v=1.0.3">
 </head>
 <body>
   <!-- Fullscreen Dashboard Loader -->
@@ -345,8 +345,14 @@
         const users = await resp.json();
         const chips = document.getElementById('user-chips'); chips.innerHTML='';
         users.sort((a,b)=>b.credit_score-a.credit_score).forEach(u => {
-          const chip = document.createElement('span'); chip.className='user-chip';
-          chip.innerHTML = `${u.user_id.slice(0,8)}… <strong style="color:${scoreColor(u.credit_score)}">${u.credit_score}</strong> ${u.decision}`;
+          const chip = document.createElement('div');
+          chip.className = `user-chip chip-${u.decision}`;
+          chip.innerHTML = `
+            <strong>Borrower:</strong> <span style="font-family:ui-monospace,monospace;">${u.user_id.slice(0,8)}…</span> 
+            <span style="margin-left: 8px; color: #475569; font-size: 11px; font-weight: 600; background: #f1f5f9; padding: 2px 8px; border-radius: 12px; border: 1px solid #e2e8f0; display: inline-block;">${u.cohort || 'Salaried'}</span>
+            <span style="margin-left: 16px; font-size: 13px; font-weight: 600;">Score: <strong style="color: ${scoreColor(u.credit_score)}">${u.credit_score}</strong></span>
+            <span class="badge badge-${u.decision}" style="margin-left: 16px; padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 6px; display: inline-block;">${u.decision}</span>
+          `;
           chip.title = u.user_id;
           chip.onclick = () => { document.getElementById('user-id-input').value=u.user_id; renderScore(u); window.scrollTo({top:0,behavior:'smooth'}); };
           chips.appendChild(chip);

@@ -18,7 +18,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from core.seeds import CATBOOST_RANDOM_SEED
-from models_ai.constants import fill_missing_features, prior_correction_log_odds
+from models_ai.constants import fill_missing_features, calculate_prior_correction_shift
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +49,11 @@ def train_logistic(df: pd.DataFrame, label_series: pd.Series) -> Pipeline:
         ]
     )
     model.fit(features, y)
-    # Undo the balanced-weight recentering (see prior_correction_log_odds): shift the
-    # intercept so the challenger's PD scale matches the champion's honest prior.
+    # Correct intercept to match target prior log-odds exactly
+    p_raw = model.predict_proba(features)[:, 1]
+    shift = calculate_prior_correction_shift(p_raw, y)
     model.named_steps["clf"].intercept_ = (
-        model.named_steps["clf"].intercept_ + prior_correction_log_odds(y)
+        model.named_steps["clf"].intercept_ + shift
     )
     return model
 

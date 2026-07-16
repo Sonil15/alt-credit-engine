@@ -332,6 +332,7 @@ class CreditScoreResponse(BaseModel):
     is_simulated: bool = False
     approval_likelihood: str | None = None
     actionable_insights: list[str] = []
+    cohort: str | None = None
 
     @field_validator("probability_of_default", mode="before")
     @classmethod

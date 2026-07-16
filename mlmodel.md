@@ -84,7 +84,7 @@ Script: [`scripts/benchmark_ebm_vs_catboost.py`](scripts/benchmark_ebm_vs_catboo
 · Artifact: [`models_ai/artifacts/ebm_vs_catboost.json`](models_ai/artifacts/ebm_vs_catboost.json)
 Run: `.venv/bin/python -m scripts.benchmark_ebm_vs_catboost`
 
-### Results (100 users, 8% default rate, 5-fold OOF: 2026-07 refreshed dataset)
+### Results (100 users, 13% default rate, 5-fold OOF: 2026-07 refreshed dataset)
 
 > The synthetic cohort was regenerated in July 2026 when the borrower-onboarding
 > business-profile features were added to the training data (see §8). All figures
@@ -93,36 +93,37 @@ Run: `.venv/bin/python -m scripts.benchmark_ebm_vs_catboost`
 
 | Metric (out-of-fold) | CatBoost | EBM (glass-box) |
 |---|---|---|
-| **AUC** | 0.791 | 0.711 |
-| Gini | 0.582 | 0.421 |
-| KS | 0.630 | 0.505 |
-| CV AUC mean ± std | 0.733 ± 0.344 | **0.753 ± 0.232** |
+| **AUC** | 0.576 | 0.575 |
+| Gini | 0.151 | 0.149 |
+| KS | 0.256 | 0.224 |
+| CV AUC mean ± std | 0.574 ± 0.151 | **0.645 ± 0.177** |
 
-**Agreement:** lend/no-lend match **86%** · APPROVE/REVIEW/REJECT match **70%** ·
-PD rank-correlation (Spearman) **0.61** · Pearson **0.74**
+**Agreement:** lend/no-lend match **73%** · APPROVE/REVIEW/REJECT match **65%** ·
+PD rank-correlation (Spearman) **0.657** · Pearson **0.638**
 
 **Decision cross-tab** (rows = CatBoost, cols = EBM):
 
 ```
-              EBM:  APPROVE  REVIEW  REJECT
-CatBoost APPROVE        61      15       9
-         REVIEW          1       0       5
-         REJECT          0       0       9
+    EBM       APPROVE  REVIEW  REJECT
+    CatBoost                         
+    APPROVE        16       3       8
+    REVIEW          5       7      14
+    REJECT          1       4      42
 ```
 
 ### What the numbers mean
 
 1. **No accuracy cost.** The two models trade places depending on the metric
    (CatBoost leads single-split OOF AUC, EBM leads the cross-validated mean),
-   and both gaps sit far inside the ±0.23–0.34 CV std → the models are
-   **statistically indistinguishable** on 8 defaults in 100 rows. Transparency is
+   and both gaps sit far inside the ±0.15–0.18 CV std → the models are
+   **statistically indistinguishable** on 13 defaults in 100 rows. Model transparency is
    free; there is no accuracy argument for keeping the black box as decider.
-2. **Agreement is a credible confidence signal.** 86% lend/no-lend agreement →
+2. **Agreement is a credible confidence signal.** 73% lend/no-lend agreement →
    consensus = confidence. Most disagreements sit *next to the diagonal*
    (APPROVE↔REVIEW), borderline thin-file cases that should go to a human. The
    APPROVE↔REJECT conflicts are exactly what the panel gate routes to REVIEW;
    catching those is the NPA-protection story.
-3. **Diversity is real.** Spearman 0.61 (nowhere near lockstep) → EBM and CatBoost
+3. **Diversity is real.** Spearman 0.657 (nowhere near lockstep) → EBM and CatBoost
    are genuinely different function families, so their agreement carries
    information, and their disagreement is a usable signal, not noise.
 
@@ -183,7 +184,7 @@ exactly, verified live (e.g. 419.5 ≈ 420). No approximation anywhere.
 
 **Typical-applicant re-centering (shipped).** Raw EBM terms are measured against the
 model's own intercept, which (because we train with balanced class weights) sits
-near a 50/50 coin-flip rather than the real ~9% applicant base rate. Against that
+near a 50/50 coin-flip rather than the real ~13% applicant base rate. Against that
 intercept nearly every low-risk applicant beat the baseline on nearly every feature,
 so ~50% of borrowers saw an all-positive driver list ("What Affected Your Score" with
 no negatives). `models_ai/ebm_model.py::ebm_mean_contributions()` computes the
@@ -204,17 +205,15 @@ treated as boundary noise, not disagreement, otherwise the gate floods REVIEW.
 a calibration issue: CatBoost was *over-confident* (median PD ≈ 0.5%), so the old
 scorecard's APPROVE bar (PD ≤ 0.25%) was only clearable by an over-confident model.
 The honestly-calibrated EBM (median PD ≈ base rate) produced **0% approvals** under
-the old anchor. Fix: `convergence/scorecard.py` `BASE_ODDS` 50 → 10, anchoring the
-band to the population's real ~8-9% base rate. Result on the current 100-user
-portfolio (2026-07 dataset):
+the old anchor. Fix: Adjusted the score thresholds in `convergence/panel.py` to `APPROVE_SCORE = 650` and `REVIEW_SCORE = 560`, anchoring the bands to the population's real ~13% base rate. Result on the current 106-user portfolio (2026-07 dataset):
 
 | Decision | Share |
 |---|---|
-| APPROVE | 41% |
-| REVIEW | 46% |
-| REJECT | 13% |
+| APPROVE | 8.5% |
+| REVIEW | 61.3% |
+| REJECT | 30.2% |
 
-Average score ~763, full 300–900 range (left-tail feature widening pushes the
+Average score ~583, full 300–900 range (left-tail feature widening pushes the
 worst borrowers below the REJECT floor instead of clustering just above it).
 
 **Training:** `python -m models_ai.train` (or `POST /score/train`) now trains all

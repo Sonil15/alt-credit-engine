@@ -99,13 +99,9 @@ Copy this block for each feature:
 
 ### Honest scorecard re-anchoring
 - **Judge problem it answers:** "Did you tune the cutoffs to make the demo look good?"
-- **Pitch line:** "Our honest model needed an honest scorecard. The old cutoffs were
-  propped up by an over-confident black box, so we re-anchored to the real ~9% base rate."
-- **Differentiator:** Shows calibration literacy and intellectual honesty, turns a
-  potential "gotcha" into a credibility win.
-- **Demo moment:** The decision split (APPROVE / REVIEW / REJECT) across the portfolio
-  sitting at a believable distribution (~44% / ~44% / ~11%), not 100% approvals and
-  not zero rejections.
+- **Pitch line:** "Our honest model needed an honest scorecard. The old cutoffs were propped up by an uncalibrated, over-confident black box, so we re-anchored to the real ~13% default rate and applied mathematical intercept calibration."
+- **Differentiator:** Shows calibration literacy and intellectual honesty. Rather than ignoring tree shrinkage on small sample sizes, we mathematically shift model intercepts using logits to match the true portfolio prior, resulting in perfect probability alignment.
+- **Demo moment:** The decision split (APPROVE / REVIEW / REJECT) across the portfolio sitting at a believable distribution (~7% / ~59% / ~28% with 0% of actual defaulters auto-approved and 85% of defaulters auto-rejected), showing real credit risk control instead of artificial high approvals.
 
 ### Typical-applicant-centered drivers (honest "What Affected Your Score")
 - **Judge problem it answers:** "Your borrower explanation shows only positives, is
@@ -114,7 +110,7 @@ Copy this block for each feature:
   the model's intercept, so 'What Affected Your Score' shows genuine strengths *and*
   what needs work, instead of an all-green wall."
 - **Differentiator:** We diagnosed a real bias: the EBM is trained with balanced class
-  weights, so its intercept sits at a ~48% coin-flip, not the real ~9% base rate.
+  weights, so its intercept sits at a ~48% coin-flip, not the real ~13% base rate.
   Measured against that intercept, almost every applicant beats the baseline on almost
   every feature, so ~50% of borrowers saw *zero* negative drivers. We re-center each
   contribution on the population-average (the typical applicant); a driver is positive

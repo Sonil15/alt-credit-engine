@@ -463,6 +463,7 @@ def _build_payload(
             "explanation_method": "ebm-additive-terms",
             "model_version": get_model_version(),
             "is_simulated": is_simulated,
+            "cohort": cohort,
         }
     )
 
@@ -648,6 +649,19 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
     results = []
     for user_id in all_target_users:
         try:
+            # Resolve cohort early
+            cohort = "Salaried"
+            intake = intakes.get(user_id)
+            if intake and intake.get("cohort"):
+                cohort = intake.get("cohort")
+            elif user_id in user_ids_with_features:
+                user_wide = wide[wide["user_id"].astype(str) == user_id].copy()
+                if "cohort_code" in user_wide.columns:
+                    code = safe_float(user_wide.iloc[0].get("cohort_code", 0.0))
+                    cohort = COHORT_CODE_MAP.get(code, BorrowerCohort.SALARIED).value
+                else:
+                    cohort = user_wide.iloc[0].get("cohort", "Salaried")
+
             account = account_map.get(user_id)
             if account and account.cibil_score is not None and account.cibil_score != -1:
                 cibil = account.cibil_score
@@ -696,6 +710,7 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
                         "explanation_method": "bureau-gating",
                         "model_version": "bureau-gate-1.0",
                         "is_simulated": True,
+                        "cohort": cohort,
                     }
                     await _persist_decision(session, result)
                     results.append(result)
@@ -742,6 +757,7 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
                         "explanation_method": "bureau-gating",
                         "model_version": "bureau-gate-1.0",
                         "is_simulated": True,
+                        "cohort": cohort,
                     }
                     await _persist_decision(session, result)
                     results.append(result)

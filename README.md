@@ -275,11 +275,11 @@ The models are trained on identical splits of the target database to ensure fair
 | **CV AUC (5-fold Mean ± Std)** | `0.7681 ± 0.1903` | - | - |
 
 - **Conformal Calibration**: Target coverage is set to `90.0%` ($\alpha = 0.10$). Current empirical coverage is `93.75%` on the held-out calibration split ($N = 16$).
-- **Scorecard Anchoring**: The 300–900 scorecard is calibrated with a base score of 600 at base odds of 10:1 (corresponding to the population's real default rate of ~9%).
+- **Scorecard Anchoring**: The 300–900 scorecard is calibrated with a base score of 600 at base odds of 10:1 (corresponding to the population's real default rate of ~13%).
 - **Decision Cutoffs**:
-  - **APPROVE**: Score $\ge 580$ (EBM Probability of Default $\le 11.66\%$)
-  - **REVIEW**: Score $\ge 480$ (EBM Probability of Default $\le 34.55\%$)
-  - **REJECT**: Score $< 480$
+  - **APPROVE**: Score $\ge 650$ (EBM Probability of Default $\le 4.76\%$)
+  - **REVIEW**: Score $\ge 560$ (EBM Probability of Default $\le 14.83\%$)
+  - **REJECT**: Score $< 560$
 
 ### Model Feature Schema (32 Input Variables)
 

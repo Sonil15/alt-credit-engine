@@ -357,21 +357,48 @@
   font-weight: 700;
 }
 
+#user-list-panel {
+  display: block !important;
+  width: 100% !important;
+  clear: both !important;
+}
+
+#user-chips {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+}
+
 .user-chip {
-  display: inline-block;
+  display: block;
   padding: 6px 12px;
   background: var(--white);
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 12px;
-  margin: 4px;
+  font-size: 13px;
+  margin: 4px 0;
   cursor: pointer;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-family);
+  transition: all 0.2s ease;
+}
+
+.user-chip.chip-APPROVE {
+  border-left: 4px solid #16a34a;
+}
+
+.user-chip.chip-REVIEW {
+  border-left: 4px solid #eab308;
+}
+
+.user-chip.chip-REJECT {
+  border-left: 4px solid #dc2626;
 }
 
 .user-chip:hover {
-  background: #eff6ff;
-  border-color: #93c5fd;
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateX(4px);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
 }
 
 .thin-flag {

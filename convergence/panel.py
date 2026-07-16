@@ -26,8 +26,8 @@ from convergence.scorecard import pd_to_credit_score
 # spread, 650/560 yields a realistic approve/review/reject split (with headroom
 # above the bar so panel-unanimous approvals survive the agreement + conformal
 # gates) instead of piling the whole portfolio into the approve band.
-APPROVE_SCORE = 685
-REVIEW_SCORE = 640
+APPROVE_SCORE = 650
+REVIEW_SCORE = 560
 
 
 

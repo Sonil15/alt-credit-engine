@@ -67,6 +67,19 @@ def prior_correction_log_odds(labels: pd.Series) -> float:
     return math.log(n_default / n_good)
 
 
+def calculate_prior_correction_shift(p_raw: np.ndarray, y: pd.Series) -> float:
+    """Compute the intercept shift required to align predictions to the true prior log-odds."""
+    p_clipped = np.clip(p_raw, 1e-9, 1.0 - 1e-9)
+    logits_raw = np.log(p_clipped / (1.0 - p_clipped))
+    avg_logit_raw = np.mean(logits_raw)
+
+    prior = y.mean()
+    if prior <= 0 or prior >= 1:
+        return 0.0
+    target_logit = math.log(prior / (1.0 - prior))
+    return float(target_logit - avg_logit_raw)
+
+
 def fill_missing_features(df: pd.DataFrame) -> pd.DataFrame:
     """Return the model feature matrix with absent values imputed.
 

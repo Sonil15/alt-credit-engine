@@ -7,7 +7,11 @@ from typing import Any
 import pandas as pd
 from catboost import CatBoostClassifier
 from core.seeds import CATBOOST_RANDOM_SEED
-from models_ai.constants import LABEL_COLUMN, fill_missing_features, prior_correction_log_odds
+from models_ai.constants import (
+    LABEL_COLUMN,
+    fill_missing_features,
+    calculate_prior_correction_shift,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,11 +54,11 @@ def train_catboost(
         auto_class_weights="Balanced",
     )
     model.fit(features, y)
-    # Undo the balanced-weight recentering (see prior_correction_log_odds): shift the
-    # raw-score bias so the challenger's PD scale matches the champion's honest prior,
-    # keeping the panel's decision bands comparable.
+    # Correct scale and bias/intercept to match target prior log-odds exactly
+    p_raw = model.predict_proba(features)[:, 1]
+    shift = calculate_prior_correction_shift(p_raw, y)
     scale, bias = model.get_scale_and_bias()
-    model.set_scale_and_bias(scale, bias + prior_correction_log_odds(y))
+    model.set_scale_and_bias(scale, bias + shift)
     return model
 
 

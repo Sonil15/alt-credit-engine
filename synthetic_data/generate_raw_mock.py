@@ -386,6 +386,16 @@ def assign_demographics(thetas: list[float]) -> list[dict[str, str]]:
     ]
 
 
+COHORT_SHARING_PROB = {
+    "Salaried": {"telecom": 0.95, "ecommerce": 0.90, "geo": 0.95, "cashflow": 0.95},
+    "GigWorker": {"telecom": 0.90, "ecommerce": 0.85, "geo": 0.90, "cashflow": 0.80},
+    "Student": {"telecom": 0.40, "ecommerce": 0.50, "geo": 0.95, "cashflow": 0.20},
+    "Vendor": {"telecom": 0.70, "ecommerce": 0.40, "geo": 0.90, "cashflow": 0.75},
+    "Farmer": {"telecom": 0.50, "ecommerce": 0.15, "geo": 0.90, "cashflow": 0.40},
+    "Homemaker": {"telecom": 0.85, "ecommerce": 0.40, "geo": 0.85, "cashflow": 0.30},
+}
+
+
 def generate_user_profile(
     theta: float,
     default_label: int,
@@ -445,10 +455,6 @@ def generate_user_profile(
 
     profile = {
         "user_id": user_id,
-        "telecom": {"user_id": user_id, "invoices": generate_telecom_invoices(user_id, theta)},
-        "ecommerce": {"user_id": user_id, "orders": generate_ecommerce_orders(user_id, theta)},
-        "geo": {"user_id": user_id, "locations": generate_geo_locations(user_id, theta)},
-        "cashflow": {"user_id": user_id, "transactions": generate_cashflow_transactions(user_id, theta)},
         "survey": {"user_id": user_id, **generate_survey(user_id, theta, extra_features)},
         "_ground_truth": {
             "latent_creditworthiness": round(theta, 4),
@@ -460,6 +466,17 @@ def generate_user_profile(
             "geography": geography,
         },
     }
+
+    sharing_probs = COHORT_SHARING_PROB.get(cohort, {})
+    if local_rng.random() < sharing_probs.get("telecom", 1.0):
+        profile["telecom"] = {"user_id": user_id, "invoices": generate_telecom_invoices(user_id, theta)}
+    if local_rng.random() < sharing_probs.get("ecommerce", 1.0):
+        profile["ecommerce"] = {"user_id": user_id, "orders": generate_ecommerce_orders(user_id, theta)}
+    if local_rng.random() < sharing_probs.get("geo", 1.0):
+        profile["geo"] = {"user_id": user_id, "locations": generate_geo_locations(user_id, theta)}
+    if local_rng.random() < sharing_probs.get("cashflow", 1.0):
+        profile["cashflow"] = {"user_id": user_id, "transactions": generate_cashflow_transactions(user_id, theta)}
+
     if borrower_type == "msme":
         profile["msme"] = {
             "user_id": user_id,
