@@ -669,6 +669,11 @@
       const ebmTable = document.getElementById('step5-ebm-table');
       ebmTable.innerHTML = '';
       
+      let totalFeaturePoints = 0;
+      for (const feat in scoreResult.factor_points) {
+        totalFeaturePoints += scoreResult.factor_points[feat];
+      }
+
       let sumOfPoints = 0;
       traceSources.forEach(src => {
         src.signals.forEach(sig => {
@@ -705,11 +710,43 @@
         });
       });
 
+      const hiddenPoints = totalFeaturePoints - sumOfPoints;
+      if (Math.abs(hiddenPoints) >= 0.05) {
+        const tr = document.createElement('tr');
+        tr.style.backgroundColor = '#f8fafc';
+        tr.style.fontStyle = 'italic';
+
+        const tdLabel = document.createElement('td');
+        tdLabel.innerHTML = '<b>Cohort Baseline Adjustments</b> <small style="color:var(--text-muted);">(hidden non-applicable features)</small>';
+        tr.appendChild(tdLabel);
+
+        const tdVal = document.createElement('td');
+        tdVal.textContent = 'N/A';
+        tr.appendChild(tdVal);
+
+        const tdLogOdds = document.createElement('td');
+        tdLogOdds.textContent = (hiddenPoints / 50).toFixed(4); // approximation
+        tr.appendChild(tdLogOdds);
+
+        const tdPoints = document.createElement('td');
+        tdPoints.textContent = hiddenPoints >= 0 ? `+${hiddenPoints.toFixed(1)}` : hiddenPoints.toFixed(1);
+        tdPoints.style.fontWeight = 'bold';
+        tdPoints.style.color = hiddenPoints >= 0 ? '#16a34a' : '#dc2626';
+        tr.appendChild(tdPoints);
+
+        const tdImpact = document.createElement('td');
+        tdImpact.textContent = hiddenPoints >= 0 ? 'Raises Score' : 'Lowers Score';
+        tdImpact.style.color = hiddenPoints >= 0 ? '#16a34a' : '#dc2626';
+        tr.appendChild(tdImpact);
+
+        ebmTable.appendChild(tr);
+      }
+
       const roundedScore = Math.round(scoreResult.credit_score);
       const roundedBase = Math.round(scoreResult.base_points);
       
       document.getElementById('step5-formula').innerHTML = 
-        `Base Points (<b>${roundedBase}</b>) + Sum of Feature Points (<b>${sumOfPoints >= 0 ? '+' : ''}${sumOfPoints.toFixed(1)}</b>) = Alternate Credit Score: <span style="color: #2563eb; font-weight: 800;">${roundedScore}</span>`;
+        `Base Points (<b>${roundedBase}</b>) + Sum of Feature Points (<b>${totalFeaturePoints >= 0 ? '+' : ''}${totalFeaturePoints.toFixed(1)}</b>) = Alternate Credit Score: <span style="color: #2563eb; font-weight: 800;">${roundedScore}</span>`;
 
       // --- STEP 6 ---
       // Conformal Prediction and Panel Agreement

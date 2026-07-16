@@ -70,7 +70,8 @@ SCOPE_TO_FEATURES = {
     "survey": [
         "conscientiousness", "locus_of_control", "financial_self_efficacy",
         "present_bias", "debt_attitude", "risk_tolerance",
-        "delayed_gratification", "honesty", "cognitive_reflection", "resourcefulness"
+        "delayed_gratification", "honesty", "cognitive_reflection", "resourcefulness",
+        "response_validity"
     ],
     "campus": ["upi_spend_consistency", "small_dues_payment_promptness", "e_wallet_topup_frequency"],
     "vendor": ["daily_transaction_count", "average_ticket_size"],
@@ -355,6 +356,21 @@ def _build_payload(
         has_business_profile=bool(intake.get("has_business_profile")) if intake else False,
     ):
         excluded_features.update(BUSINESS_MODEL_FEATURES)
+
+    # Exclude features that belong to scopes not applicable to this cohort
+    COHORT_EXPECTED_SCOPES = {
+        "Salaried": ["telecom", "ecommerce", "geo", "cashflow", "survey"],
+        "GigWorker": ["telecom", "ecommerce", "geo", "cashflow", "survey"],
+        "Student": ["geo", "survey", "campus"],
+        "Vendor": ["geo", "survey", "vendor"],
+        "Farmer": ["geo", "survey", "farmer"],
+        "Homemaker": ["telecom", "geo", "survey", "household"],
+    }
+    expected_scopes = COHORT_EXPECTED_SCOPES.get(str(cohort), [])
+    for scope_name, scope_features in SCOPE_TO_FEATURES.items():
+        if scope_name not in expected_scopes:
+            excluded_features.update(scope_features)
+
     visible_contributions = [c for c in contributions if c["feature"] not in excluded_features]
 
     feature_drivers = _top_drivers(visible_contributions)
