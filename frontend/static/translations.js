@@ -362,7 +362,7 @@ const ALTCREDIT_DICTIONARY = {
     "register-btn-verifying-otp": "Verifying…",
     "register-field-otp": "Enter 6-digit OTP",
     "register-otp-sent": "OTP sent to your Aadhaar-registered mobile number.",
-    "register-verified-success": "Identity Verified: Ravi Kumar ✅",
+    "register-verified-success": "Identity Verified ✅",
     "register-field-loginid": "Choose Login ID",
     "register-field-password": "Password",
     "register-submit": "Verify & Create Account",

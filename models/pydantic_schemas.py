@@ -441,7 +441,11 @@ class AuthCredentials(BaseModel):
         return v
 
 
-class AuthResponse(BaseModel):
+class CaptchaVerifyRequest(BaseModel):
+    """Request model for CAPTCHA verification."""
+
+    captcha_answer: str = Field(min_length=1)
+    captcha_token: str = Field(min_length=1)
     """Returned on successful register/login."""
 
     token: str
