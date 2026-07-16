@@ -36,13 +36,25 @@ CAPTCHA_SECRET = "hackathon-captcha-secret"
 
 
 @router.get("/captcha")
-def get_captcha() -> dict[str, str]:
-    a = random.randint(1, 10)
-    b = random.randint(1, 10)
-    ans = a + b
-    question = f"What is {a} + {b}?"
+async def get_captcha(db: AsyncSession = Depends(get_db)) -> dict[str, str]:
+    from models.db_models import Captcha
+    from sqlalchemy import func
+
+    # Fetch a random CAPTCHA from database
+    result = await db.execute(select(Captcha).order_by(func.random()).limit(1))
+    captcha = result.scalar_one_or_none()
+
+    if not captcha:
+        # Fallback dynamic generation if database table is empty for some reason
+        from core.bootstrap import generate_bad_captcha
+        label = "ERROR"
+        image_base64 = generate_bad_captcha(label)
+        token = hashlib.md5(f"{label}-{CAPTCHA_SECRET}".encode()).hexdigest()
+        return {"image_base64": f"data:image/png;base64,{image_base64}", "token": token}
+
+    ans = captcha.label.strip() if captcha.label else ""
     token = hashlib.md5(f"{ans}-{CAPTCHA_SECRET}".encode()).hexdigest()
-    return {"question": question, "token": token}
+    return {"image_base64": f"data:image/png;base64,{captcha.image_base64}", "token": token}
 
 
 @router.post("/register", response_model=AuthResponse, dependencies=[Depends(check_rate_limit)])

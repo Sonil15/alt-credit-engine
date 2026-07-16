@@ -45,9 +45,7 @@
 
     <div id="result-section" style="display:none">
       <div class="card">
-        <div id="simulated-warning" style="display:none; background:#7f1d1d; color:#fca5a5; padding:10px; border-radius:10px; text-align:center; font-weight:bold; font-size:13px; margin-bottom:20px; border: 1px solid #991b1b;" data-i18n="borrower-warning-simulated">
-          ⚠️ SIMULATED DATA / TEST PROTOCOL &bull; NOT AN ACTIVE BORROWER FILE
-        </div>
+
         <h2 data-i18n="borrower-score-title">Your Credit Score</h2>
 
         <div class="score-hero">
@@ -258,11 +256,8 @@
       document.getElementById('loading').style.display = 'none';
       document.getElementById('result-section').style.display = 'block';
 
-      if (d.is_simulated) {
-        document.getElementById('simulated-warning').style.display = 'block';
-      } else {
-        document.getElementById('simulated-warning').style.display = 'none';
-      }
+
+
 
       document.getElementById('score-num').textContent = d.credit_score;
       // The lending outcome the borrower is told (post affordability gate);

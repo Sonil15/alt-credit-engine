@@ -205,3 +205,14 @@ class AuditLog(Base):
         server_default=func.now(),
         nullable=False,
     )
+
+
+class Captcha(Base):
+    """Stores generated visual CAPTCHA challenges."""
+
+    __tablename__ = "captchas"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    image_base64: Mapped[str] = mapped_column(Text, nullable=False)
+    label: Mapped[str] = mapped_column(String(20), nullable=True)
+

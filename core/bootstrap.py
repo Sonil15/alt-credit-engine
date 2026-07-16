@@ -14,16 +14,117 @@ import json
 import logging
 from pathlib import Path
 from uuid import UUID
+import random
+import io
+import base64
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 from sqlalchemy import func, select
 
 from core.database import AsyncSessionLocal
 from core.feature_store import upsert_feature
 from core.security import get_encryptor
-from models.db_models import MLFeature, SecureVault
+from models.db_models import MLFeature, SecureVault, Captcha
 from preprocessing.pipeline import process_vault_record
 
 logger = logging.getLogger(__name__)
+
+
+def generate_bad_captcha(text: str) -> str:
+    """Generates a distorted, noisy visual CAPTCHA image and returns it as base64."""
+    w, h = 180, 60
+    # Dark slate background matching dashboard UI
+    image = Image.new("RGB", (w, h), (30, 41, 59))
+    draw = ImageDraw.Draw(image)
+
+    # Try loading common system fonts
+    font = None
+    for font_path in [
+        "/System/Library/Fonts/Geneva.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/System/Library/Fonts/Supplemental/Verdana.ttf",
+        "/System/Library/Fonts/SFNSMono.ttf",
+    ]:
+        try:
+            font = ImageFont.truetype(font_path, 32)
+            break
+        except Exception:
+            continue
+
+    if font is None:
+        font = ImageFont.load_default()
+
+    # Draw grid/noise lines in background
+    for _ in range(12):
+        x1 = random.randint(0, w)
+        y1 = random.randint(0, h)
+        x2 = random.randint(0, w)
+        y2 = random.randint(0, h)
+        draw.line(
+            (x1, y1, x2, y2),
+            fill=(random.randint(60, 120), random.randint(60, 120), random.randint(60, 120)),
+            width=2,
+        )
+
+    # Draw point noise (dots)
+    for _ in range(400):
+        draw.point(
+            (random.randint(0, w), random.randint(0, h)),
+            fill=(random.randint(100, 200), random.randint(100, 200), random.randint(100, 200)),
+        )
+
+    # Draw characters one by one with individual skew/rotation
+    char_w = w / len(text)
+    for i, char in enumerate(text):
+        char_img = Image.new("RGBA", (40, 50), (0, 0, 0, 0))
+        char_draw = ImageDraw.Draw(char_img)
+        char_color = (random.randint(150, 255), random.randint(150, 255), random.randint(150, 255), 255)
+        char_draw.text((5, 5), char, font=font, fill=char_color)
+        char_rotated = char_img.rotate(random.randint(-30, 30), expand=True, resample=Image.Resampling.BILINEAR)
+        char_x = int(10 + i * char_w + random.randint(-5, 5))
+        char_y = int(random.randint(2, 10))
+        image.paste(char_rotated, (char_x, char_y), char_rotated)
+
+    # Add foreground noise lines crossing characters
+    for _ in range(5):
+        x1 = random.randint(0, w)
+        y1 = random.randint(0, h)
+        x2 = random.randint(0, w)
+        y2 = random.randint(0, h)
+        draw.line(
+            (x1, y1, x2, y2),
+            fill=(random.randint(200, 255), random.randint(100, 200), random.randint(100, 200)),
+            width=2,
+        )
+
+    # Apply a slight blur
+    image = image.filter(ImageFilter.GaussianBlur(radius=0.8))
+
+    buf = io.BytesIO()
+    image.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
+async def ensure_captchas_seeded() -> None:
+    """Ensures at least 10 visual captcha challenges are stored in the database."""
+    async with AsyncSessionLocal() as session:
+        count = await session.scalar(select(func.count()).select_from(Captcha))
+        if count >= 10:
+            return
+
+        to_seed = 10 - count
+        logger.info("Seeding %d visual captchas to database...", to_seed)
+
+        # Exclude easily confused characters like I, O, 0, 1
+        possible_chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        for _ in range(to_seed):
+            label = "".join(random.choice(possible_chars) for _ in range(5))
+            image_b64 = generate_bad_captcha(label)
+            record = Captcha(image_base64=image_b64, label=label)
+            session.add(record)
+
+        await session.commit()
+
 
 MOCK_DATA_PATH = Path(__file__).resolve().parent.parent / "synthetic_data" / "mock_data_100_users.json"
 DATA_TYPES = ("telecom", "ecommerce", "geo", "cashflow", "survey")

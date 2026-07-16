@@ -19,6 +19,14 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("Initializing database tables...")
     await init_db()
+    
+    # Always seed CAPTCHAs so visual challenges are available
+    try:
+        from core.bootstrap import ensure_captchas_seeded
+        await ensure_captchas_seeded()
+    except Exception:
+        logger.exception("CAPTCHA seeding failed")
+
     if get_settings().seed_on_startup_enabled:
         try:
             await ensure_seeded()

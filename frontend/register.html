@@ -187,7 +187,10 @@
             <div class="form-group" style="margin-top: 15px;">
               <label class="form-label" for="captcha-input">Security Challenge (CAPTCHA)</label>
               <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-                <div id="captcha-question" style="font-weight: bold; background: #1e293b; border: 1px solid #334155; padding: 8px 12px; border-radius: 6px; color: #38bdf8; font-size: 14px; letter-spacing: 1px; user-select: none;">Loading challenge...</div>
+                <div id="captcha-image-container" style="border: 1px solid #334155; border-radius: 6px; overflow: hidden; width: 180px; height: 60px; display: flex; align-items: center; justify-content: center; background: #1e293b;">
+                  <img id="captcha-image" src="" alt="CAPTCHA Challenge" style="width: 100%; height: 100%; object-fit: contain; display: none;" />
+                  <span id="captcha-loading" style="font-size: 12px; color: #64748b;">Loading...</span>
+                </div>
                 <button type="button" class="btn btn-secondary" onclick="loadCaptcha()" style="padding: 6px 12px; font-size: 12px; height: auto; background: #475569; border: none; color: #fff; border-radius: 6px; cursor: pointer;">↻ Refresh</button>
               </div>
               <input id="captcha-input" class="form-control" type="text" placeholder="Enter answer here">
@@ -223,10 +226,12 @@
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 10px; color: #64748b;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                 <span>Camera starting...</span>
               </div>
-              <div id="camera-feed" style="display: none; width: 100%; height: 100%; position: relative; background: radial-gradient(circle, #334155 0%, #0f172a 100%);">
+              <div id="camera-feed" style="display: none; width: 100%; height: 100%; position: relative; background: #0f172a;">
+                <video id="webcam-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block;"></video>
+                <canvas id="webcam-canvas" style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: none;"></canvas>
                 <!-- Glowing scanning line -->
                 <div id="scanning-line" style="position: absolute; left: 0; width: 100%; height: 2px; background: #22c55e; box-shadow: 0 0 8px #22c55e; animation: scan 2s linear infinite;"></div>
-                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+                <div id="align-face-overlay" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;">
                   <div style="width: 140px; height: 180px; border: 2px dashed #3b82f6; border-radius: 50%; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 11px; font-weight: bold; text-transform: uppercase;">Align Face</div>
                 </div>
               </div>
@@ -277,6 +282,7 @@
     const nextUrl = params.get('next') || '/apply';
     let currentStep = 1;
     let verifiedAadhaar = '';
+    let webcamStream = null;
 
     // If already logged in, skip register
     if (Auth.isLoggedIn()) {
@@ -316,13 +322,22 @@
 
     async function loadCaptcha() {
       try {
+        document.getElementById('captcha-image').style.display = 'none';
+        document.getElementById('captcha-loading').style.display = 'inline';
+        document.getElementById('captcha-loading').textContent = 'Loading...';
+
         const resp = await fetch('/auth/captcha');
         const data = await resp.json();
-        document.getElementById('captcha-question').textContent = data.question;
+
+        const img = document.getElementById('captcha-image');
+        img.src = data.image_base64;
+        img.style.display = 'block';
+        
+        document.getElementById('captcha-loading').style.display = 'none';
         document.getElementById('captcha-token').value = data.token;
         document.getElementById('captcha-input').value = '';
       } catch (err) {
-        document.getElementById('captcha-question').textContent = 'Error loading challenge';
+        document.getElementById('captcha-loading').textContent = 'Error loading challenge';
       }
     }
 
@@ -379,13 +394,38 @@
       }, 1000);
     }
 
-    function startCameraMock() {
+    async function startCameraMock() {
       const overlay = document.getElementById('camera-overlay');
       const feed = document.getElementById('camera-feed');
-      setTimeout(() => {
+      const video = document.getElementById('webcam-video');
+      const canvas = document.getElementById('webcam-canvas');
+      const line = document.getElementById('scanning-line');
+      const faceOverlay = document.getElementById('align-face-overlay');
+
+      // Reset visibility states
+      video.style.display = 'block';
+      canvas.style.display = 'none';
+      if (line) line.style.display = 'block';
+      if (faceOverlay) faceOverlay.style.display = 'flex';
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+        });
+        webcamStream = stream;
+        video.srcObject = stream;
+        
+        // Hide loading and show webcam feed
         overlay.style.display = 'none';
         feed.style.display = 'block';
-      }, 1000);
+        feed.style.background = '#0f172a';
+      } catch (err) {
+        console.warn('Webcam access failed, falling back to mock gradient simulation:', err);
+        video.style.display = 'none';
+        feed.style.background = 'radial-gradient(circle, #334155 0%, #0f172a 100%)';
+        overlay.style.display = 'none';
+        feed.style.display = 'block';
+      }
     }
 
     async function performLivenessCheck() {
@@ -394,8 +434,31 @@
       btn.disabled = true;
       btn.textContent = 'Analyzing Face Liveness...';
 
+      const video = document.getElementById('webcam-video');
+      const canvas = document.getElementById('webcam-canvas');
+      const line = document.getElementById('scanning-line');
+      const faceOverlay = document.getElementById('align-face-overlay');
+
+      // If we have an active stream, freeze the video frame onto the canvas
+      if (webcamStream && video.readyState >= video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Toggle visibility to show the frozen canvas frame and hide video/overlay lines
+        video.style.display = 'none';
+        canvas.style.display = 'block';
+        if (line) line.style.display = 'none';
+        if (faceOverlay) faceOverlay.style.display = 'none';
+
+        // Stop all tracks to turn off the webcam light
+        webcamStream.getTracks().forEach(track => track.stop());
+        webcamStream = null;
+      }
+
       setTimeout(() => {
-        btn.textContent = 'Face Match Success: 98.4% ✅';
+        btn.textContent = 'Verified ✅';
         btn.style.background = '#10b981';
         btn.style.borderColor = '#10b981';
         
@@ -453,22 +516,7 @@
           btnText.textContent = t('register-btn-verified', 'Verified ✅');
           btn.style.background = '#10b981';
           
-          // Auto-solve math challenge if present
-          try {
-            const challengeText = document.getElementById('captcha-question').textContent;
-            const mathMatch = challengeText.match(/What is\s+(\d+)\s*\+\s*(\d+)/i);
-            if (mathMatch) {
-              const ans = parseInt(mathMatch[1], 10) + parseInt(mathMatch[2], 10);
-              document.getElementById('captcha-input').value = ans;
-            }
-          } catch (e) {
-            console.error('Error solving captcha: ', e);
-          }
-          
-          // Instantly skip to Liveness Check (Step 2)
-          setTimeout(() => {
-            goToStep(2);
-          }, 800);
+          // Stay on Step 1: user must still solve CAPTCHA and complete OTP
         }, 1200);
       }, 1000);
     }

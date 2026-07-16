@@ -85,3 +85,4 @@ def mount_static(app) -> None:
     """Mount static assets (voice.js) if directory exists."""
     if STATIC_DIR.exists():
         app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
