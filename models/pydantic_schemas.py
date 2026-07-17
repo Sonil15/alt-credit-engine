@@ -446,6 +446,9 @@ class CaptchaVerifyRequest(BaseModel):
 
     captcha_answer: str = Field(min_length=1)
     captcha_token: str = Field(min_length=1)
+
+
+class AuthResponse(BaseModel):
     """Returned on successful register/login."""
 
     token: str
