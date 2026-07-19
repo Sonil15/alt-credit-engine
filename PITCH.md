@@ -62,6 +62,13 @@ Copy this block for each feature:
 
 ## Feature Framing
 
+### Bureau Pre-Screening Gate
+- **Judge problem it answers:** "Why waste compute and alternative data parsing on borrowers who already have a prime traditional credit history, or why lend to known subprime defaulters via an alternative channel?"
+- **Pitch line:** "We instantly route known-good and known-bad borrowers out of the alternative pipeline using a deterministic Bureau Gate, reserving the costly Alt-Credit Engine for genuine New To Credit (NTC) customers."
+- **Differentiator:** Our system demonstrates a realistic hybrid architecture where traditional bureau hits (via PAN) short-circuit the pipeline immediately, rather than ignoring the traditional bureau entirely.
+- **Demo moment:** Show a borrower application being instantly fast-tracked (Decision: `TRADITIONAL_BUREAU_HIT`) because their PAN number resulted in a prime traditional bureau score, bypassing the alt-credit calculation entirely.
+- **Honest caveat (optional):** This is a deterministic mock based on PAN string matching, since we don't have live API access to a real credit bureau in the hackathon.
+
 ### Glass-box EBM champion (replaced CatBoost + SHAP)
 - **Judge problem it answers:** "Post-hoc explanations (SHAP) narrate a black box: the
   *decider* is still opaque. Can a risk officer or regulator actually audit the model? And what stops the model from learning nonsensical patterns from small/noisy data, like missed bill payments helping a score?"
@@ -81,9 +88,14 @@ Copy this block for each feature:
   disagreement as a signal*, when they argue, a human decides."
 - **Differentiator:** This is real bank model-risk-management practice (champion/
   challenger), not a single-model demo. Diversity is genuine (PD rank-correlation
-  ~0.6, different function families, nowhere near lockstep).
-- **Demo moment:** Find a borrower the black-box challenger would APPROVE but the panel
-  routes to REVIEW, "the black box alone would have lent; the committee caught it."
+  ~0.6, different function families, nowhere near lockstep). The gate is *calibrated,
+  not trigger-happy*: it demotes an approval to review only on a genuine hard
+  conflict (a challenger would REJECT what the champion would APPROVE), not when a
+  challenger merely lands one band lower in REVIEW — adjacent-band scatter is model
+  noise, and treating it as a veto would route away almost every sound approval.
+- **Demo moment:** Find a borrower a challenger would REJECT while the champion would
+  APPROVE — the panel catches the genuine split and routes to REVIEW: "the black box
+  alone would have lent; the committee caught the one that actually mattered."
 
 ### Conformal abstention (statistically-grounded "I don't know")
 - **Judge problem it answers:** "What stops the model from confidently auto-approving a
@@ -98,8 +110,8 @@ Copy this block for each feature:
 ### Honest scorecard re-anchoring & numerical prior shift calibration
 - **Judge problem it answers:** "Did you tune the cutoffs or models to make the demo look good? And what stops the EBM champion from overfitting small datasets and saturating all credit scores at exactly 300 or 900?"
 - **Pitch line:** "Our honest model needed an honest scorecard. We resolved the extreme score saturation (300/900 splits) by correcting the math of prior probability calibration and aligning model training capacity with cross-validation."
-- **Differentiator:** Most teams ignore class-weight prior calibration or use naive log-odds average shifts that collapse on saturated small-sample predictions. We implemented a numerically exact **binary search solver** that matches the average predicted default probability to the actual population default rate ($12.3\%$). We also aligned EBM training to use the full `X_train` training split ($84$ rows) to match the CV fold size. This allows the temperature scaling optimizer to fit a healthy, robust temperature ($T \approx 2.64$) rather than defaulting to $T = 1.0$. Together, this yielded a **$15.7\%$ boost in holdout AUC** and a **$5.9\%$ boost in CV AUC**, while generating a realistic, balanced credit score distribution.
-- **Demo moment:** The portfolio's credit score distribution showing a clean, realistic spread from `438` to `881` (mean `650.6`, standard dev `95.8`) with **zero** artificial 900s, only one chronic defaulter at 300, and our thin-file applicant with poor facet-wise performance receiving a logical `664` (`REVIEW`) instead of an auto-approved `900`.
+- **Differentiator:** Most teams ignore class-weight prior calibration or use naive log-odds average shifts that collapse on saturated small-sample predictions. We implemented a numerically exact **binary search solver** that matches the average predicted default probability to the actual population default rate ($12.0\%$). We also aligned EBM training to use the full `X_train` training split ($84$ rows) to match the CV fold size. This allows the temperature scaling optimizer to fit a healthy, robust temperature ($T \approx 2.64$) rather than defaulting to $T = 1.0$. Together, this yielded a **$15.7\%$ boost in holdout AUC** and a **$5.9\%$ boost in CV AUC**, while generating a realistic, balanced credit score distribution.
+- **Demo moment:** The portfolio's credit score distribution showing a clean, realistic spread from `300` to `850` (mean `661`, standard dev `132`) with **zero** artificial 900s and only the chronic defaulters floored at 300, yielding a `51 / 31 / 18` approve / review / reject split — the approve cutoff (`700`) reserves auto-lending for the clearly-safe and routes the borderline-good to a human, so it is neither a portfolio piled into one band nor a demo where everyone is auto-approved.
 
 ### Typical-applicant-centered drivers (honest "What Affected Your Score")
 - **Judge problem it answers:** "Your borrower explanation shows only positives, is
@@ -267,22 +279,31 @@ Copy this block for each feature:
 ### Multi-dimension Fairness Monitor
 - **Judge problem it answers:** "Alternate data can encode bias, how do you know you're
   not discriminating, and against which groups?"
-- **Pitch line:** "We monitor approval-rate parity across five slices simultaneously:
-  borrower category, gender, geography, income bracket, and social category, with a
-  live 80% rule check on each."
+- **Pitch line:** "We monitor approval-rate parity across four slices simultaneously:
+  borrower category, gender, geography, and social category, with a live 80% rule
+  check on each, and it applies to every borrower, not just the ones scored by the
+  alt-credit model."
 - **Differentiator:** Most teams check one protected attribute. We built a configurable
   dimension framework: adding a new slice is a one-line entry, and the dashboard selector
   lets the loan officer or regulator switch views in one click. Demographic fields are
-  monitoring-only. They are never model inputs. Default view is borrower category
-  (Individual vs MSME). The slice a loan officer reasons about, rather than leading
-  with a sensitive attribute.
-- **Demo moment:** Open the Fairness Monitor, switch between dimensions live, point out
-  that geography passes the 80% rule (rural borrowers approved at comparable rates) while
-  income bracket flags a disparity worth investigating, which is exactly the kind of
-  signal a responsible lending programme should surface and act on.
-- **Honest caveat:** Demographic fields are synthetic, distributions approximate
-  realistic proportions but are not derived from real borrower data. The monitoring
-  framework is what to demonstrate, not the specific ratios.
+  self-declared at registration, optional, and monitoring-only, they are never model
+  inputs and a borrower who skips them is simply excluded from parity groups rather than
+  assigned a guessed value. Default view is borrower category (Individual vs MSME), the
+  slice a loan officer reasons about, rather than leading with a sensitive attribute.
+- **Credibility fix:** Bureau-fast-track approvals (prime CIBIL, bypassing the alt-credit
+  pipeline) used to have no demographic data at all, so every approval in that path was
+  silently dropped from every parity group. We now capture the same self-declared
+  attributes at registration regardless of which path a borrower is approved through, so
+  fast-track approvals count too. Separately, when a group has zero approvals to measure,
+  the monitor used to default the disparate-impact ratio to 1.0 and report "Passes 80%
+  rule" - a false-clean read. It now reports "Insufficient data" instead, so an empty
+  chart can never be mistaken for a clean bill of health.
+- **Demo moment:** Open the Fairness Monitor, switch between dimensions live, then show a
+  fresh registration flow where selecting a demographic self-declaration on signup feeds
+  straight into the next portfolio refresh.
+- **Honest caveat:** Demographic self-declaration is new and optional, so real coverage
+  fills in gradually as borrowers register; the synthetic seed cohort still backs the bulk
+  of the demo dataset.
 
 ### Adverse-action reason codes
 - **Judge problem it answers:** "If you decline someone, can you tell them why, as
@@ -386,6 +407,14 @@ Copy this block for each feature:
   was informal user feedback (two individuals), not a structured usability study,
   so it's directional validation of the design approach, not a statistically
   representative sample.
+- **Data-integrity note:** The requested amount is captured faithfully end to end —
+  the value the borrower types is what's stored, scored, and shown back, with no
+  rounding or transformation anywhere in the path. We hardened the amount field
+  against a subtle native-browser footgun where a focused `<input type=number>`
+  treats the scroll wheel as increment/decrement by `step`: scrolling the page after
+  typing could silently shift the ask (e.g. ₹57,000 → ₹55,000). The field now
+  suppresses wheel-driven mutation while focused, so the stored amount always equals
+  the stated ask.
 
 ### LLM business profiler: borrower-confirmed, with a deterministic fallback
 - **Judge problem it answers:** "MSME borrowers have business facts no data source

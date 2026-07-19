@@ -23,10 +23,14 @@ from convergence.scorecard import pd_to_credit_score
 # Tuned to the honestly-calibrated + temperature-scaled EBM champion: prior
 # correction recenters PDs on the real base rate and temperature scaling spreads
 # them across the band (calibrated PDs run ~1-14%, scores ~560-810). Against that
-# spread, 650/560 yields a realistic approve/review/reject split (with headroom
-# above the bar so panel-unanimous approvals survive the agreement + conformal
-# gates) instead of piling the whole portfolio into the approve band.
-APPROVE_SCORE = 650
+# spread, 700/560 yields a ~50/30/20 approve/review/reject split: auto-approval is
+# deliberately reserved for the clearly-safe (PD ~2.5% or lower), the borderline-
+# good (score 560-699) get a human look rather than an instant lend, and only the
+# genuinely weak are rejected -- instead of piling the whole portfolio into one
+# band. The agreement gate demotes an approval to
+# review only on a hard APPROVE-vs-REJECT conflict, not on adjacent-band scatter,
+# so a champion approval survives a merely-more-conservative challenger.
+APPROVE_SCORE = 700
 REVIEW_SCORE = 560
 
 

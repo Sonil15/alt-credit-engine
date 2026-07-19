@@ -122,12 +122,23 @@ def sample_latent_and_default(rng: random.Random) -> tuple[float, int]:
 
     Intercept/slope are tuned so calibrated PDs spread across all three decision
     bands (roughly 40/40/20 approve/review/reject on the scorecard) instead of
-    piling the whole portfolio into the approve band. Tail widening is applied via
+    piling the whole portfolio into the review band. Tail widening is applied via
     ``_risk_penalty`` on observable features, not by inflating the default prior.
+
+    The latent draw is skewed toward creditworthy (Beta(2.4, 1.9), mean ~0.56):
+    an inclusive thin-file lender's applicant pool is mostly people who repay but
+    lack a bureau trail, not a random-risk cross-section. The intercept centres the
+    portfolio base default rate near ~15% -- low enough that a real share of good
+    borrowers clears the approve band, but high enough to leave the champion EBM a
+    trainable number of defaulters (a 9% prior starves the model and collapses its
+    AUC to ~0.5, which then fails the challenger-agreement gate). The label noise is
+    kept tight (sd 0.12) so the theta->default signal is learnable: a champion that
+    genuinely discriminates is what lets clear-cut good borrowers earn a *unanimous*
+    auto-approval instead of being routed to review on panel disagreement.
     """
-    theta = rng.betavariate(2.0, 2.0)
-    noise = rng.gauss(0.0, 0.25)
-    logit_pd = -1.55 + 4.0 * (0.5 - theta) + noise
+    theta = rng.betavariate(2.4, 1.9)
+    noise = rng.gauss(0.0, 0.12)
+    logit_pd = -1.95 + 4.8 * (0.5 - theta) + noise
     p_default = _sigmoid(logit_pd)
     default_label = 1 if rng.random() < p_default else 0
     return theta, default_label

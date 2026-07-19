@@ -163,13 +163,13 @@
               </button>
             </div>
             
-            <div style="display: flex; align-items: center; text-align: center; margin: 15px 0; color: var(--text-muted); font-size: 11px;">
+            <div id="manual-divider" style="display: flex; align-items: center; text-align: center; margin: 15px 0; color: var(--text-muted); font-size: 11px;">
               <div style="flex: 1; height: 1px; background: #334155; opacity: 0.5;"></div>
               <span style="padding: 0 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;" data-i18n="register-or-divider">Or Verify Manually</span>
               <div style="flex: 1; height: 1px; background: #334155; opacity: 0.5;"></div>
             </div>
 
-            <div class="form-group">
+            <div id="manual-aadhaar-group" class="form-group">
               <label class="form-label" for="aadhaar-input" data-i18n="register-field-aadhaar">Aadhaar Number</label>
               <input id="aadhaar-input" class="form-control" type="text" inputmode="numeric" maxlength="14" placeholder="12-digit Aadhaar (e.g. 1234 5678 9012)">
             </div>
@@ -263,6 +263,35 @@
               <label class="form-label" for="password" data-i18n="register-field-password">Password</label>
               <input id="password" class="form-control" type="password" autocomplete="new-password" placeholder="••••••••">
               <span id="pw-hint" class="field-hint" data-i18n="login-pw-hint">At least 6 characters.</span>
+            </div>
+
+            <div class="form-group" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #334155;">
+              <label class="form-label" style="margin-bottom: 4px;" data-i18n="register-fairness-heading">Optional: fairness monitoring</label>
+              <p style="font-size: 11px; color: var(--text-muted); margin: 0 0 10px;" data-i18n="register-fairness-note">
+                Self-declared, used only to audit approval-rate parity across groups. Never used to score your application. Skip any you'd rather not answer.
+              </p>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <select id="gender-select" class="form-control" style="border-radius: 8px; padding: 10px; background: #1e293b; color: #fff; border: 1px solid #334155;">
+                  <option value="" data-i18n="register-gender-skip">Gender: Prefer not to say</option>
+                  <option value="male" data-i18n="register-gender-male">Male</option>
+                  <option value="female" data-i18n="register-gender-female">Female</option>
+                  <option value="other" data-i18n="register-gender-other">Other</option>
+                </select>
+                <select id="geography-select" class="form-control" style="border-radius: 8px; padding: 10px; background: #1e293b; color: #fff; border: 1px solid #334155;">
+                  <option value="" data-i18n="register-geography-skip">Area: Prefer not to say</option>
+                  <option value="urban" data-i18n="register-geography-urban">Urban</option>
+                  <option value="semi_urban" data-i18n="register-geography-semi-urban">Semi-Urban</option>
+                  <option value="rural" data-i18n="register-geography-rural">Rural</option>
+                </select>
+              </div>
+              <select id="social-category-select" class="form-control" style="width: 100%; border-radius: 8px; padding: 10px; background: #1e293b; color: #fff; border: 1px solid #334155;">
+                <option value="" data-i18n="register-social-category-skip">Social category: Prefer not to say</option>
+                <option value="general" data-i18n="register-social-category-general">General</option>
+                <option value="obc" data-i18n="register-social-category-obc">OBC</option>
+                <option value="sc" data-i18n="register-social-category-sc">SC</option>
+                <option value="st" data-i18n="register-social-category-st">ST</option>
+                <option value="minority" data-i18n="register-social-category-other">Other</option>
+              </select>
             </div>
 
             <button id="submit-btn" class="btn btn-primary auth-submit" onclick="submitRegistration()" data-i18n="register-submit">Verify & Create Account</button>
@@ -577,7 +606,11 @@
           
           btnText.textContent = t('register-btn-verified', 'Verified ✅');
           btn.style.background = '#10b981';
-          
+
+          // Aadhaar already resolved via DigiLocker — hide manual entry
+          document.getElementById('manual-divider').style.display = 'none';
+          document.getElementById('manual-aadhaar-group').style.display = 'none';
+
           // Stay on Step 1: user must still solve CAPTCHA and complete OTP
         }, 1200);
       }, 1000);
@@ -593,6 +626,11 @@
       const cibilVal = Number(document.getElementById('cibil-select').value);
       const captchaAnswer = document.getElementById('captcha-input').value.trim();
       const captchaToken = document.getElementById('captcha-token').value;
+      const demographics = {
+        gender: document.getElementById('gender-select').value || null,
+        geography: document.getElementById('geography-select').value || null,
+        social_category: document.getElementById('social-category-select').value || null,
+      };
 
       const btn = document.getElementById('submit-btn');
       
@@ -637,7 +675,7 @@
 
         // Finalize registration
         progressBar.style.width = '100%';
-        await Auth.register(loginId, password, cibilVal, captchaAnswer, captchaToken);
+        await Auth.register(loginId, password, cibilVal, captchaAnswer, captchaToken, demographics);
         
         // Save verified Aadhaar status and details to simulate a real identity vault link
         localStorage.setItem('altcredit_aadhaar_verified', 'true');

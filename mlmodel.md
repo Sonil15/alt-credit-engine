@@ -205,15 +205,25 @@ treated as boundary noise, not disagreement, otherwise the gate floods REVIEW.
 a calibration issue: CatBoost was *over-confident* (median PD ≈ 0.5%), so the old
 scorecard's APPROVE bar (PD ≤ 0.25%) was only clearable by an over-confident model.
 The honestly-calibrated EBM (median PD ≈ base rate) produced **0% approvals** under
-the old anchor. Fix: Adjusted the score thresholds in `convergence/panel.py` to `APPROVE_SCORE = 650` and `REVIEW_SCORE = 560`, anchoring the bands to the population's real ~13% base rate. Result on the current 106-user portfolio (2026-07 dataset):
+the old anchor. Fix, in two parts: (1) the synthetic applicant pool is drawn as an
+*inclusive lender's* pool — latent creditworthiness skewed toward repayment
+(Beta(2.4, 1.9)) with the base default rate re-anchored to ~12% so the portfolio
+matches the scorecard's 10:1-at-600 assumption instead of sitting ~25% and dragging
+every score onto the REVIEW floor; (2) the score thresholds in `convergence/panel.py`
+are `APPROVE_SCORE = 700` and `REVIEW_SCORE = 560` — auto-approval reserved for the
+clearly-safe (PD ~2.5%), the borderline-good routed to human review. The agreement
+gate was also made consistent: it demotes an approval only on a hard APPROVE-vs-
+REJECT conflict, not on adjacent-band scatter (a challenger one band lower is noise,
+not a veto — the old unanimity rule collapsed the approve rate). Result on the
+current 100-user portfolio (2026-07 dataset):
 
 | Decision | Share |
 |---|---|
-| APPROVE | 8.5% |
-| REVIEW | 61.3% |
-| REJECT | 30.2% |
+| APPROVE | 51% |
+| REVIEW | 31% |
+| REJECT | 18% |
 
-Average score ~583, full 300–900 range (left-tail feature widening pushes the
+Average score ~661, full 300–850 range, sd ~132 (left-tail feature widening pushes the
 worst borrowers below the REJECT floor instead of clustering just above it).
 
 **Training:** `python -m models_ai.train` (or `POST /score/train`) now trains all

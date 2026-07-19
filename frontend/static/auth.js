@@ -57,7 +57,7 @@
     return data;
   }
 
-  async function register(loginId, password, cibilScore, captchaAnswer, captchaToken) {
+  async function register(loginId, password, cibilScore, captchaAnswer, captchaToken, demographics) {
     const payload = { login_id: loginId, password };
     if (cibilScore !== undefined && cibilScore !== null) {
       payload.cibil_score = cibilScore;
@@ -67,6 +67,11 @@
     }
     if (captchaToken !== undefined && captchaToken !== null) {
       payload.captcha_token = captchaToken;
+    }
+    if (demographics) {
+      if (demographics.gender) payload.gender = demographics.gender;
+      if (demographics.geography) payload.geography = demographics.geography;
+      if (demographics.social_category) payload.social_category = demographics.social_category;
     }
     const data = await _post('/auth/register', payload);
     _store(data);

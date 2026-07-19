@@ -31,11 +31,15 @@ def test_gate_keeps_decision_when_unanimous():
     assert _apply_agreement_gate("APPROVE", False, ag) == "APPROVE"
 
 
-def test_gate_routes_contested_approve_to_review():
-    # champion APPROVE but challengers land in REVIEW -> never auto-lend
-    ag = compute_agreement(0.005, {"catboost": 0.15, "logistic": 0.15})
+def test_gate_keeps_approve_on_adjacent_scatter():
+    # champion APPROVE, challengers one band away in REVIEW (no REJECT present):
+    # boundary noise, symmetric with the REJECT-side scatter case below, not a veto
+    # -> keep the champion's APPROVE rather than collapsing the approve rate.
+    ag = compute_agreement(0.005, {"catboost": 0.10, "logistic": 0.10})
+    assert [c["band"] for c in ag["challengers"]] == ["REVIEW", "REVIEW"]
     assert ag["unanimous"] is False
-    assert _apply_agreement_gate("APPROVE", False, ag) == "REVIEW"
+    assert ag["hard_conflict"] is False
+    assert _apply_agreement_gate("APPROVE", False, ag) == "APPROVE"
 
 
 def test_gate_routes_hard_conflict_to_review():

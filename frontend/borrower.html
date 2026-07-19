@@ -46,6 +46,17 @@
     <div id="result-section" style="display:none">
       <div class="card">
 
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:16px;">
+          <div style="min-width:0;">
+            <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;" data-i18n="borrower-id-label">Borrower ID</div>
+            <div id="borrower-id-display" style="font-family:ui-monospace,monospace;font-size:13px;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</div>
+          </div>
+          <button id="copy-borrower-id-btn" type="button" onclick="copyBorrowerId()"
+            style="flex-shrink:0;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;background:white;color:#2563eb;font-size:12px;font-weight:600;cursor:pointer;" data-i18n="borrower-copy-id-btn">
+            Copy
+          </button>
+        </div>
+
         <h2 data-i18n="borrower-score-title">Your Credit Score</h2>
 
         <div class="score-hero">
@@ -252,6 +263,17 @@
       URL.revokeObjectURL(a.href);
     }
 
+    function copyBorrowerId() {
+      const id = document.getElementById('borrower-id-display').textContent;
+      if (!id || id === '—') return;
+      navigator.clipboard.writeText(id).then(() => {
+        const btn = document.getElementById('copy-borrower-id-btn');
+        const original = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = original; }, 1500);
+      });
+    }
+
     function renderScore(d) {
       document.getElementById('loading').style.display = 'none';
       document.getElementById('result-section').style.display = 'block';
@@ -259,6 +281,7 @@
 
 
 
+      document.getElementById('borrower-id-display').textContent = d.user_id;
       document.getElementById('score-num').textContent = d.credit_score;
       // The lending outcome the borrower is told (post affordability gate);
       // falls back to the model decision for older payloads.

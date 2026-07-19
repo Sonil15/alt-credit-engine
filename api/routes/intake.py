@@ -21,6 +21,7 @@ from core.business_profile import (
 )
 from core.config import get_settings
 from core.database import get_db
+from core.feature_store import upsert_feature
 from core.security import get_encryptor
 from models.db_models import ApplicationIntake, SecureVault
 from models.pydantic_schemas import (
@@ -32,6 +33,11 @@ from models.pydantic_schemas import (
 )
 
 router = APIRouter(prefix="/intake", tags=["intake"])
+
+# Cohorts that describe a business rather than a personal/salaried applicant —
+# used to derive the fairness-monitor "borrower_type" (individual vs MSME) group
+# from the cohort the borrower already picked, instead of asking a second time.
+MSME_COHORTS = {"Vendor", "Farmer"}
 
 
 async def _require_borrower(
@@ -153,6 +159,9 @@ async def submit_intake(
         extraction_confidence=request.extraction_confidence,
     )
     db.add(intake)
+    await upsert_feature(
+        db, request.user_id, "borrower_type", 1.0 if request.cohort in MSME_COHORTS else 0.0
+    )
     await db.commit()
     await db.refresh(intake)
 

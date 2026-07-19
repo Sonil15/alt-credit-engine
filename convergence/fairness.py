@@ -87,6 +87,7 @@ def _empty_dimension(dimension: dict[str, Any]) -> dict[str, Any]:
         "groups": {},
         "disparate_impact_ratio": 1.0,
         "passes_80_rule": True,
+        "insufficient_data": True,
     }
 
 
@@ -134,6 +135,10 @@ def _compute_dimension(
     ]
     max_rate = max(rates) if rates else 0.0
     min_rate = min(rates) if rates else 0.0
+    # No group with enough members has a single approval yet — there is nothing to
+    # evaluate the 4/5ths rule against. Reporting a ratio of 1.0 / "passes" here
+    # would falsely read as a clean parity result rather than "no data".
+    insufficient_data = max_rate <= 0
     di_ratio = round(min_rate / max_rate, 4) if max_rate > 0 else 1.0
 
     return {
@@ -142,7 +147,8 @@ def _compute_dimension(
         "available": True,
         "groups": group_stats,
         "disparate_impact_ratio": di_ratio,
-        "passes_80_rule": di_ratio >= DISPARATE_IMPACT_THRESHOLD,
+        "passes_80_rule": (di_ratio >= DISPARATE_IMPACT_THRESHOLD) and not insufficient_data,
+        "insufficient_data": insufficient_data,
     }
 
 

@@ -6,7 +6,7 @@
     "catboost",
     "logistic"
   ],
-  "trained_at": "2026-07-19T05:34:33.749217+00:00",
+  "trained_at": "2026-07-19T18:01:11.195689+00:00",
   "users_trained": 100,
   "feature_columns": [
     "avg_days_late",
@@ -53,18 +53,39 @@
     "enam_receipt_volume"
   ],
   "metrics": {
-    "auc": 0.6863,
-    "gini": 0.3725,
-    "ks": 0.4706,
-    "accuracy": 0.85,
-    "default_rate": 0.15,
+    "auc": 0.6111,
+    "gini": 0.2222,
+    "ks": 0.3889,
+    "accuracy": 0.9,
+    "default_rate": 0.1,
     "calibration": [
+      {
+        "bin_start": 0.0,
+        "bin_end": 0.1,
+        "predicted_mean": 0.026231926060401263,
+        "observed_rate": 0.0625,
+        "count": 16
+      },
       {
         "bin_start": 0.1,
         "bin_end": 0.2,
-        "predicted_mean": 0.15121526579546501,
-        "observed_rate": 0.15,
-        "count": 20
+        "predicted_mean": 0.18578192465305726,
+        "observed_rate": 0.0,
+        "count": 1
+      },
+      {
+        "bin_start": 0.2,
+        "bin_end": 0.30000000000000004,
+        "predicted_mean": 0.2603592236569602,
+        "observed_rate": 0.5,
+        "count": 2
+      },
+      {
+        "bin_start": 0.30000000000000004,
+        "bin_end": 0.4,
+        "predicted_mean": 0.3167368807442598,
+        "observed_rate": 0.0,
+        "count": 1
       }
     ],
     "confusion": {
@@ -75,9 +96,9 @@
       ],
       "matrix": [
         [
-          0,
           8,
-          9
+          7,
+          3
         ],
         [
           0,
@@ -85,48 +106,44 @@
           0
         ],
         [
-          0,
           1,
-          2
+          0,
+          1
         ]
       ],
-      "accuracy": 0.1
+      "accuracy": 0.45
     },
     "roc_curve": {
       "fpr": [
         0.0,
-        0.0588,
-        0.1176,
-        0.1176,
-        0.2941,
-        0.2941,
-        0.5294,
-        0.5294,
+        0.0556,
+        0.1111,
+        0.1111,
+        0.6667,
+        0.6667,
         1.0
       ],
       "tpr": [
         0.0,
         0.0,
         0.0,
-        0.3333,
-        0.3333,
-        0.6667,
-        0.6667,
+        0.5,
+        0.5,
         1.0,
         1.0
       ]
     }
   },
   "cv_metrics": {
-    "cv_auc_mean": 0.5357,
-    "cv_auc_std": 0.193
+    "cv_auc_mean": 0.7214,
+    "cv_auc_std": 0.1987
   },
   "challenger_metrics": {
     "catboost": {
-      "auc": 0.6471
+      "auc": 0.4167
     },
     "logistic": {
-      "auc": 0.3529
+      "auc": 0.6667
     }
   },
   "scorecard": {
@@ -139,22 +156,22 @@
     "pdo": 50
   },
   "decision_thresholds": {
-    "approve_score": 650,
+    "approve_score": 700,
     "review_score": 560,
-    "approve_pd_max": 0.0476,
+    "approve_pd_max": 0.0244,
     "review_pd_max": 0.1483
   },
   "conformal": {
     "alpha": 0.1,
     "coverage_target": 0.9,
-    "threshold_q": 0.835817,
+    "threshold_q": 0.70945,
     "n_calibration": 20,
     "empirical_coverage": 1.0,
     "model": "ebm_champion"
   },
   "temperatures": {
-    "ebm": 6.0,
-    "catboost": 3.8,
-    "logistic": 6.0
+    "ebm": 2.07,
+    "catboost": 4.3,
+    "logistic": 1.31
   }
 }

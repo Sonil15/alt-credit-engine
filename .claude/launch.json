@@ -4,19 +4,19 @@
     {
       "name": "alt-credit",
       "runtimeExecutable": ".venv/bin/uvicorn",
-      "runtimeArgs": ["api.main:app", "--port", "8000"],
+      "runtimeArgs": ["api.main:app", "--port", "8000", "--reload"],
       "port": 8000
     },
     {
       "name": "alt-credit-sqlite",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "USE_SQLITE=true AUTO_SEED_ON_STARTUP=true .venv/bin/uvicorn api.main:app --port 8000"],
+      "runtimeArgs": ["-c", "USE_SQLITE=true AUTO_SEED_ON_STARTUP=true .venv/bin/uvicorn api.main:app --port 8000 --reload"],
       "port": 8000
     },
     {
       "name": "alt-credit-demo",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "USE_SQLITE=true AUTO_SEED_ON_STARTUP=true SIMULATE_ALL_FACETS=true .venv/bin/uvicorn api.main:app --port 8000"],
+      "runtimeArgs": ["-c", "USE_SQLITE=true AUTO_SEED_ON_STARTUP=true SIMULATE_ALL_FACETS=true .venv/bin/uvicorn api.main:app --port 8000 --reload"],
       "port": 8000
     }
   ]

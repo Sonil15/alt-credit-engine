@@ -24,6 +24,8 @@ from core.borrower_auth import (
     _extract_bearer,
 )
 from core.database import get_db
+from core.demographics import GENDER_CODES, GEOGRAPHY_CODES, PROTECTED_GROUP_CODES
+from core.feature_store import upsert_feature
 from models.db_models import BorrowerAccount
 from models.pydantic_schemas import AuthCredentials, AuthResponse, BorrowerProfile
 from sqlalchemy import select
@@ -73,8 +75,32 @@ async def register(creds: AuthCredentials, db: AsyncSession = Depends(get_db)) -
 
 
     account = await create_account(db, creds.login_id, creds.password, creds.cibil_score)
+    await _store_declared_demographics(db, str(account.user_id), creds)
     token = await issue_token(db, account)
     return AuthResponse(token=token.token, user_id=str(account.user_id), login_id=account.login_id)
+
+
+async def _store_declared_demographics(db: AsyncSession, user_id: str, creds: AuthCredentials) -> None:
+    """Persist the borrower's optional self-declared fairness-monitor attributes.
+
+    Applies to every registration path (bureau fast-track included) so approved
+    borrowers aren't silently excluded from parity groups just because they
+    never went through the alt-credit onboarding pipeline.
+    """
+    wrote = False
+    if creds.gender and creds.gender in GENDER_CODES:
+        await upsert_feature(db, user_id, "gender_code", float(GENDER_CODES[creds.gender]))
+        wrote = True
+    if creds.geography and creds.geography in GEOGRAPHY_CODES:
+        await upsert_feature(db, user_id, "geography_code", float(GEOGRAPHY_CODES[creds.geography]))
+        wrote = True
+    if creds.social_category and creds.social_category in PROTECTED_GROUP_CODES:
+        await upsert_feature(
+            db, user_id, "protected_group_code", float(PROTECTED_GROUP_CODES[creds.social_category])
+        )
+        wrote = True
+    if wrote:
+        await db.commit()
 
 
 @router.post("/login", response_model=AuthResponse, dependencies=[Depends(check_rate_limit)])

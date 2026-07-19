@@ -342,8 +342,13 @@
         options:{ plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y.toFixed(1)+'% approved'}}}, scales:{y:{suggestedMax:100, title:{display:true,text:'Approval %'}}} }
       });
       const dimLabel = (dim.label || 'group').toLowerCase();
-      document.getElementById('fairness-summary').innerHTML =
-        `Disparate impact ratio <strong>${di.toFixed(3)}</strong>: <span class="${pass?'fairness-ok':'fairness-warn'}">${pass?'Passes':'Flagged by'} 80% rule</span>. Approval-rate parity across <strong>${dimLabel}</strong> groups, per RBI fair-lending expectations.`;
+      if (dim.insufficient_data) {
+        document.getElementById('fairness-summary').innerHTML =
+          `<span class="fairness-warn">Insufficient data</span>: no approvals recorded yet for any <strong>${dimLabel}</strong> group large enough to evaluate. The 80% rule will populate once approvals accrue in this slice.`;
+      } else {
+        document.getElementById('fairness-summary').innerHTML =
+          `Disparate impact ratio <strong>${di.toFixed(3)}</strong>: <span class="${pass?'fairness-ok':'fairness-warn'}">${pass?'Passes':'Flagged by'} 80% rule</span>. Approval-rate parity across <strong>${dimLabel}</strong> groups, per RBI fair-lending expectations.`;
+      }
     }
 
     async function loadScore() {
@@ -377,7 +382,6 @@
           chip.className = `user-chip chip-${u.decision}`;
           chip.innerHTML = `
             <strong>Borrower:</strong> <span style="font-family:ui-monospace,monospace;">${u.user_id.slice(0,8)}…</span> 
-            <span style="margin-left: 8px; color: #475569; font-size: 11px; font-weight: 600; background: #f1f5f9; padding: 2px 8px; border-radius: 12px; border: 1px solid #e2e8f0; display: inline-block;">${u.cohort || 'Salaried'}</span>
             <span style="margin-left: 16px; font-size: 13px; font-weight: 600;">Score: <strong style="color: ${scoreColor(u.credit_score)}">${u.credit_score}</strong></span>
             <span class="badge badge-${u.decision}" style="margin-left: 16px; padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 6px; display: inline-block;">${u.decision}</span>
             ${gatedBadge}

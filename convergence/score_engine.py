@@ -175,17 +175,19 @@ def _apply_agreement_gate(champion_decision: str, auto_reject: bool, agreement: 
 
     Hard red-flag rejects always stand (rules override models). Otherwise we only
     overrule the champion when the panel *genuinely* conflicts, not for adjacent
-    boundary scatter (e.g. REVIEW vs REJECT), which is noise on a strict scorecard:
+    boundary scatter (APPROVE vs REVIEW, or REVIEW vs REJECT), which is noise on a
+    strict scorecard:
 
       - hard conflict (one model would APPROVE while another would REJECT) -> REVIEW
-      - a contested APPROVE (champion approves but the panel isn't unanimous) -> REVIEW
-      - otherwise keep the champion's decision (challengers agree closely enough)
+      - otherwise keep the champion's decision. A challenger sitting one band away
+        (e.g. REVIEW while the champion APPROVES) is boundary scatter, not a veto:
+        demoting every non-unanimous approval to review collapses the approve rate
+        without adding signal, since an adjacent-band challenger raises no red flag
+        the way a REJECT-vs-APPROVE split does.
     """
     if auto_reject:
         return "REJECT"
     if agreement["hard_conflict"]:
-        return "REVIEW"
-    if champion_decision == "APPROVE" and not agreement["unanimous"]:
         return "REVIEW"
     return champion_decision
 
@@ -503,7 +505,7 @@ def _build_payload(
     )
 
 
-async def score_user(session: AsyncSession, user_id: str, *, persist: bool = True) -> dict[str, Any]:
+async def score_user(session: AsyncSession, user_id: str, *, pan: str | None = None, persist: bool = True) -> dict[str, Any]:
     """Compute full credit score payload for a single user, routing through CIBIL gate if set."""
     # First check the user's CIBIL score in BorrowerAccount
     result = await session.execute(
@@ -511,10 +513,67 @@ async def score_user(session: AsyncSession, user_id: str, *, persist: bool = Tru
     )
     account = result.scalar_one_or_none()
     
+    intake_row = await fetch_latest_intake(session, user_id)
+    intake = intake_to_dict(intake_row) if intake_row else None
+    
+    from core.bureau_mock import check_bureau_score
+    bureau_score = check_bureau_score(pan)
+    if bureau_score > 0:
+        if account:
+            account.cibil_score = bureau_score
+            await session.commit()
+            
+        req_amount = intake.get("requested_amount", 100000.0) if intake else 100000.0
+        loan_purpose = intake.get("loan_purpose", "personal") if intake else "personal"
+        cohort = intake.get("cohort", "Salaried") if intake else "Salaried"
+        emi_val = round(_emi(req_amount, 11.0, 36), 2)
+        payload = {
+            "user_id": str(user_id),
+            "credit_score": bureau_score,
+            "probability_of_default": 0.01,
+            "decision": "TRADITIONAL_BUREAU_HIT",
+            "approval_likelihood": "High",
+            "actionable_insights": ["Tip: Maintain your traditional credit record."],
+            "auto_reject": False,
+            "reject_reason": None,
+            "feature_drivers": [],
+            "reason_codes": [f"Pre-Screening Gate: Fast-track approved via prime bureau history (Score: {bureau_score})"],
+            "reason_codes_text": f"Pre-Screening Gate: Fast-track approved via prime bureau history (Score: {bureau_score})",
+            "base_points": float(bureau_score),
+            "factor_points": {},
+            "feature_trace": {},
+            "facet_scores": [],
+            "confidence": {"confidence_pct": 100.0, "thin_file": False, "missing_sources": [], "cohort": cohort},
+            "confidence_pct": 100.0,
+            "thin_file": False,
+            "lending": {
+                "eligible": True,
+                "max_loan_amount": req_amount,
+                "interest_rate_pct": 11.0,
+                "tenure_months": 36,
+                "monthly_emi": emi_val,
+                "borrower_type": "individual",
+                "rationale": f"Fast-track approved via traditional bureau history (Score: {bureau_score}).",
+            },
+            "requested_amount": req_amount,
+            "loan_purpose": loan_purpose,
+            "loan_purpose_other_text": intake.get("loan_purpose_other_text") if intake else None,
+            "purpose_consistent": True,
+            "final_outcome": "TRADITIONAL_BUREAU_HIT",
+            "funding_gap": {"gated": False},
+            "panel": {"hard_conflict": False, "unanimous": True},
+            "conformal": {"prediction_set": ["APPROVE"], "abstain": False, "enabled": False},
+            "explanation_method": "bureau-gating",
+            "model_version": "bureau-gate-1.0",
+            "is_simulated": True,
+            "cohort": cohort,
+        }
+        if persist:
+            await _persist_decision(session, payload)
+        return payload
+
     if account and account.cibil_score is not None and account.cibil_score != -1:
         cibil = account.cibil_score
-        intake_row = await fetch_latest_intake(session, user_id)
-        intake = intake_to_dict(intake_row) if intake_row else None
         
         if cibil >= 750:
             # Prime fast-track

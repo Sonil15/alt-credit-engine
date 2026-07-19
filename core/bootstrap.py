@@ -126,11 +126,10 @@ async def ensure_captchas_seeded() -> None:
         await session.commit()
 
 
+from core.demographics import GENDER_CODES, GEOGRAPHY_CODES, PROTECTED_GROUP_CODES
+
 MOCK_DATA_PATH = Path(__file__).resolve().parent.parent / "synthetic_data" / "mock_data_100_users.json"
 DATA_TYPES = ("telecom", "ecommerce", "geo", "cashflow", "survey")
-PROTECTED_GROUP_CODES = {"general": 0, "obc": 1, "sc": 2, "st": 3, "minority": 4}
-GENDER_CODES = {"male": 0, "female": 1, "other": 2}
-GEOGRAPHY_CODES = {"rural": 0, "semi_urban": 1, "urban": 2}
 
 
 async def _already_seeded() -> bool:

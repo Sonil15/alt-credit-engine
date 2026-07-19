@@ -27,12 +27,13 @@ router = APIRouter(prefix="/score", tags=["scoring"])
 
 @router.get("/me", response_model=CreditScoreResponse)
 async def get_my_credit_score(
+    pan: str | None = None,
     user_id: str = Depends(get_session_user_id),
     db: AsyncSession = Depends(get_db),
 ) -> CreditScoreResponse:
     """Return the authenticated borrower's own credit score."""
     try:
-        result = await score_user(db, user_id)
+        result = await score_user(db, user_id, pan=pan)
         return CreditScoreResponse(**result)
     except FileNotFoundError as exc:
         raise HTTPException(
@@ -163,12 +164,13 @@ async def train_models() -> TrainResponse:
 @router.get("/{user_id}", response_model=CreditScoreResponse)
 async def get_credit_score(
     user_id: str,
+    pan: str | None = None,
     db: AsyncSession = Depends(get_db),
     _: None = Depends(require_own_session),
 ) -> CreditScoreResponse:
     """Return alternate credit score, PD, decision, feature drivers, and reason codes."""
     try:
-        result = await score_user(db, user_id)
+        result = await score_user(db, user_id, pan=pan)
         return CreditScoreResponse(**result)
     except FileNotFoundError as exc:
         raise HTTPException(

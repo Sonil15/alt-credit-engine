@@ -89,6 +89,7 @@
           <div id="udyam-badge" style="display: none; margin-top: 8px; color: #15803d; font-weight: 600; font-size: 13px; align-items: center; gap: 5px;">
             <span data-i18n="onboard-udyam-verified">Udyam Verified ✅</span>
             <span id="udyam-vintage-badge" style="font-size: 11px; color: #166534; background: #dcfce7; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 999px;">3 yrs</span>
+            <button type="button" id="udyam-change-btn" onclick="resetUdyam()" style="margin-left: 6px; padding: 2px 8px; background: none; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 11px; color: #475569; cursor: pointer;" data-i18n="onboard-udyam-change-btn">Change</button>
           </div>
         </div>
 
@@ -198,6 +199,20 @@
       input.disabled = true;
       document.getElementById('udyam-badge').style.display = 'flex';
       document.getElementById('udyam-vintage-badge').textContent = udyamVintageYears + ' ' + t('onboard-udyam-years-suffix', 'yrs vintage');
+    }
+
+    function resetUdyam() {
+      verifiedUdyamNumber = null;
+      udyamVintageYears = null;
+      const input = document.getElementById('udyam-input');
+      const btn = document.getElementById('udyam-verify-btn');
+      input.disabled = false;
+      input.value = '';
+      input.focus();
+      btn.style.display = '';
+      btn.disabled = false;
+      btn.textContent = t('onboard-udyam-verify-btn', 'Verify');
+      document.getElementById('udyam-badge').style.display = 'none';
     }
 
     function t(key, fallback) {
@@ -359,6 +374,9 @@
           if (typeof errMsg === 'object') {
             errMsg = JSON.stringify(errMsg);
           }
+          if (typeof errMsg === 'string' && errMsg.includes('Velocity Check Failed')) {
+            resetUdyam();
+          }
           showError(errMsg);
           return;
         }
@@ -418,6 +436,16 @@
         panel: 'business-kb-panel',
         input: 'business-text'
       });
+
+      // A focused <input type="number"> otherwise treats the scroll wheel as
+      // increment/decrement by `step`, so scrolling the page after typing would
+      // silently change the requested amount (e.g. 57000 → 55000). Block it.
+      const amountInput = document.getElementById('amount-input');
+      if (amountInput) {
+        amountInput.addEventListener('wheel', (e) => {
+          if (document.activeElement === amountInput) e.preventDefault();
+        }, { passive: false });
+      }
     });
   </script>
   <script src="/static/session_timeout.js"></script>

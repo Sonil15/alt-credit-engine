@@ -13,6 +13,8 @@ from core.bootstrap import ensure_seeded
 from models_ai.ensemble import train_all_from_db
 from models_econometric.ecm_model import run_ecm_pipeline
 from core.database import AsyncSessionLocal
+from core.model_cache import reload_model_cache
+from convergence.score_engine import score_all_users
 
 async def main():
     db_file = "alt_credit.db"
@@ -37,6 +39,19 @@ async def main():
         logging.info("Training complete!")
         metrics = train_result.get("metrics", {})
         logging.info("Champion Holdout AUC: %.4f", metrics.get("auc", 0))
+
+        # Load the freshly-trained artifacts into the in-process cache, then score
+        # and PERSIST every user so score_decisions reflects the current model and
+        # thresholds. Without this the DB keeps whatever decisions a prior pass wrote
+        # (score_decisions is append-only and the app reads the latest row per user),
+        # so a reseed alone would leave the dashboard showing stale decisions.
+        reload_model_cache()
+        logging.info("Scoring and persisting decisions for all users...")
+        scores = await score_all_users(session)
+        await session.commit()
+        from collections import Counter
+        dist = Counter(s["decision"] for s in scores)
+        logging.info("Persisted %d decisions: %s", len(scores), dict(dist))
 
 if __name__ == "__main__":
     asyncio.run(main())
