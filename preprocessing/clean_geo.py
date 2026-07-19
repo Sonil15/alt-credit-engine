@@ -42,37 +42,32 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 
 def clean_geo(raw_data: list[dict[str, Any]]) -> dict[str, float]:
-    """Cluster geolocation points and compute spatial variance from anchor centroids."""
+    """Calculate shipping address drift from lat/long coordinates.
+    
+    We map each coordinate to a stable PIN code and calculate:
+    - spatial_variance_score: the normalized Shannon entropy of delivery locations.
+    - anchor_count: the count of unique shipping locations.
+    """
     if not raw_data:
         return {"spatial_variance_score": 0.0, "anchor_count": 0.0}
 
-    coords = np.array([[float(p["lat"]), float(p["long"])] for p in raw_data if "lat" in p and "long" in p])
-    if coords.size == 0:
+    pins = []
+    for p in raw_data:
+        if "lat" in p and "long" in p:
+            pins.append(latlong_to_pincode(float(p["lat"]), float(p["long"])))
+
+    if not pins:
         return {"spatial_variance_score": 0.0, "anchor_count": 0.0}
 
-    clustering = DBSCAN(eps=0.01, min_samples=3).fit(coords)
-    labels = clustering.labels_
+    counts = Counter(pins)
+    total = len(pins)
+    k = len(counts)
 
-    centroids: list[tuple[float, float]] = []
-    for label in sorted(set(labels)):
-        if label == -1:
-            continue
-        cluster_points = coords[labels == label]
-        centroid = cluster_points.mean(axis=0)
-        centroids.append((float(centroid[0]), float(centroid[1])))
-
-    if not centroids:
-        centroid = coords.mean(axis=0)
-        centroids = [(float(centroid[0]), float(centroid[1]))]
-
-    distances: list[float] = []
-    for lat, lon in coords:
-        nearest = min(_haversine_km(lat, lon, c_lat, c_lon) for c_lat, c_lon in centroids)
-        distances.append(nearest)
-
-    spatial_variance = float(np.mean(distances)) if distances else 0.0
+    # Calculate normalized Shannon Entropy
+    entropy = -sum((c / total) * math.log2(c / total) for c in counts.values())
+    norm_entropy = entropy / math.log2(k) if k > 1 else 0.0
 
     return {
-        "spatial_variance_score": spatial_variance,
-        "anchor_count": float(len(centroids)),
+        "spatial_variance_score": float(norm_entropy),
+        "anchor_count": float(k),
     }

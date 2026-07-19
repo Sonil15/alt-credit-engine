@@ -53,10 +53,38 @@
           </p>
         </div>
         <ul class="scope-list">
-          <li id="li-telecom"><input type="checkbox" id="scope-telecom"> <span data-i18n="scope-telecom">Telecom bills</span> <span id="opt-telecom" style="color:#64748b; font-size:12px; display:none;">(Optional)</span></li>
+          <li id="li-telecom" style="display:flex; flex-direction:column; align-items:flex-start;">
+            <div>
+              <input type="checkbox" id="scope-telecom" onchange="toggleSubScopes('telecom')"> <span data-i18n="scope-telecom">Telecom bills</span> <span id="opt-telecom" style="color:#64748b; font-size:12px; display:none;">(Optional)</span>
+            </div>
+            <div id="sub-telecom" style="margin-left: 28px; margin-top: 6px; display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-sms_parsing" checked> <span data-i18n="scope-sms_parsing">Transactional SMS alert logs</span>
+              </label>
+            </div>
+          </li>
           <li id="li-ecommerce"><input type="checkbox" id="scope-ecommerce"> <span data-i18n="scope-ecommerce">E-commerce history</span> <span id="opt-ecommerce" style="color:#64748b; font-size:12px; display:none;">(Optional)</span></li>
-          <li id="li-geo"><input type="checkbox" id="scope-geo"> <span data-i18n="scope-geo">Location stability</span> <span id="opt-geo" style="color:#64748b; font-size:12px; display:none;">(Optional)</span></li>
-          <li id="li-cashflow"><input type="checkbox" id="scope-cashflow"> <span data-i18n="scope-cashflow">Bank cash flow</span> <span id="opt-cashflow" style="color:#64748b; font-size:12px; display:none;">(Optional)</span></li>
+          <li id="li-geo" style="display:flex; flex-direction:column; align-items:flex-start;">
+            <div>
+              <input type="checkbox" id="scope-geo"> <span data-i18n="scope-geo">Location stability</span> <span id="opt-geo" style="color:#64748b; font-size:12px; display:none;">(Optional)</span>
+            </div>
+            <div style="font-size:11px; color:#64748b; margin-left:28px; margin-top:4px;" data-i18n="scope-geo-desc">
+              Note: Uses e-commerce shipping logs to calculate stability, ensuring zero real-time daily GPS tracking.
+            </div>
+          </li>
+          <li id="li-cashflow" style="display:flex; flex-direction:column; align-items:flex-start;">
+            <div>
+              <input type="checkbox" id="scope-cashflow" onchange="toggleSubScopes('cashflow')"> <span data-i18n="scope-cashflow">Bank cash flow</span> <span id="opt-cashflow" style="color:#64748b; font-size:12px; display:none;">(Optional)</span>
+            </div>
+            <div id="sub-cashflow" style="margin-left: 28px; margin-top: 6px; display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-upi_lite" checked> <span data-i18n="scope-upi_lite">UPI Lite Wallet logs</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-dbt_logs" checked> <span data-i18n="scope-dbt_logs">Direct Benefit Transfer (DBT) logs</span>
+              </label>
+            </div>
+          </li>
           
           <li id="li-campus" style="display:none; flex-direction:column; align-items:flex-start;">
             <div><input type="checkbox" id="scope-campus"> <span data-i18n="scope-campus">Campus & UPI transactions</span> <span id="opt-campus" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-campus" style="color:#10b981; font-size:12px; display:none;">(Necessary for Score)</span></div>
@@ -65,7 +93,16 @@
             </div>
           </li>
           <li id="li-vendor" style="display:none;"><input type="checkbox" id="scope-vendor"> <span data-i18n="scope-vendor">Micro-enterprise UPI volumes</span> <span id="opt-vendor" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-vendor" style="color:#10b981; font-size:12px; display:none;">(Necessary for Score)</span></li>
-          <li id="li-farmer" style="display:none;"><input type="checkbox" id="scope-farmer"> <span data-i18n="scope-farmer">Farming cycles & purchases</span></li>
+          <li id="li-farmer" style="display:none; flex-direction:column; align-items:flex-start;">
+            <div>
+              <input type="checkbox" id="scope-farmer" onchange="toggleSubScopes('farmer')"> <span data-i18n="scope-farmer">Farming cycles & purchases</span>
+            </div>
+            <div id="sub-farmer" style="margin-left: 28px; margin-top: 6px; display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-enam_receipts" checked> <span data-i18n="scope-enam_receipts">e-NAM verified Mandi receipts</span>
+              </label>
+            </div>
+          </li>
           <li id="li-household" style="display:none;"><input type="checkbox" id="scope-household"> <span data-i18n="scope-household">Household utility payments</span></li>
           
           <li id="li-survey"><input type="checkbox" id="scope-survey" checked disabled> <span data-i18n="scope-survey">Psychometric survey</span></li>
@@ -182,6 +219,24 @@
       loadStatus();
     }
 
+    function toggleSubScopes(scope) {
+      const parent = document.getElementById('scope-' + scope);
+      if (!parent) return;
+      const subMapping = {
+        'telecom': ['sms_parsing'],
+        'cashflow': ['upi_lite', 'dbt_logs'],
+        'farmer': ['enam_receipts']
+      };
+      const children = subMapping[scope] || [];
+      children.forEach(childId => {
+        const childBox = document.getElementById('scope-' + childId);
+        if (childBox) {
+          childBox.checked = parent.checked;
+          childBox.disabled = !parent.checked;
+        }
+      });
+    }
+
     async function grantConsent() {
       try {
         const resp = await fetch(`/consent/authorize?user_id=${encodeURIComponent(userId)}`);
@@ -195,7 +250,10 @@
         // selection is cosmetic; unchecked sources would still be collected, scored,
         // and shown as drivers. Survey is mandatory (checkbox disabled) and never revoked;
         // hidden cohort-specific boxes (offsetParent === null) are skipped.
-        const optionalScopes = ['telecom', 'ecommerce', 'geo', 'cashflow', 'campus', 'vendor', 'farmer', 'household'];
+        const optionalScopes = [
+          'telecom', 'ecommerce', 'geo', 'cashflow', 'campus', 'vendor', 'farmer', 'household',
+          'upi_lite', 'dbt_logs', 'sms_parsing', 'enam_receipts'
+        ];
         const declined = optionalScopes.filter(scope => {
           const box = document.getElementById('scope-' + scope);
           return box && !box.disabled && box.offsetParent !== null && !box.checked;
@@ -523,7 +581,7 @@
 
         // Define cohort-specific scopes and standard scopes
         const cohortSpecifics = ['campus', 'vendor', 'farmer', 'household'];
-        const standardScopes = ['telecom', 'ecommerce', 'geo', 'cashflow'];
+        const standardScopes = ['telecom', 'ecommerce', 'geo', 'cashflow', 'upi_lite', 'dbt_logs', 'sms_parsing', 'enam_receipts'];
         const allScopes = [...standardScopes, ...cohortSpecifics];
 
         allScopes.forEach(id => {
@@ -532,7 +590,14 @@
           const optLabel = document.getElementById('opt-' + id);
           const necLabel = document.getElementById('nec-' + id);
 
-          const isExpected = cohortExpected.includes(id);
+          let isExpected = cohortExpected.includes(id);
+          if (id === 'upi_lite' || id === 'dbt_logs') {
+            isExpected = cohortExpected.includes('cashflow');
+          } else if (id === 'sms_parsing') {
+            isExpected = cohortExpected.includes('telecom');
+          } else if (id === 'enam_receipts') {
+            isExpected = cohortExpected.includes('farmer');
+          }
           const isSpecific = cohortSpecifics.includes(id);
 
           // 1. Show/hide list item
@@ -547,7 +612,15 @@
           // 2. Set default check status (run once)
           if (cb && !isInitialized) {
             cb.checked = isExpected;
-            cb.disabled = false;
+            if (id === 'upi_lite' || id === 'dbt_logs') {
+              cb.disabled = !cohortExpected.includes('cashflow');
+            } else if (id === 'sms_parsing') {
+              cb.disabled = !cohortExpected.includes('telecom');
+            } else if (id === 'enam_receipts') {
+              cb.disabled = !cohortExpected.includes('farmer');
+            } else {
+              cb.disabled = false;
+            }
           }
 
           // 3. Translate and display appropriate labels

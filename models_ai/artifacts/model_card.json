@@ -6,8 +6,8 @@
     "catboost",
     "logistic"
   ],
-  "trained_at": "2026-07-16T18:38:40.464501+00:00",
-  "users_trained": 106,
+  "trained_at": "2026-07-19T05:34:33.749217+00:00",
+  "users_trained": 100,
   "feature_columns": [
     "avg_days_late",
     "missed_payments_count",
@@ -19,6 +19,7 @@
     "monthly_income_mean",
     "monthly_expense_mean",
     "cashflow_volatility",
+    "cash_burn_rate",
     "conscientiousness",
     "locus_of_control",
     "financial_self_efficacy",
@@ -43,42 +44,27 @@
     "harvest_income_spike",
     "input_purchase_consistency",
     "utility_payment_consistency",
-    "grocery_spend_stability"
+    "grocery_spend_stability",
+    "upi_lite_txn_count",
+    "upi_lite_average_ticket",
+    "dbt_income_consistency",
+    "sms_spend_total",
+    "sms_bill_delay",
+    "enam_receipt_volume"
   ],
   "metrics": {
-    "auc": 0.5965,
-    "gini": 0.193,
-    "ks": 0.3333,
-    "accuracy": 0.8636,
-    "default_rate": 0.1364,
+    "auc": 0.6863,
+    "gini": 0.3725,
+    "ks": 0.4706,
+    "accuracy": 0.85,
+    "default_rate": 0.15,
     "calibration": [
-      {
-        "bin_start": 0.0,
-        "bin_end": 0.1,
-        "predicted_mean": 0.03585966725061165,
-        "observed_rate": 0.1111111111111111,
-        "count": 18
-      },
       {
         "bin_start": 0.1,
         "bin_end": 0.2,
-        "predicted_mean": 0.12331268306180092,
-        "observed_rate": 0.0,
-        "count": 1
-      },
-      {
-        "bin_start": 0.2,
-        "bin_end": 0.30000000000000004,
-        "predicted_mean": 0.2532747332860885,
-        "observed_rate": 0.0,
-        "count": 1
-      },
-      {
-        "bin_start": 0.30000000000000004,
-        "bin_end": 0.4,
-        "predicted_mean": 0.37278875528401756,
-        "observed_rate": 0.5,
-        "count": 2
+        "predicted_mean": 0.15121526579546501,
+        "observed_rate": 0.15,
+        "count": 20
       }
     ],
     "confusion": {
@@ -89,9 +75,9 @@
       ],
       "matrix": [
         [
-          12,
-          5,
-          2
+          0,
+          8,
+          9
         ],
         [
           0,
@@ -99,24 +85,28 @@
           0
         ],
         [
-          2,
           0,
-          1
+          1,
+          2
         ]
       ],
-      "accuracy": 0.5909090909090909
+      "accuracy": 0.1
     },
     "roc_curve": {
       "fpr": [
         0.0,
-        0.0,
-        0.5263,
-        0.5263,
-        0.6842,
-        0.6842,
+        0.0588,
+        0.1176,
+        0.1176,
+        0.2941,
+        0.2941,
+        0.5294,
+        0.5294,
         1.0
       ],
       "tpr": [
+        0.0,
+        0.0,
         0.0,
         0.3333,
         0.3333,
@@ -128,15 +118,15 @@
     }
   },
   "cv_metrics": {
-    "cv_auc_mean": 0.7267,
-    "cv_auc_std": 0.1948
+    "cv_auc_mean": 0.5357,
+    "cv_auc_std": 0.193
   },
   "challenger_metrics": {
     "catboost": {
-      "auc": 0.4386
+      "auc": 0.6471
     },
     "logistic": {
-      "auc": 0.5789
+      "auc": 0.3529
     }
   },
   "scorecard": {
@@ -157,14 +147,14 @@
   "conformal": {
     "alpha": 0.1,
     "coverage_target": 0.9,
-    "threshold_q": 0.739684,
-    "n_calibration": 21,
+    "threshold_q": 0.835817,
+    "n_calibration": 20,
     "empirical_coverage": 1.0,
     "model": "ebm_champion"
   },
   "temperatures": {
-    "ebm": 2.64,
-    "catboost": 5.31,
-    "logistic": 3.69
+    "ebm": 6.0,
+    "catboost": 3.8,
+    "logistic": 6.0
   }
 }

@@ -16,6 +16,7 @@ FEATURE_COLUMNS = [
     "monthly_income_mean",
     "monthly_expense_mean",
     "cashflow_volatility",
+    "cash_burn_rate",
     "conscientiousness",
     "locus_of_control",
     "financial_self_efficacy",
@@ -44,6 +45,13 @@ FEATURE_COLUMNS = [
     "input_purchase_consistency",
     "utility_payment_consistency",
     "grocery_spend_stability",
+    # Granular sub-scope features (2026-07)
+    "upi_lite_txn_count",
+    "upi_lite_average_ticket",
+    "dbt_income_consistency",
+    "sms_spend_total",
+    "sms_bill_delay",
+    "enam_receipt_volume",
 ]
 
 LABEL_COLUMN = "default_label"

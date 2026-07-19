@@ -281,27 +281,33 @@ The models are trained on identical splits of the target database to ensure fair
   - **REVIEW**: Score $\ge 560$ (EBM Probability of Default $\le 14.83\%$)
   - **REJECT**: Score $< 560$
 
-### Model Feature Schema (32 Input Variables)
+### Model Feature Schema (42 Input Variables)
 
-The ensemble models process 32 features across five alternative data facets, onboarding intake fields, and cohort-specific transaction profiles. The features, grouped by their AA-style consent scope, are:
+The ensemble models process 42 features across five alternative data facets, onboarding intake fields, and cohort-specific transaction profiles. The features, grouped by their AA-style consent scope, are:
 
 | Consent Scope | Feature Name | Description |
 | :--- | :--- | :--- |
-| **Telecom** | `avg_days_late` | Average number of days telecom payments are late |
-| | `missed_payments_count` | Number of missed telecom billing cycles |
+| **Telecom** | `avg_days_late` | Average days late on bill payments or prepaid recharge delay |
+| | `missed_payments_count` | Number of missed billing cycles or inactive SIM periods (includes SIM vintage penalty) |
+| | `sms_bill_delay` | SMS-parsed bill payment delay (average days late from alert to confirmation; 0.0 if scope revoked) |
 | **E-Commerce** | `necessity_ratio` | Ratio of essential/necessity purchases to total spend |
 | | `avg_merchant_rating` | Average rating of merchants visited |
 | | `monthly_spend_volatility` | Volatility in e-commerce spend patterns |
-| **Geolocation** | `spatial_variance_score` | Dispersion/variance in coordinates of daily check-ins |
-| | `anchor_count` | Number of distinct high-frequency anchor locations (e.g., home/work) |
+| | `sms_spend_total` | Total monthly transaction spend parsed from SMS notifications (0.0 if scope revoked) |
+| **Geolocation** | `spatial_variance_score` | Delivery address drift entropy calculated from e-commerce shipping records |
+| | `anchor_count` | Number of unique delivery PIN codes |
 | **Cashflow** (Econometric) | `monthly_income_mean` | Estimated mean monthly cash inflows |
 | | `monthly_expense_mean` | Estimated mean monthly cash outflows |
 | | `cashflow_volatility` | Volatility of monthly cash flow |
+| | `cash_burn_rate` | Post-payday cash depletion velocity (ratio of debits in the first 7 days post-payday) |
 | | `resilience_coefficient` | Co-integration coefficient estimated via single-equation Error Correction Model (ECM) |
 | | `adf_statistic` | Augmented Dickey-Fuller stationarity test statistic (runs on detrended net cashflow series) |
 | | `adf_pvalue` | P-value of the ADF stationarity test |
 | | `is_stationary` | Binary indicator (1.0 if `adf_pvalue` < 0.05) indicating stable mean cashflow |
 | | `trend_slope` | Slope of the linear trend line fitted to the net cashflow series |
+| | `upi_lite_txn_count` | Count of UPI Lite pocket-wallet transactions (parsed from bank statement narration; 0.0 if scope revoked) |
+| | `upi_lite_average_ticket` | Average ticket size of UPI Lite transactions (0.0 if scope revoked) |
+| | `dbt_income_consistency` | Consistency of Direct Benefit Transfer (DBT) welfare receipts (0.0 if scope revoked) |
 | **Psychometric** | `conscientiousness` | Psychometric score measuring diligence and organization (0–100) |
 | | `locus_of_control` | Score measuring internal vs. external attribution of life events (0–100) |
 | | `financial_self_efficacy` | Score measuring confidence in managing financial goals (0–100) |
@@ -317,6 +323,7 @@ The ensemble models process 32 features across five alternative data facets, onb
 | | `average_ticket_size` | Average transaction ticket size (0.0 for non-vendors) |
 | **Farmer** | `harvest_income_spike` | Peak income spikes matching harvest season cycles (0.0 for non-farmers) |
 | | `input_purchase_consistency` | Consistency in purchasing seed, fertilizer, and agricultural inputs (0.0 for non-farmers) |
+| | `enam_receipt_volume` | Verified Mandi sale transaction volumes from e-NAM platform (0.0 for non-farmers/scope revoked) |
 | **Household** (Homemaker) | `utility_payment_consistency` | Consistency of home utility bill payments (electricity, gas, water; 0.0 for non-homemakers) |
 | | `grocery_spend_stability` | Stability of monthly grocery spend volatility (0.0 for non-homemakers) |
 

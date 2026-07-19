@@ -63,9 +63,9 @@ async def process_vault_record(vault_id: UUID) -> None:
 
             series: list[float] = []
             if data_type == DataType.TELECOM:
-                features, series = clean_telecom(raw_records)
+                features, series = clean_telecom(raw_records, payload.get("sms_records"))
             elif data_type == DataType.ECOMMERCE:
-                features = clean_ecommerce(raw_records)
+                features = clean_ecommerce(raw_records, payload.get("sms_records"))
             elif data_type == DataType.GEO:
                 features = clean_geo(raw_records)
             elif data_type == DataType.CASHFLOW:

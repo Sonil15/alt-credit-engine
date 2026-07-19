@@ -495,6 +495,59 @@ Copy this block for each feature:
 - **Demo moment:** Click the "Score Explainer" link in the dashboard header. Select different cohorts (like **Farmer** or **Gig Worker**) and trace exactly how raw alternative data payloads convert into econometric features and translate into scorecard points and dynamic loan limits live.
 - **Honest caveat:** The raw data displayed is synthetic sample data modeled from our mock borrowers to avoid exposing actual borrower PII in a live audit view.
 
+### E-commerce Shipping Address Drift (Privacy-preserving Geolocation)
+- **Judge problem it answers:** "Daily GPS tracking is creepy, drains the borrower's battery, and raises massive regulatory red flags under privacy rules. Can you measure spatial stability without active tracking?"
+- **Pitch line:** "We replace active daily GPS tracking with e-commerce delivery logs: calculating the Shannon entropy of a borrower's shipping destinations to prove spatial stability without tracking their daily steps."
+- **Differentiator:** Most teams collect real-time coordinates. We use static shipping destinations (entropy of delivery PIN codes), which provides the same credit risk predictive power while respecting borrower privacy.
+- **Demo moment:** Show a borrower who frequently orders to the same home/work PIN code scoring high, whereas a borrower who frequently ships packages to multiple random PIN codes gets flagged for address drift.
+
+### Prepaid Recharge Latency & SIM Vintage (Vernacular Telecom Scoring)
+- **Judge problem it answers:** "In low-income cohorts, postpaid billing doesn't exist: 95% of borrowers use prepaid SIMs. How do you score phone bill payment consistency for prepaid users?"
+- **Pitch line:** "We model prepaid recharge timing as payment discipline: measuring the average delay in recharges post-expiration as late days, and penalizing short SIM tenures to flag flight risk."
+- **Differentiator:** We treat prepaid recharge proactiveness and SIM age as structural equivalents to postpaid bill delays, making telecom alternative scoring highly inclusive.
+- **Demo moment:** Point to the "Avg payment or recharge delay" on the dashboard: show how a prepaid borrower's score drops if they frequently delay recharges or switch SIM cards regularly.
+
+### Bank Cash Burn Profile (Consumption Velocity)
+- **Judge problem it answers:** "Monthly income alone does not show money management skills: a borrower who earns well can still deplete their balance immediately. How do you measure present bias from bank statements?"
+- **Pitch line:** "We map the post-payday cash depletion curve: measuring the ratio of total debits in the first 7 days following a paycheck to evaluate impulsive spending patterns."
+- **Differentiator:** Instead of looking at simple end-of-month balances, we analyze the daily cash burn velocity curve. A steep step-function depletion curve directly signals present bias, which our EBM prices into the risk.
+- **Demo moment:** Point to the "Post-payday cash depletion" driver in the Score Explainer: show how a borrower who spends 85% of their paycheck in the first week gets penalized for consumption velocity.
+
+### ONDC & Partner UPI Merchant Sourcing
+- **Judge problem it answers:** "How do you source merchant ratings and transaction velocities for street vendors and informal micro-businesses without traditional POS machines or card processors?"
+- **Pitch line:** "We tap India's digital public infrastructure: retrieving rating profiles and transaction volumes directly from ONDC open APIs, partner UPI QR merchant dashboards (like PhonePe and BharatPe), and B2B wholesale platforms."
+- **Differentiator:** Shows we design for real-world India Stack rails rather than simulating abstract databases.
+
+### Granular Consent (Sahmati / Consent Manager integration)
+- **Judge problem it answers:** "DPDP Act 2023 requires consent to be specific, clear, and revocable. Under traditional systems, consent is all-or-nothing: if a borrower wants a loan, they must share everything. How do you implement compliant granular consent?"
+- **Pitch line:** "We implement India's Sahmati Account Aggregator framework with nested sub-scope toggles, allowing borrowers to selectively share specific data points (like UPI Lite pocket wallets or DBT transfer history) without revoking their entire bank statement."
+- **Differentiator:** Most platforms use monolithic consent gates. We provide nested toggles (e.g. opting out of SMS parsing or UPI Lite logs while still sharing telecom/cash-flow basics) with immediate cascade revocation logic, ensuring strict compliance with DPDP Section 6 guidelines.
+- **Demo moment:** Go to the borrower consent gateway, select a cohort, and uncheck "UPI Lite Wallet logs" under Bank Cash Flow. Submit and show that the dashboard updates to show that only UPI Lite features are masked and imputed with cohort averages, while the main cash-flow analysis remains active.
+
+### UPI Lite Wallet Sourcing
+- **Judge problem it answers:** "In India, micro-payments (< ₹500) make up 70% of transactions and are increasingly shifted to on-device UPI Lite wallets to prevent bank statement clutter. Since UPI Lite transactions don't show up individually in regular bank statements, doesn't alternative scoring miss these crucial payment consistency signals?"
+- **Pitch line:** "We extract and reconstruct small-ticket transaction habits by parsing bank statement pocket-wallet load narrations (`UPI-LITE/`, `LITE-WALLET/`), recovering a vital proxy for daily transaction velocity."
+- **Differentiator:** Traditional statement analyzers ignore pocket-wallet transfers as flat debits. We isolate these transactions to calculate `upi_lite_txn_count` and `upi_lite_average_ticket`, giving low-income borrowers credit for micro-payment discipline.
+- **Demo moment:** Point to the "UPI Lite transaction count" driver in the Score Explainer: show how a borrower who uses UPI Lite frequently for small expenses receives positive scorecard points.
+
+### Direct Benefit Transfer (DBT) Income Consistency
+- **Judge problem it answers:** "For the most financially excluded individuals (farmers, rural artisans), regular salaries do not exist. Their primary income consists of government welfare benefits (PM-KISAN, PAHAL, scholarships). How do you verify and reward this baseline income consistency?"
+- **Pitch line:** "We identify and parse standard APBS and DBT transaction headers (e.g., `DBT/PM-KISAN`, `APBS/`) directly from bank statement transaction narratives, calculating a custom income consistency score."
+- **Differentiator:** Underwriting engines treat welfare deposits as erratic transfers and ignore them. We recognize DBT deposits as a highly stable income floor, calculating `dbt_income_consistency` to boost credit profiles for welfare recipients.
+- **Demo moment:** Show a low-income Farmer applicant whose score is supported by a 1.0 `dbt_income_consistency` metric, proving they have received regular government support payments for the last 4 months.
+
+### On-Device Transactional SMS Parsing
+- **Judge problem it answers:** "Accessing formal utility and e-commerce records requires active API integrations with dozens of private platforms. How do you get real-time payment history and spend data when API integrations are missing?"
+- **Pitch line:** "We simulate compliant on-device SMS parsing of transactional utility alerts and payment confirmations, tracking bill payment delays and total monthly e-commerce expenditures."
+- **Differentiator:** Most teams require direct utility merchant logins. We extract payment latencies (matching "due" alerts with "thank you" confirmations from the same sender) and spend summaries locally, matching CRED-style transactional SMS reading while respecting PII.
+- **Demo moment:** In the Score Explainer, show how the system parses the delay between JIOMOB bill alerts and JIOPAY confirmations to calculate the `sms_bill_delay` driver.
+
+### e-NAM verified Mandi receipts
+- **Judge problem it answers:** "Farmers sell their crops at local Mandis for cash, leaving zero digital bank footprint. How do you verify their harvest income when they lack formal sales invoices?"
+- **Pitch line:** "We integrate directly with India's electronic National Agriculture Market (e-NAM), retrieving verified mandi sale transaction receipts to validate crop income volumes for the agricultural cohort."
+- **Differentiator:** Most agricultural credit scoring relies purely on satellite crop indicators or self-declarations. We use verified government e-NAM transaction history (`enam_receipt_volume`) as hard financial proof of crop sales.
+- **Demo moment:** Under a Farmer applicant, show their `enam_receipt_volume` driver loaded with verified Mandi sales numbers, directly proving their repayment capacity.
+
 ---
 
 ## Cross-cutting narrative (the one-paragraph story)

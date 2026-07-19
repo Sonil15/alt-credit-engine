@@ -22,11 +22,20 @@ class TelecomInvoice(BaseModel):
     payment_date: date | None = None
     billed_amount: float = Field(ge=0)
     status: str
+    recharge_delay_days: int | None = None
+    sim_vintage_months: int | None = None
+
+
+class SMSRecord(BaseModel):
+    timestamp: datetime
+    sender: str
+    body: str
 
 
 class TelecomPayload(BaseModel):
     user_id: UUID
     invoices: list[TelecomInvoice]
+    sms_records: list[SMSRecord] | None = None
 
 
 class EcommerceOrder(BaseModel):
@@ -42,6 +51,7 @@ class EcommerceOrder(BaseModel):
 class EcommercePayload(BaseModel):
     user_id: UUID
     orders: list[EcommerceOrder]
+    sms_records: list[SMSRecord] | None = None
 
 
 class GeoPoint(BaseModel):

@@ -95,8 +95,9 @@ FACETS: tuple[Facet, ...] = (
         label="Telecom Reliability",
         source="Mobile & broadband payments",
         features=(
-            ("avg_days_late", "low", 0.4),
-            ("missed_payments_count", "low", 0.6),
+            ("avg_days_late", "low", 0.3),
+            ("missed_payments_count", "low", 0.4),
+            ("sms_bill_delay", "low", 0.3),
         ),
     ),
     Facet(
@@ -104,15 +105,16 @@ FACETS: tuple[Facet, ...] = (
         label="Spending Behaviour",
         source="E-commerce purchase patterns",
         features=(
-            ("necessity_ratio", "high", 0.4),
-            ("avg_merchant_rating", "high", 0.3),
-            ("monthly_spend_volatility", "low", 0.3),
+            ("necessity_ratio", "high", 0.3),
+            ("avg_merchant_rating", "high", 0.2),
+            ("monthly_spend_volatility", "low", 0.2),
+            ("sms_spend_total", "high", 0.3),
         ),
     ),
     Facet(
         key="location_stability",
         label="Location Stability",
-        source="Geolocation & delivery consistency",
+        source="E-commerce shipping records",
         features=(
             ("spatial_variance_score", "low", 0.6),
             ("anchor_count", "high", 0.4),
@@ -123,11 +125,15 @@ FACETS: tuple[Facet, ...] = (
         label="Cashflow Resilience",
         source="Bank cash-flow (econometric ECM)",
         features=(
-            ("monthly_income_mean", "high", 0.25),
-            ("cashflow_volatility", "low", 0.25),
-            ("resilience_coefficient", "high", 0.25),
-            ("trend_slope", "high", 0.20),
+            ("monthly_income_mean", "high", 0.15),
+            ("cash_burn_rate", "low", 0.15),
+            ("cashflow_volatility", "low", 0.10),
+            ("resilience_coefficient", "high", 0.15),
+            ("trend_slope", "high", 0.15),
             ("is_stationary", "high", 0.05),
+            ("upi_lite_txn_count", "high", 0.10),
+            ("upi_lite_average_ticket", "high", 0.05),
+            ("dbt_income_consistency", "high", 0.10),
         ),
     ),
     Facet(
@@ -171,8 +177,9 @@ FACETS: tuple[Facet, ...] = (
         label="Agricultural Seasonality",
         source="Farming cycles & input purchases",
         features=(
-            ("harvest_income_spike", "high", 0.6),
-            ("input_purchase_consistency", "high", 0.4),
+            ("harvest_income_spike", "high", 0.4),
+            ("input_purchase_consistency", "high", 0.3),
+            ("enam_receipt_volume", "high", 0.3),
         ),
     ),
     Facet(

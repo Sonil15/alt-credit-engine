@@ -141,6 +141,9 @@ def generate_telecom_invoices(user_id: str, theta: float, count: int = 12) -> li
     late_prob = max(0.02, 0.35 - 0.30 * theta + 0.28 * penalty + rng.uniform(-0.05, 0.05))
     miss_prob = max(0.01, 0.15 - 0.12 * theta + 0.24 * penalty + rng.uniform(-0.03, 0.03))
 
+    # SIM vintage: high theta -> 24-48 months, low theta -> 3-18 months
+    sim_vintage = int(max(1, min(120, round(6 + theta * 36 + rng.uniform(-5, 5)))))
+
     for i in range(count):
         invoice_date = base_date + timedelta(days=30 * i)
         due_date = invoice_date + timedelta(days=15)
@@ -155,6 +158,9 @@ def generate_telecom_invoices(user_id: str, theta: float, count: int = 12) -> li
             status = "paid"
             payment_date = due_date + timedelta(days=rng.randint(-2, 3))
 
+        # Recharge delay (days): high theta -> 0-2 days, low theta -> 1-12 days
+        recharge_delay = int(max(0, round((1.0 - theta) * 8 + rng.randint(-2, 4))))
+
         invoices.append(
             {
                 "invoice_date": invoice_date.isoformat(),
@@ -162,6 +168,8 @@ def generate_telecom_invoices(user_id: str, theta: float, count: int = 12) -> li
                 "payment_date": payment_date.isoformat() if payment_date else None,
                 "billed_amount": round(rng.uniform(299, 1499), 2),
                 "status": status,
+                "recharge_delay_days": recharge_delay,
+                "sim_vintage_months": sim_vintage,
             }
         )
     return invoices
@@ -230,56 +238,173 @@ def generate_geo_locations(user_id: str, theta: float, count: int = 50) -> list[
     rng = _user_rng(f"{user_id}:geo")
     home_lat = rng.uniform(INDIA_BOUNDS["lat_min"], INDIA_BOUNDS["lat_max"])
     home_long = rng.uniform(INDIA_BOUNDS["long_min"], INDIA_BOUNDS["long_max"])
-    penalty = _risk_penalty(theta)
-    spread = max(0.002, 0.02 - 0.018 * theta + 0.018 * penalty)
-    work_lat = home_lat + rng.uniform(-spread, spread)
-    work_long = home_long + rng.uniform(-spread, spread)
+
+    # High theta -> stable shipping anchors (e.g. 1-2 distinct PINs)
+    # Low theta -> drifting shipping locations (e.g. 4-8 distinct PINs)
+    num_unique_pins = int(max(1, min(10, round(1 + (1.0 - theta) * 7 + rng.uniform(-1, 1)))))
+
+    centroids = []
+    for i in range(num_unique_pins):
+        spread = 0.05 * i
+        centroids.append((home_lat + rng.uniform(-spread, spread), home_long + rng.uniform(-spread, spread)))
 
     locations = []
     base_time = datetime.now() - timedelta(days=30)
     for i in range(count):
-        anchor_lat = home_lat if i % 3 != 0 else work_lat
-        anchor_long = home_long if i % 3 != 0 else work_long
+        # Pick centroid: high theta concentrates on index 0, low theta is uniform
+        if rng.random() < theta and centroids:
+            centroid = centroids[0]
+        else:
+            centroid = rng.choice(centroids)
+
+        lat, lon = centroid
         locations.append(
             {
                 "timestamp": (base_time + timedelta(hours=i * 6)).isoformat(),
-                "lat": round(anchor_lat + rng.uniform(-spread, spread), 6),
-                "long": round(anchor_long + rng.uniform(-spread, spread), 6),
+                "lat": round(lat + rng.uniform(-0.001, 0.001), 6),
+                "long": round(lon + rng.uniform(-0.001, 0.001), 6),
                 "accuracy_meters": rng.randint(5, 50),
             }
         )
     return locations
 
 
+def generate_telecom_sms(user_id: str, theta: float, invoices: list[dict]) -> list[dict]:
+    rng = _user_rng(f"{user_id}:telecom_sms")
+    sms_records = []
+    sender_prefix = rng.choice(["JIO", "BSC"])
+    alert_sender = f"AD-{sender_prefix}MOB"
+    pay_sender = f"AD-{sender_prefix}PAY"
+
+    for inv in invoices:
+        amount = inv["billed_amount"]
+        due_dt = datetime.fromisoformat(inv["due_date"])
+        # Alert SMS 15 days before due date
+        alert_time = due_dt - timedelta(days=15)
+        sms_records.append({
+            "timestamp": alert_time.isoformat() + "Z",
+            "sender": alert_sender,
+            "body": f"Dear customer, your bill of Rs {amount} is due on {inv['due_date']}. Please pay promptly."
+        })
+
+        # Payment SMS if paid
+        pay_str = inv.get("payment_date")
+        if pay_str:
+            pay_dt = datetime.fromisoformat(pay_str)
+            pay_sms_time = pay_dt + timedelta(hours=rng.randint(2, 6))
+            sms_records.append({
+                "timestamp": pay_sms_time.isoformat() + "Z",
+                "sender": pay_sender,
+                "body": f"Thank you for your payment of Rs {amount}. Your transaction has been successfully processed."
+            })
+
+    sms_records.sort(key=lambda x: x["timestamp"])
+    return sms_records
+
+
+def generate_ecommerce_sms(user_id: str, theta: float, orders: list[dict]) -> list[dict]:
+    rng = _user_rng(f"{user_id}:ecommerce_sms")
+    sms_records = []
+
+    for order in orders:
+        amount = order["amount"]
+        ts_str = order["timestamp"]
+        ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+        if rng.random() < 0.8:
+            sms_time = ts + timedelta(minutes=rng.randint(1, 5))
+            sms_records.append({
+                "timestamp": sms_time.isoformat() + "Z",
+                "sender": rng.choice(["AD-BANKTX", "VM-PAYTM", "JD-AMAZON"]),
+                "body": f"Alert: Rs {amount} spent on your card at merchant {order['merchant_id']}. Transaction debited."
+            })
+
+    sms_records.sort(key=lambda x: x["timestamp"])
+    return sms_records
+
+
 def generate_cashflow_transactions(user_id: str, theta: float, count: int = 40) -> list[dict]:
     rng = _user_rng(f"{user_id}:cashflow")
     base_date = fake.date_between(start_date="-120d", end_date="-1d")
     penalty = _risk_penalty(theta)
-    income_scale = max(2000, 8000 + 42000 * theta - 22000 * penalty)
+    income_scale = max(5000, 10000 + 40000 * theta - 20000 * penalty)
     volatility = max(0.05, 0.35 - 0.25 * theta + 0.22 * penalty)
 
     transactions = []
-    for i in range(count):
-        txn_date = base_date + timedelta(days=i * 3)
-        is_income = rng.random() < (0.18 + 0.12 * theta)
-        txn_type = "CREDIT" if is_income else "DEBIT"
-        ref = uuid.uuid4().hex[:8].upper()
-        if is_income:
-            amount = round(rng.uniform(income_scale * 0.8, income_scale * 1.2), 2)
-            narration = f"NEFT/SALARY/{ref}"
-        else:
-            base_spend = income_scale * rng.uniform(0.15, 0.45) * (1 + volatility * rng.gauss(0, 1))
-            amount = round(max(100, base_spend), 2)
-            narration = rng.choice(NARRATION_TEMPLATES).format(ref=ref)
+    
+    # 40% of users have DBT, higher probability for lower theta
+    user_has_dbt = rng.random() < (0.6 - 0.4 * theta)
 
+    # Generate 4 monthly cycles (120 days total)
+    for m in range(4):
+        cycle_start_date = base_date + timedelta(days=m * 30)
+
+        # Day 1: Salary/Income Credit
+        salary_ref = uuid.uuid4().hex[:8].upper()
+        salary_amount = round(rng.uniform(income_scale * 0.9, income_scale * 1.1), 2)
         transactions.append(
             {
-                "txn_date": txn_date.isoformat(),
-                "type": txn_type,
-                "amount": amount,
-                "narration": narration,
+                "txn_date": cycle_start_date.isoformat(),
+                "type": "CREDIT",
+                "amount": salary_amount,
+                "narration": f"NEFT/SALARY/{salary_ref}",
             }
         )
+
+        # Optional DBT Credit
+        if user_has_dbt:
+            dbt_ref = uuid.uuid4().hex[:8].upper()
+            dbt_amount = round(rng.uniform(1500, 3000), 2)
+            dbt_date = cycle_start_date + timedelta(days=4)
+            transactions.append(
+                {
+                    "txn_date": dbt_date.isoformat(),
+                    "type": "CREDIT",
+                    "amount": dbt_amount,
+                    "narration": rng.choice([
+                        f"DBT/PM-KISAN/{dbt_ref}",
+                        f"APBS/PAHAL/{dbt_ref}",
+                        f"DBT/SCHOLARSHIP/{dbt_ref}"
+                    ])
+                }
+            )
+
+        # Generate 10 debit transactions per cycle
+        for d in range(10):
+            if rng.random() > theta:
+                # High risk: concentrate debits in the first 7 days
+                day_offset = rng.randint(1, 7)
+                base_spend = salary_amount * rng.uniform(0.08, 0.15) * (1 + volatility * rng.gauss(0, 0.5))
+            else:
+                # Low risk: spread debits across the month
+                day_offset = rng.randint(2, 29)
+                base_spend = salary_amount * rng.uniform(0.04, 0.08) * (1 + volatility * rng.gauss(0, 0.5))
+
+            txn_date = cycle_start_date + timedelta(days=day_offset)
+            ref = uuid.uuid4().hex[:8].upper()
+            
+            # 20% of transactions are UPI-LITE
+            is_upi_lite = rng.random() < 0.2
+            if is_upi_lite:
+                amount = round(rng.uniform(10, 200), 2)
+                narration = rng.choice([
+                    f"UPI-LITE/MERCHANT/{ref}/Tea",
+                    f"UPI/LITE-WALLET/{ref}/Auto",
+                    f"LITE-WALLET/TRANSFER/{ref}/Snacks"
+                ])
+            else:
+                amount = round(max(50.0, base_spend), 2)
+                narration = rng.choice(NARRATION_TEMPLATES).format(ref=ref)
+
+            transactions.append(
+                {
+                    "txn_date": txn_date.isoformat(),
+                    "type": "DEBIT",
+                    "amount": amount,
+                    "narration": narration,
+                }
+            )
+
+    transactions.sort(key=lambda x: x["txn_date"])
     return transactions
 
 
@@ -438,6 +563,7 @@ def generate_user_profile(
     elif cohort == "Farmer":
         extra_features["harvest_income_spike"] = round(local_rng.uniform(3.0, 10.0) if theta > 0.4 else local_rng.uniform(1.0, 4.0), 2)
         extra_features["input_purchase_consistency"] = round(local_rng.uniform(0.7, 1.0) if theta > 0.4 else local_rng.uniform(0.3, 0.75), 2)
+        extra_features["enam_receipt_volume"] = round(local_rng.uniform(50000, 250000) if theta > 0.4 else local_rng.uniform(10000, 75000), 2)
     elif cohort == "Homemaker":
         extra_features["utility_payment_consistency"] = round(local_rng.uniform(0.8, 1.0) if theta > 0.4 else local_rng.uniform(0.4, 0.85), 2)
         extra_features["grocery_spend_stability"] = round(local_rng.uniform(0.7, 1.0) if theta > 0.4 else local_rng.uniform(0.3, 0.75), 2)
@@ -469,9 +595,13 @@ def generate_user_profile(
 
     sharing_probs = COHORT_SHARING_PROB.get(cohort, {})
     if local_rng.random() < sharing_probs.get("telecom", 1.0):
-        profile["telecom"] = {"user_id": user_id, "invoices": generate_telecom_invoices(user_id, theta)}
+        invoices = generate_telecom_invoices(user_id, theta)
+        sms_records = generate_telecom_sms(user_id, theta, invoices)
+        profile["telecom"] = {"user_id": user_id, "invoices": invoices, "sms_records": sms_records}
     if local_rng.random() < sharing_probs.get("ecommerce", 1.0):
-        profile["ecommerce"] = {"user_id": user_id, "orders": generate_ecommerce_orders(user_id, theta)}
+        orders = generate_ecommerce_orders(user_id, theta)
+        sms_records = generate_ecommerce_sms(user_id, theta, orders)
+        profile["ecommerce"] = {"user_id": user_id, "orders": orders, "sms_records": sms_records}
     if local_rng.random() < sharing_probs.get("geo", 1.0):
         profile["geo"] = {"user_id": user_id, "locations": generate_geo_locations(user_id, theta)}
     if local_rng.random() < sharing_probs.get("cashflow", 1.0):

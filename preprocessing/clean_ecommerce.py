@@ -18,7 +18,7 @@ def _parse_timestamp(value: Any) -> datetime | None:
     return None
 
 
-def clean_ecommerce(raw_data: list[dict[str, Any]]) -> dict[str, float]:
+def clean_ecommerce(raw_data: list[dict[str, Any]], sms_records: list[dict[str, Any]] | None = None) -> dict[str, float]:
     """Extract spending behavior features from e-commerce order records."""
     if not raw_data:
         return {
@@ -27,6 +27,7 @@ def clean_ecommerce(raw_data: list[dict[str, Any]]) -> dict[str, float]:
             "monthly_spend_volatility": 0.0,
             "historical_spatial_variance": 0.0,
             "distinct_pin_codes": 0.0,
+            "sms_spend_total": 0.0,
         }
 
     necessity_spend = 0.0
@@ -67,10 +68,26 @@ def clean_ecommerce(raw_data: list[dict[str, Any]]) -> dict[str, float]:
     else:
         volatility = 0.0
 
+    sms_spend_total = 0.0
+    if sms_records:
+        import re
+        amount_pat = re.compile(r"(?:rs\.?|inr|amt)\s*([\d,]+(?:\.\d+)?)", re.IGNORECASE)
+        for s in sms_records:
+            body = str(s.get("body", "")).lower()
+            if any(k in body for k in ["debited", "spent", "charged", "purchase of", "paid to"]):
+                match = amount_pat.search(body)
+                if match:
+                    try:
+                        amt_str = match.group(1).replace(",", "")
+                        sms_spend_total += float(amt_str)
+                    except ValueError:
+                        continue
+
     features = {
         "necessity_ratio": float(necessity_ratio),
         "avg_merchant_rating": float(avg_rating),
         "monthly_spend_volatility": float(volatility),
+        "sms_spend_total": float(sms_spend_total),
     }
     features.update(historical_spatial_variance(raw_data))
     return features

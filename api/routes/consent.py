@@ -39,7 +39,7 @@ _revoked_users: set[str] = set()              # user_id (for user-id-based revok
 _user_consent_map: dict[str, str] = {}        # user_id -> consent_id
 _erasure_requests: dict[str, dict] = {}       # user_id -> erasure record
 
-CONSENT_SCOPES = ["telecom", "ecommerce", "geo", "cashflow", "survey"]
+CONSENT_SCOPES = ["telecom", "ecommerce", "geo", "cashflow", "survey", "upi_lite", "dbt_logs", "sms_parsing", "enam_receipts"]
 DATA_FIDUCIARY = "Alt-Credit Engine (Demo AA)"
 CONSENT_PURPOSE = "Alternate creditworthiness assessment for thin-file loan origination"
 CONSENT_TTL_HOURS = 24
@@ -253,7 +253,20 @@ def get_revoked_scopes(user_id: str) -> list[str]:
             return CONSENT_SCOPES.copy()
         record = _active_consents.get(consent_id)
         if record:
-            return record.get("revoked_scopes", [])
+            revoked = list(record.get("revoked_scopes", []))
+            # Cascade parent scope revocations to sub-scopes
+            if "cashflow" in revoked:
+                if "upi_lite" not in revoked:
+                    revoked.append("upi_lite")
+                if "dbt_logs" not in revoked:
+                    revoked.append("dbt_logs")
+            if "telecom" in revoked:
+                if "sms_parsing" not in revoked:
+                    revoked.append("sms_parsing")
+            if "farmer" in revoked:
+                if "enam_receipts" not in revoked:
+                    revoked.append("enam_receipts")
+            return revoked
     return []
 
 

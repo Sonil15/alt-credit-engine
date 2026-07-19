@@ -64,6 +64,7 @@ SCOPE_TO_FEATURES = {
     # signals leak back into the model input and the driver explanation.
     "cashflow": [
         "monthly_income_mean", "monthly_expense_mean", "cashflow_volatility",
+        "cash_burn_rate",
         "resilience_coefficient", "trend_slope", "is_stationary",
         "adf_statistic", "adf_pvalue",
     ],
@@ -76,7 +77,12 @@ SCOPE_TO_FEATURES = {
     "campus": ["upi_spend_consistency", "small_dues_payment_promptness", "e_wallet_topup_frequency"],
     "vendor": ["daily_transaction_count", "average_ticket_size"],
     "farmer": ["harvest_income_spike", "input_purchase_consistency"],
-    "household": ["utility_payment_consistency", "grocery_spend_stability"]
+    "household": ["utility_payment_consistency", "grocery_spend_stability"],
+    # Granular sub-scopes (2026-07)
+    "upi_lite": ["upi_lite_txn_count", "upi_lite_average_ticket"],
+    "dbt_logs": ["dbt_income_consistency"],
+    "sms_parsing": ["sms_spend_total", "sms_bill_delay"],
+    "enam_receipts": ["enam_receipt_volume"],
 }
 
 
@@ -211,6 +217,7 @@ def _generate_actionable_insights(drivers: list[dict[str, float]]) -> list[str]:
         "anchor_count": "Tip: Establishing routine locations (like home/work) improves profile confidence.",
         "monthly_income_mean": "Tip: Increasing or stabilizing your monthly inflow strengthens your assessment.",
         "cashflow_volatility": "Tip: Demonstrating consistent monthly cash flow will improve your score.",
+        "cash_burn_rate": "Tip: Pacing your expenditures evenly throughout the month post-payday will improve your score.",
         "resilience_coefficient": "Tip: Maintaining a buffer in your account improves financial resilience.",
         "trend_slope": "Tip: A positive trend in your account balance over time will improve your score.",
         "is_stationary": "Tip: Reducing unpredictable spikes in cash flow will strengthen your profile.",
@@ -224,7 +231,14 @@ def _generate_actionable_insights(drivers: list[dict[str, float]]) -> list[str]:
         "utility_payment_consistency": "Tip: Consistent payment of household utilities is a strong positive signal.",
         "grocery_spend_stability": "Tip: Stable household spending patterns improve your credit assessment.",
         "business_vintage_years": "Tip: A longer business history indicates stability and helps improve your score.",
-        "turnover_income_consistency": "Tip: Ensure your declared business turnover matches your actual bank transaction history."
+        "turnover_income_consistency": "Tip: Ensure your declared business turnover matches your actual bank transaction history.",
+        # Granular sub-scope features (2026-07)
+        "upi_lite_txn_count": "Tip: Regular use of UPI Lite for small transactions shows active digital usage.",
+        "upi_lite_average_ticket": "Tip: Keeping a stable average ticket size for minor purchases builds credit history.",
+        "dbt_income_consistency": "Tip: Receiving direct benefit transfers consistently confirms a stable baseline income.",
+        "sms_spend_total": "Tip: Documenting regular e-commerce purchases via SMS alert records improves the credit profile.",
+        "sms_bill_delay": "Tip: Paying bills quickly after receiving SMS alert alerts improves the telecom reliability score.",
+        "enam_receipt_volume": "Tip: Linking e-NAM mandi verified crop sale receipts directly validates agricultural output."
     }
     
     insights = []

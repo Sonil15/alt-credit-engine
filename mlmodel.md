@@ -343,3 +343,52 @@ makes **consent revocation** fair: a withdrawn source is masked to NaN and imput
 the cohort-typical value, so revoking a source makes a borrower look *average* on it,
 not worst-case. Genuinely thin files still lose *confidence* (routed to REVIEW), not
 points, "less confident, not more punitive."
+
+## 10. Creative Alternative Data Indicators (2026-07)
+
+We added new alternative data indicators to the preprocessing pipeline to capture borrower stability, discipline, and behavior. These indicators are:
+
+### A. E-commerce Shipping Address Drift
+* **Concept:** Instead of using intrusive, battery-draining GPS tracking, we evaluate location stability using the delivery destinations from e-commerce order logs.
+* **Math:** We compute the normalized Shannon entropy of the delivery PIN codes:
+  \[
+  \text{Entropy} = \frac{-\sum p_i \log_2(p_i)}{\log_2(k)}
+  \]
+  where $p_i$ is the frequency of orders shipped to PIN code $i$, and $k$ is the count of unique PIN codes. A low entropy represents high residential stability (delivering consistently to home/work).
+* **EBM Mapping:** We map this entropy directly to `spatial_variance_score` and the unique PIN count to `anchor_count`.
+
+### B. Telecom Prepaid Recharge Latency & SIM Vintage
+* **Concept:** We adapt the telecom extraction logic to support prepaid connections, which are common among thin-file borrowers.
+* **Prepaid recharge latency:** We measure the delay (days) in recharges post-expiration. We blend this latency directly into the `avg_days_late` feature (high delay maps to late payments).
+* **SIM Vintage:** Keeping the same SIM card for years shows high identity stability. If a SIM vintage is under 12 months, we apply a penalty to `missed_payments_count` to reflect flight risk.
+
+### C. Bank Cash Burn Profile
+* **Concept:** We evaluate present bias and consumption velocity by observing how quickly a borrower spends their money after payday.
+* **Math:** We identify the monthly salary or income credit date. We calculate the cash burn rate as:
+  \[
+  \text{Burn Rate} = \frac{\sum \text{Debits in post-payday window } [T, T+7]}{\text{Credited Income Amount}}
+  \]
+  We average these monthly ratios as `cash_burn_rate`. A high ratio indicates impulsive spending and low financial discipline.
+
+### D. ONDC & Partner UPI Merchant Sourcing
+* **Sourcing:** To retrieve transaction velocity and business credit features for informal micro-merchants (street vendors, small shop owners), we integrate with ONDC APIs (ratings and order volumes), partner UPI QR dashboards ( BharatPe / PhonePe payment velocities), and B2B distributor platforms (purchase invoicing histories).
+
+### E. Granular Consent (DPDP-Compliant Sahmati Integration)
+* **Concept:** Specific, clear, and revocable consent under DPDP Act 2023. We map sub-scopes to specific features under the hood, so revoking a granular toggle (e.g. opting out of SMS parsing or UPI Lite) immediately masks its features and imputes cohort medians, preserving the rest of the application score.
+
+### F. UPI Lite Wallet Sourcing
+* **Concept:** Isolate micro-payment wallet loads from standard bank statements.
+* **Math:** We identify debit transactions matching narrations like `UPI-LITE/`, `LITE-WALLET/` to count frequency (`upi_lite_txn_count`) and calculate `upi_lite_average_ticket` size. This prevents micro-payments from being penalized as general cash outflows.
+
+### G. Direct Benefit Transfer (DBT) Welfare Sourcing
+* **Concept:** Identify welfare deposits as a steady income floor for rural/marginalized borrowers.
+* **Math:** We parse transaction narrations for DBT and APBS headers (e.g. `DBT/PM-KISAN`, `APBS/PAHAL`). We calculate `dbt_income_consistency` as the ratio of months with at least one DBT deposit, treating it as a reliable income stream.
+
+### H. On-Device Transactional SMS Parsing
+* **Concept:** Extract utility bill latency and e-commerce spend without direct API integrations.
+* **Math:** We measure payment latency (`sms_bill_delay`) by calculating the days elapsed between a bill alert SMS (e.g. from `JD-BSCOM` matching "due") and a payment confirmation SMS (matching "thank you"). We also sum all parsed transaction values matching merchant keywords (e.g. Amazon, Flipkart) to compute `sms_spend_total`.
+
+### I. e-NAM Agri Mandi verified receipts
+* **Concept:** Financial verification of crop sales for farmers.
+* **Sourcing:** We integrate verified National Agriculture Market (e-NAM) transaction receipts (`enam_receipt_volume`) directly into the agricultural cohort features, providing a solid proof-of-income baseline.
+

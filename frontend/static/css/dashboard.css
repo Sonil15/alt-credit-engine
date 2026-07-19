@@ -108,6 +108,18 @@
   background: #334155;
 }
 
+.search-bar button.outline {
+  background: transparent;
+  border: 2px solid var(--primary);
+  color: var(--primary);
+  padding: 8px 18px;
+}
+
+.search-bar button.outline:hover {
+  background: var(--primary);
+  color: var(--white);
+}
+
 .badge {
   display: inline-block;
   padding: var(--space-xs) var(--space-md);

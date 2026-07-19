@@ -254,6 +254,8 @@ async def _ingest_assessment(
         elif cohort == "Farmer" and "farmer" not in revoked_scopes:
             sim_features["harvest_income_spike"] = round(1.0 + theta * 9.0, 2)
             sim_features["input_purchase_consistency"] = round(0.5 + theta * 0.5, 2)
+            if "enam_receipts" not in revoked_scopes:
+                sim_features["enam_receipt_volume"] = round(30000.0 + theta * 170000.0, 2)
         elif cohort == "Homemaker" and "household" not in revoked_scopes:
             sim_features["utility_payment_consistency"] = round(0.5 + theta * 0.5, 2)
             sim_features["grocery_spend_stability"] = round(0.5 + theta * 0.5, 2)

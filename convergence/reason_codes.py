@@ -6,11 +6,12 @@ FEATURE_REASON_MAP: dict[str, str] = {
     "necessity_ratio": "Low share of essential spending",
     "avg_merchant_rating": "Low merchant quality in purchase history",
     "monthly_spend_volatility": "High spending volatility",
-    "spatial_variance_score": "Geographic instability",
-    "anchor_count": "Limited location anchors",
+    "spatial_variance_score": "High shipping address drift",
+    "anchor_count": "Multiple shipping destinations",
     "monthly_income_mean": "Low or unstable income",
     "monthly_expense_mean": "High recurring expenses",
     "cashflow_volatility": "Volatile cash flow patterns",
+    "cash_burn_rate": "Rapid post-payday cash depletion",
     "conscientiousness": "Signs of less careful financial planning",
     "locus_of_control": "Feels finances are outside their control",
     "financial_self_efficacy": "Low confidence managing personal finances",
@@ -36,6 +37,13 @@ FEATURE_REASON_MAP: dict[str, str] = {
     "input_purchase_consistency": "Irregular agricultural input purchases",
     "utility_payment_consistency": "Inconsistent utility bill payments",
     "grocery_spend_stability": "Unstable household spending patterns",
+    # Granular sub-scope features (2026-07)
+    "upi_lite_txn_count": "Low UPI Lite transaction volume",
+    "upi_lite_average_ticket": "Small UPI Lite average transaction size",
+    "dbt_income_consistency": "Irregular direct benefit transfer receipts",
+    "sms_spend_total": "Low SMS-parsed transaction volume",
+    "sms_bill_delay": "High delay in paying bills after SMS alerts",
+    "enam_receipt_volume": "Low e-NAM verified Mandi sales volume",
 }
 
 

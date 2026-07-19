@@ -36,16 +36,17 @@ SOURCE_ECONOMETRIC = "Econometric engine (ECM + ADF)"
 #   number  -> 2-dp number
 # direction: "high" = larger value helps the score, "low" = larger value hurts it.
 FEATURE_META: dict[str, dict[str, str]] = {
-    "avg_days_late": {"label": "Avg days late on bills", "source": "Telecom & utility bills", "fmt": "days", "direction": "low", "engine": ENGINE_EXTRACTION},
-    "missed_payments_count": {"label": "Missed bill payments", "source": "Telecom & utility bills", "fmt": "count", "direction": "low", "engine": ENGINE_EXTRACTION},
+    "avg_days_late": {"label": "Avg payment or recharge delay", "source": "Telecom & recharges", "fmt": "days", "direction": "low", "engine": ENGINE_EXTRACTION},
+    "missed_payments_count": {"label": "Missed payments or inactive periods", "source": "Telecom & SIM vintage", "fmt": "count", "direction": "low", "engine": ENGINE_EXTRACTION},
     "necessity_ratio": {"label": "Essential-spend ratio", "source": "E-commerce purchases", "fmt": "percent", "direction": "high", "engine": ENGINE_EXTRACTION},
     "avg_merchant_rating": {"label": "Avg merchant rating", "source": "E-commerce purchases", "fmt": "rating", "direction": "high", "engine": ENGINE_EXTRACTION},
     "monthly_spend_volatility": {"label": "Monthly spend volatility", "source": "E-commerce purchases", "fmt": "rupee", "direction": "low", "engine": ENGINE_EXTRACTION},
-    "spatial_variance_score": {"label": "Location variance", "source": "Geolocation consistency", "fmt": "number", "direction": "low", "engine": ENGINE_EXTRACTION},
-    "anchor_count": {"label": "Stable location anchors", "source": "Geolocation consistency", "fmt": "count", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "spatial_variance_score": {"label": "Delivery address drift entropy", "source": "E-commerce shipping records", "fmt": "number", "direction": "low", "engine": ENGINE_EXTRACTION},
+    "anchor_count": {"label": "Unique delivery destinations", "source": "E-commerce shipping records", "fmt": "count", "direction": "high", "engine": ENGINE_EXTRACTION},
     "monthly_income_mean": {"label": "Avg monthly income", "source": "Bank cash-flow", "fmt": "rupee", "direction": "high", "engine": ENGINE_EXTRACTION},
     "monthly_expense_mean": {"label": "Avg monthly expense", "source": "Bank cash-flow", "fmt": "rupee", "direction": "low", "engine": ENGINE_EXTRACTION},
     "cashflow_volatility": {"label": "Cash-flow volatility", "source": "Bank cash-flow", "fmt": "rupee", "direction": "low", "engine": ENGINE_EXTRACTION},
+    "cash_burn_rate": {"label": "Post-payday cash depletion", "source": "Bank cash-flow", "fmt": "score01", "direction": "low", "engine": ENGINE_EXTRACTION},
     "conscientiousness": {"label": "Careful financial planning", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
     "locus_of_control": {"label": "Sense of financial control", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
     "financial_self_efficacy": {"label": "Confidence managing money", "source": "Psychometric assessment", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
@@ -74,6 +75,13 @@ FEATURE_META: dict[str, dict[str, str]] = {
     "input_purchase_consistency": {"label": "Input purchase consistency", "source": "Farming cycles & input purchases", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
     "utility_payment_consistency": {"label": "Utility payment consistency", "source": "Electricity/Water/Gas & Groceries", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
     "grocery_spend_stability": {"label": "Grocery spend stability", "source": "Electricity/Water/Gas & Groceries", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
+    # Granular sub-scope features (2026-07)
+    "upi_lite_txn_count": {"label": "UPI Lite transaction count", "source": "Bank cash-flow", "fmt": "count", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "upi_lite_average_ticket": {"label": "UPI Lite average transaction amount", "source": "Bank cash-flow", "fmt": "rupee", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "dbt_income_consistency": {"label": "DBT income consistency", "source": "Bank cash-flow", "fmt": "score01", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "sms_spend_total": {"label": "SMS-parsed e-commerce spend", "source": "E-commerce purchases", "fmt": "rupee", "direction": "high", "engine": ENGINE_EXTRACTION},
+    "sms_bill_delay": {"label": "SMS-parsed bill payment delay", "source": "Telecom & utility bills", "fmt": "count", "direction": "low", "engine": ENGINE_EXTRACTION},
+    "enam_receipt_volume": {"label": "e-NAM verified Mandi volume", "source": "Farming cycles & input purchases", "fmt": "rupee", "direction": "high", "engine": ENGINE_EXTRACTION},
 }
 
 # Order data sources appear in the grouped lineage view.

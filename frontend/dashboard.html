@@ -79,7 +79,7 @@
       <input type="text" id="user-id-input" placeholder="Enter Borrower ID (UUID)" value="{{ user_id }}">
       <button onclick="loadScore()">Assess</button>
       <button class="secondary" onclick="loadAll()">List All</button>
-      <button class="secondary" onclick="openExplainer()" style="border-color: #2563eb; color: #2563eb; font-weight: 700;">E2E Explainer (Demo)</button>
+      <button class="outline" onclick="openExplainer()">E2E Explainer (Demo)</button>
     </div>
     <div id="error-box" class="error-box" style="display:none;"></div>
     <div id="loading-indicator" style="display:none;padding:32px;text-align:center;">
@@ -141,18 +141,37 @@
       <div class="two-col">
         <div class="chart-card">
           <h2 id="facet-chart-title">Facet Profile</h2>
-          <canvas id="facet-radar" height="220"></canvas>
+          <div id="facet-radar-container">
+            <canvas id="facet-radar" height="220"></canvas>
+          </div>
+          <div id="facet-radar-bureau-msg" style="display:none; padding:24px; text-align:center; background:#f8fafc; border-radius:8px; border:1px dashed #cbd5e1; height:220px; box-sizing:border-box; flex-direction:column; justify-content:center; align-items:center;">
+            <div style="font-size:32px; margin-bottom:8px;">🔍</div>
+            <p style="margin:0; font-size:13px; color:#64748b; line-height:1.4;">Alternative data is not needed because a traditional credit score already exists for this borrower.</p>
+          </div>
         </div>
         <div class="chart-card">
           <h2>Facet Sub-Scores</h2>
-          <div id="facet-list"></div>
+          <div id="facet-list-container">
+            <div id="facet-list"></div>
+          </div>
+          <div id="facet-list-bureau-msg" style="display:none; padding:24px; text-align:center; background:#f8fafc; border-radius:8px; border:1px dashed #cbd5e1; min-height:140px; box-sizing:border-box; flex-direction:column; justify-content:center; align-items:center;">
+            <div style="font-size:32px; margin-bottom:8px;">🔍</div>
+            <p style="margin:0; font-size:13px; color:#64748b; line-height:1.4;">Alternative scoring categories (such as telecom, e-commerce, or psychometrics) were bypassed since traditional credit history is available.</p>
+          </div>
         </div>
       </div>
 
       <!-- Explainability: the model's own additive contributions (no SHAP) -->
       <div class="chart-card">
         <h2>Why this score: the model's own contributions (in points)</h2>
-        <canvas id="ebm-chart" height="120"></canvas>
+        <div id="ebm-chart-container">
+          <canvas id="ebm-chart" height="120"></canvas>
+        </div>
+        <div id="ebm-bureau-msg" style="display:none; padding:24px; text-align:center; background:#f8fafc; border-radius:8px; border:1px dashed #cbd5e1; margin-bottom:12px;">
+          <div style="font-size:36px; margin-bottom:12px;">🔍</div>
+          <h3 style="margin:0 0 8px; color:#0f172a; font-size:16px; font-weight:700;">Bureau Routing Active</h3>
+          <p style="margin:0; font-size:14px; color:#475569; line-height:1.5;"></p>
+        </div>
         <div class="drivers" id="drivers-list"></div>
         <div class="reason-box" id="reason-codes-box" style="display:none;">
           <strong>Adverse Action Reason Codes:</strong> <span id="reason-codes-text"></span>
@@ -456,7 +475,42 @@
 
       renderGauge(d.credit_score);
       renderLending(d.lending||{}, d);
+
+      const isBureauGated = d.explanation_method === 'bureau-gating';
+
+      const radarContainer = document.getElementById('facet-radar-container');
+      const radarMsg = document.getElementById('facet-radar-bureau-msg');
+      if (radarContainer && radarMsg) {
+        radarContainer.style.display = isBureauGated ? 'none' : 'block';
+        radarMsg.style.display = isBureauGated ? 'flex' : 'none';
+      }
+
+      const listContainer = document.getElementById('facet-list-container');
+      const listMsg = document.getElementById('facet-list-bureau-msg');
+      if (listContainer && listMsg) {
+        listContainer.style.display = isBureauGated ? 'none' : 'block';
+        listMsg.style.display = isBureauGated ? 'flex' : 'none';
+      }
+
       renderFacets(d.facet_scores||[]);
+      
+      const chartContainer = document.getElementById('ebm-chart-container');
+      const bureauMsg = document.getElementById('ebm-bureau-msg');
+      if (chartContainer && bureauMsg) {
+        if (isBureauGated) {
+          chartContainer.style.display = 'none';
+          bureauMsg.style.display = 'block';
+          const isApprove = d.decision === 'APPROVE';
+          bureauMsg.querySelector('h3').textContent = isApprove ? 'Traditional Bureau History Found (Auto-Approved)' : 'Traditional Bureau History Found (Auto-Rejected)';
+          bureauMsg.querySelector('p').textContent = isApprove
+            ? `This borrower has a prime traditional credit score (CIBIL: ${d.credit_score}). Because traditional credit history is available, the alternative credit scoring engine is bypassed, and the loan is automatically approved.`
+            : `This borrower has a poor traditional credit score (CIBIL: ${d.credit_score}). Because traditional credit history indicates high risk, the alternative credit scoring engine is bypassed, and the loan is automatically rejected.`;
+        } else {
+          chartContainer.style.display = 'block';
+          bureauMsg.style.display = 'none';
+        }
+      }
+
       renderEbmDrivers(d.feature_drivers||[]);
       renderPipeline(d);
       renderTrace(d.feature_trace||{});

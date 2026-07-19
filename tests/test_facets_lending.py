@@ -155,8 +155,8 @@ def test_optional_facets_and_confidence_offset():
     pop = _population()
     stats = compute_norm_stats(pop)
 
-    # Farmer cohort: expected facets include agricultural_seasonality (2), location_stability (2), psychometric_character (10), and business_credentials (5) -> 19 features
-    # Let's provide a subset: only 12 features out of 19 (missing location_stability and business_credentials)
+    # Farmer cohort: expected facets include agricultural_seasonality (3), location_stability (2), psychometric_character (10), and business_credentials (5) -> 20 features
+    # Let's provide a subset: only 12 features out of 20 (missing location_stability, business_credentials, and enam_receipt_volume)
     row_farmer_no_opt = pd.Series({
         "cohort_code": 4.0,  # Farmer
         "harvest_income_spike": 5.0,
@@ -173,20 +173,22 @@ def test_optional_facets_and_confidence_offset():
         "resourcefulness": 0.9,
         # missing location_stability features (spatial_variance_score, anchor_count)
         # missing business_credentials features
+        # missing enam_receipt_volume
     })
     farmer_facets_no_opt = compute_facet_scores(row_farmer_no_opt, stats)
     # Should not include spending_behaviour since it's not expected and not provided
     assert not any(p["key"] == "spending_behaviour" for p in farmer_facets_no_opt)
 
     conf_no_opt = compute_confidence(farmer_facets_no_opt, cohort="Farmer")
-    # Features with data = 12 (agricultural_seasonality: 2, psychometric_character: 10)
-    # Expected features = 19 (including 2 from location_stability + 5 from business_credentials)
-    # confidence pct should be round(100 * 12 / 19) = 63.2%
-    assert conf_no_opt["confidence_pct"] == 63.2
-    assert conf_no_opt["features_total"] == 19
+    # Features with data = 13 (agricultural_seasonality: 3 due to hybrid logic, psychometric_character: 10)
+    # Expected features = 20 (including 3 from agricultural_seasonality + 2 from location_stability + 5 from business_credentials)
+    # confidence pct should be round(100 * 13 / 20) = 65.0%
+    assert conf_no_opt["confidence_pct"] == 65.0
+    assert conf_no_opt["features_total"] == 20
 
     # Farmer cohort with optional data: same expected features, but now also provides e-commerce (spending_behaviour)
-    # spending_behaviour has 3 features: necessity_ratio, avg_merchant_rating, monthly_spend_volatility
+    # spending_behaviour has 4 features now (necessity_ratio, avg_merchant_rating, monthly_spend_volatility, sms_spend_total)
+    # let's provide necessity_ratio, avg_merchant_rating, monthly_spend_volatility (3 features)
     row_farmer_with_opt = pd.Series({
         "cohort_code": 4.0,  # Farmer
         "harvest_income_spike": 5.0,
@@ -202,7 +204,7 @@ def test_optional_facets_and_confidence_offset():
         "cognitive_reflection": 0.9,
         "resourcefulness": 0.9,
         # missing location_stability features
-        # provided optional features: spending_behaviour (3 features)
+        # provided optional features: spending_behaviour (3 features out of 4)
         "necessity_ratio": 0.8,
         "avg_merchant_rating": 4.5,
         "monthly_spend_volatility": 1500.0,
@@ -212,11 +214,11 @@ def test_optional_facets_and_confidence_offset():
     assert any(p["key"] == "spending_behaviour" for p in farmer_facets_with_opt)
 
     conf_with_opt = compute_confidence(farmer_facets_with_opt, cohort="Farmer")
-    # Features with data = 12 (expected) + 3 (optional) = 15
-    # Expected features (denominator) = 19
-    # confidence pct = round(100 * 15 / 19, 1) = 78.9%
-    assert conf_with_opt["confidence_pct"] == 78.9
-    assert conf_with_opt["features_total"] == 19
+    # Features with data = 13 (expected) + 4 (optional due to hybrid logic) = 17
+    # Expected features (denominator) = 20
+    # confidence pct = round(100 * 17 / 20, 1) = 85.0%
+    assert conf_with_opt["confidence_pct"] == 85.0
+    assert conf_with_opt["features_total"] == 20
 
 
 def test_hybrid_confidence_logic():
@@ -266,7 +268,7 @@ def test_homemaker_dynamic_business_expectation():
     stats = compute_norm_stats(pop)
 
     # 1. Homemaker without business purpose:
-    # expected facets: telecom_reliability (2), location_stability (2), psychometric_character (10), household_reliability (2) -> 16 features.
+    # expected facets: telecom_reliability (3), location_stability (2), psychometric_character (10), household_reliability (2) -> 17 features.
     row = pd.Series({
         "cohort_code": 5.0,  # Homemaker
         "utility_payment_consistency": 0.95,
@@ -288,21 +290,22 @@ def test_homemaker_dynamic_business_expectation():
         # telecom
         "avg_days_late": 1.0,
         "missed_payments_count": 0.0,
+        "sms_bill_delay": 0.0,
     })
 
     # expect_business_profile = False
     facets = compute_facet_scores(row, stats, cohort="Homemaker", expect_business_profile=False)
     conf = compute_confidence(facets, cohort="Homemaker", expect_business_profile=False)
-    assert conf["features_total"] == 16
+    assert conf["features_total"] == 17
     assert conf["confidence_pct"] == 100.0
 
     # 2. Homemaker with business purpose:
-    # expected facets should include business_credentials (5) -> 21 features.
+    # expected facets should include business_credentials (5) -> 22 features.
     # Because we didn't provide business credentials, confidence should drop.
     facets_biz = compute_facet_scores(row, stats, cohort="Homemaker", expect_business_profile=True)
     conf_biz = compute_confidence(facets_biz, cohort="Homemaker", expect_business_profile=True)
-    assert conf_biz["features_total"] == 21
-    assert conf_biz["confidence_pct"] == round(100 * 16 / 21, 1)  # 76.2%
+    assert conf_biz["features_total"] == 22
+    assert conf_biz["confidence_pct"] == round(100 * 17 / 22, 1)  # 77.3%
 
 
 def test_msme_dynamic_capacity_multipliers():
