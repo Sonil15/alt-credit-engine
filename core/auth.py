@@ -25,6 +25,12 @@ async def require_own_session(
     settings = get_settings()
     expected_key = settings.API_KEY.strip()
 
+    # No API key configured -> keyless/demo deployment: the officer dashboard is open
+    # to anyone, mirroring require_api_key's early return. Set API_KEY to re-lock
+    # officer access and fall back to the per-borrower session check below.
+    if not expected_key:
+        return
+
     if expected_key and x_api_key == expected_key:
         return
 

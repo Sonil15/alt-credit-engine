@@ -12,7 +12,7 @@ import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from convergence.fairness import compute_fairness_report
-from convergence.feature_meta import build_feature_trace
+from convergence.feature_meta import FEATURE_META, build_feature_trace
 from convergence.lending import evaluate_funding_gap, recommend_terms
 from convergence.letter_store import trim_pending_letter_queue, upsert_letter_for_decision
 from convergence.panel import APPROVE_SCORE, REVIEW_SCORE, compute_agreement, decision_thresholds
@@ -153,6 +153,10 @@ def _champion_contributions(
     contributions = [
         {
             "feature": name,
+            # Plain-language label from the single source of truth (FEATURE_META),
+            # so the dashboard never surfaces raw feature names like
+            # "locus_of_control" to a loan officer.
+            "label": FEATURE_META.get(name, {}).get("label", name.replace("_", " ")),
             "contribution_value": (
                 centered := safe_float(contrib_map.get(name, 0.0))
                 - safe_float(baseline_contrib.get(name, 0.0))

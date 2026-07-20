@@ -303,6 +303,7 @@ class HealthResponse(BaseModel):
 
 class FeatureDriver(BaseModel):
     feature: str
+    label: str = ""
     contribution_value: float
     points: float = 0.0
 

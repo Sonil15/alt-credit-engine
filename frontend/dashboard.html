@@ -616,7 +616,11 @@
     }
 
     function renderEbmDrivers(drivers) {
-      const labels = drivers.map(d=>d.feature.replace(/_/g,' '));
+      // Prefer the backend's plain-language label (single source of truth in
+      // convergence/feature_meta.py); fall back to the prettified raw name only
+      // if a label is somehow absent, so a loan officer never sees "locus of control".
+      const driverLabel = d => d.label || d.feature.replace(/_/g,' ');
+      const labels = drivers.map(driverLabel);
       const points = drivers.map(d=>d.points ?? 0);
       if (ebmChart) ebmChart.destroy();
       ebmChart = new Chart(document.getElementById('ebm-chart'), {
@@ -626,7 +630,7 @@
       });
       document.getElementById('drivers-list').innerHTML = drivers.map(d => {
         const pts = d.points ?? 0;
-        return `<div class="driver-row"><span class="name">${d.feature.replace(/_/g,' ')}</span>
+        return `<div class="driver-row"><span class="name">${driverLabel(d)}</span>
           <span class="val ${pts>=0?'up':'down'}">${pts>=0?'+':''}${pts.toFixed(1)} pts</span></div>`;
       }).join('');
     }

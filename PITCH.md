@@ -351,9 +351,11 @@ Copy this block for each feature:
 - **Pitch line:** "The dashboard speaks the loan officer's language: 'Sense of financial
   control' and 'Tendency to spend impulsively', not 'locus of control' and 'present bias'."
 - **Differentiator:** Construct names stay intact under the hood (auditable, in the item
-  bank and model features), but every term the reviewer sees in the Signal Trace, the
-  five-facet profile ("Character & Money Mindset"), and the reason codes is rephrased in
-  plain English, so the explainability is usable, not just present.
+  bank and model features), but every term the reviewer sees, the Signal Trace, the
+  five-facet profile ("Character & Money Mindset"), the reason codes, and the "Why this
+  score" additive-contributions chart, is rephrased in plain English from one source of
+  truth (`convergence/feature_meta.py`), so the explainability is usable, not just present.
+  No dashboard surface renders a raw feature name like `locus_of_control`.
 - **Demo moment:** Point at the psychometric signals in the trace and read them aloud;
   they need no translation for the panel.
 
