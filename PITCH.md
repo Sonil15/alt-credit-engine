@@ -562,6 +562,13 @@ Copy this block for each feature:
 - **Differentiator:** Most teams collect real-time coordinates. We use static shipping destinations (entropy of delivery PIN codes), which provides the same credit risk predictive power while respecting borrower privacy.
 - **Demo moment:** Show a borrower who frequently orders to the same home/work PIN code scoring high, whereas a borrower who frequently ships packages to multiple random PIN codes gets flagged for address drift.
 
+### Transience-without-Income auto-reject (a two-condition red flag, not a mobility penalty)
+- **Judge problem it answers:** "Won't a spatial-instability rule wrongly punish legitimately mobile earners — a field-sales rep, a consultant, a migrant worker who moves *for* work?"
+- **Pitch line:** "High mobility alone never rejects anyone: our geographic red flag fires only when transience is paired with *zero verifiable income* — it screens rootlessness without an anchor, not movement itself."
+- **Differentiator:** Most teams treat a single risky feature crossing a threshold as an instant reject. Our hard-policy gate is an explicit **AND** of two conditions (`spatial_variance_score > 50` **AND** `monthly_income_mean <= 0`), so mobile-but-employed applicants pass straight through to the model instead of being auto-rejected on geography.
+- **Demo moment:** On the Score Explainer, open Step 4. The "Transience-without-Income Check" card reads `High mobility (Spatial Variance X) AND no income anchor (₹Y)` — show a high-variance borrower *with* income passing, and one with high variance *and* zero income getting the REJECT pill.
+- **Honest caveat:** The threshold (50 / ₹0) is a hand-tuned policy rule on synthetic data, not a learned boundary — it demonstrates the two-condition design, and would be recalibrated against real reject-inference data in production.
+
 ### Prepaid Recharge Latency & SIM Vintage (Vernacular Telecom Scoring)
 - **Judge problem it answers:** "In low-income cohorts, postpaid billing doesn't exist: 95% of borrowers use prepaid SIMs. How do you score phone bill payment consistency for prepaid users?"
 - **Pitch line:** "We model prepaid recharge timing as payment discipline: measuring the average delay in recharges post-expiration as late days, and penalizing short SIM tenures to flag flight risk."

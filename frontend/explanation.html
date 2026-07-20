@@ -347,7 +347,7 @@
         
         <div class="comparison-grid">
           <div class="comp-card">
-            <div class="comp-title">Geographic Instability Check</div>
+            <div class="comp-title">Transience-without-Income Check</div>
             <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between;">
               <span id="step4-check-geo-detail" style="font-size: 13px;">—</span>
               <span id="step4-check-geo-status" class="rule-pill">—</span>
@@ -675,7 +675,7 @@
       const isGeoInstability = (spatialScore > 50.0 && incomeMean <= 0);
       const isTelecomDefault = (data.cohort === 'Salaried' && missedCount >= 5);
 
-      document.getElementById('step4-check-geo-detail').textContent = `Spatial Variance: ${spatialScore}, Income: ₹${incomeMean}`;
+      document.getElementById('step4-check-geo-detail').textContent = `High mobility (Spatial Variance ${spatialScore}) AND no income anchor (₹${incomeMean})`;
       const geoPill = document.getElementById('step4-check-geo-status');
       geoPill.textContent = isGeoInstability ? 'REJECT' : 'PASS';
       geoPill.className = `rule-pill ${isGeoInstability ? 'rule-fail' : 'rule-pass'}`;
