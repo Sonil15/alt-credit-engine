@@ -71,9 +71,20 @@ To satisfy risk officers, regulators, and data protection authorities, the platf
 
 ### 8. Self-Report Honesty Feature
 * **Auditor/Regulator Concern:** *Micro-merchants and gig workers can easily inflate their self-reported business turnovers during onboarding. How do you verify these numbers?*
-* **Our Solution:** We don't score the turnover claim itself; we score its **consistency** with verified bank cash flows:
-  $$\text{turnover\_income\_consistency} = \frac{\min(\text{Declared Turnover}, \text{Observed Income})}{\max(\text{Declared Turnover}, \text{Observed Income})}$$
-  Inflating declared turnover strictly reduces this ratio, lowering the credit score. This makes the feature anti-gameable by construction.
+* **Our Solution:** We don't score the turnover claim itself; we score its **consistency** with verified bank cash flows using a multi-tiered, cash-heavy, and vintage-aware validation logic that accommodates informal merchant dynamics:
+  1. **Projection Phase (Tier 1):** For early-stage businesses operating under 6 months (`business_vintage_years < 0.5`), the consistency score is set to a neutral `1.0` to avoid penalizing new enterprises before bank records stabilize.
+  2. **Cash-Heavy Sourcing Adjustment (Declared > Observed):** To account for cash-dominant operations, the system sets an expected digital ratio (the portion of turnover expected to flow through the bank account) based on the borrower cohort:
+     * **Farmer:** 20% (0.20)
+     * **Vendor / Homemaker:** 40% (0.40)
+     * **Gig Worker / Student:** 80% (0.80)
+     * **Salaried / Default:** 90% (0.90)
+     * **Ramp-Up Grace (Tier 2):** If the business is between 6 months and 1.5 years old, a 50% grace factor is applied, halving the expected digital ratio.
+     * **Target Observed Cashflow:** $I_{\text{expected}} = \text{Declared Turnover} \times \text{expected\_digital\_ratio}$.
+     * **Score Calculation:** If observed bank income $I \ge I_{\text{expected}}$, the consistency score is `1.0`. Otherwise, it is:
+       $$\text{turnover\_income\_consistency} = \frac{\text{Observed Income}}{I_{\text{expected}}}$$
+  3. **Observed $\ge$ Declared:** If observed bank income exceeds the self-declared amount, the consistency is calculated as:
+     $$\text{turnover\_income\_consistency} = \frac{\text{Declared Turnover}}{\text{Observed Income}}$$
+  4. **Output Range:** The final consistency value is rounded to 4 decimal places and clamped between `0.0` and `1.0`. Any attempts to inflate declared turnover will drag the score down by reducing this ratio, rendering the self-report anti-gameable.
 
 ### 9. Vernacular Voice & Audio Inclusion (Closing the Accessibility Gap)
 * **Auditor/Regulator Concern:** *How do you assess thin-file borrowers who are illiterate, cannot read English, or use budget devices without regional keyboard support?*
@@ -100,6 +111,15 @@ To satisfy risk officers, regulators, and data protection authorities, the platf
   If a borrower revokes a specific data scope or granular toggle, the system performs a **cascading purge** of the raw encrypted vault files and masks the derived model features to `NaN`. Masked features are imputed to cohort-typical averages at model run, ensuring the borrower looks average (rather than worst-case) on the revoked scope, preventing points-based penalties.
 * **Audit Trail Retention:** Under RBI regulations, score records (`ScoreDecision`) are retained for 5 years in an anonymized state, while the raw personal payloads in `SecureVault` are immediately deleted upon an erasure request (DPDP Act §17).
 
+### 3. RBI Account Aggregator (AA) & DPDP-Compliant Flow
+* **File:** [api/routes/consent.py](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/api/routes/consent.py)
+* **Under the Hood:**
+  The platform simulates the RBI Account Aggregator (AA) framework for DPDP-compliant data sharing:
+  * **Consent Authorization (`/consent/authorize`):** Initiates a secure consent request, defining the Data Fiduciary (`Alt-Credit Engine (Demo AA)`), the Purpose (`Alternate creditworthiness assessment for thin-file loan origination`), explicit consent scopes, and expiration (24 hours TTL).
+  * **Token Exchange (`/consent/token`):** Exchanges authorized consent codes for transient access tokens mapping to active scopes, strictly enforcing access controls.
+  * **Privacy Dashboard (`/consent/status/{user_id}`):** Allows borrowers to view active vs. revoked scopes, check data erasure status, and verify vault data presence.
+  * **Compliance Summary (`/consent/compliance`):** Outlines regulatory alignments (RBI AA framework, DPDP Act 2023, RBI Digital Lending Guidelines 2022) and borrower rights (revocation, erasure, and anonymized score retention audit trails).
+
 ---
 
 ## Section 3: Data Preprocessing & Feature Extraction
@@ -119,14 +139,19 @@ To satisfy risk officers, regulators, and data protection authorities, the platf
     $$\text{Entropy} = \frac{-\sum p_i \log_2(p_i)}{\log_2(k)}$$
     where $p_i$ is the order frequency to PIN $i$, and $k$ is the unique PIN count. Low entropy represents high stability (consistently shipping to home/work), mapped directly to `spatial_variance_score` and `anchor_count`.
 
-### 3. Geolocation Centroids (DBSCAN & Haversine)
+### 3. Geolocation & Spatial Variance
 * **File:** [preprocessing/clean_geo.py](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/preprocessing/clean_geo.py)
 * **Under the Hood:**
-  1. **DBSCAN Clustering:** Groups coordinates into dense clusters (using radius $\epsilon = 0.01$, corresponding to $\approx 1.1\text{ km}$) to identify centroids (home, work, shop).
-  2. **Haversine Distance:** Calculates distance between points and centroids:
-     $$d = 2 \cdot R \cdot \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta\phi}{2}\right) + \cos(\phi_1)\cos(\phi_2)\sin^2\left(\frac{\Delta\lambda}{2}\right)}\right)$$
-  3. **Spatial Variance:** Compares check-ins against nearest centroids:
-     $$\text{spatial\_variance\_score} = \frac{1}{N}\sum_{i=1}^N \min_{c \in \text{Centroids}} d(p_i, c)$$
+  To evaluate geographic stability while keeping calculations lightweight and deterministic:
+  1. **Cell Grid PIN Mapping:** Coordinates are mapped deterministically to a stable 6-digit PIN code using a cell grid size of $0.5$ degrees:
+     $$\text{row} = \lfloor(\text{lat} - 8.0) / 0.5\rfloor$$
+     $$\text{col} = \lfloor(\text{long} - 68.0) / 0.5\rfloor$$
+     $$\text{PIN} = 110000 + ((\text{row} \times 60 + \text{col}) \times 7 \bmod 889999)$$
+  2. **Spatial Variance Score:** Calculates the normalized Shannon entropy of these location PINs to measure delivery/check-in address drift:
+     $$\text{Entropy} = \frac{- \sum p_i \log_2(p_i)}{\log_2(k)}$$
+     where $p_i$ is the frequency of orders/check-ins at PIN cell $i$, and $k$ is the count of unique PIN codes. Low entropy reflects high residential/occupational stability, represented as `spatial_variance_score`.
+  3. **Location Anchors:** Counts the total number of unique check-in PIN cells, mapped to the `anchor_count` feature.
+  *(Note: DBSCAN clustering and Haversine distance represent legacy models, whereas the cell-grid deterministic approach is implemented in the active preprocessor for performance and robust alignment with e-commerce PIN entropy.)*
 
 ### 4. Bank Cash Burn & Welfare Parsing
 * **Under the Hood:**
@@ -144,9 +169,16 @@ To satisfy risk officers, regulators, and data protection authorities, the platf
 ### 6. Borrower Onboarding Business Profile
 * **File:** [core/business_profile.py](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/core/business_profile.py)
 * **Under the Hood:**
-  Extracts `business_vintage_years` and monthly declared turnover ($T$) from free-text descriptions via LLM parsing (with a local regex fallback). Declared turnover is compared to bank-verified cash inflow ($I$) using the consistency ratio:
-  $$\text{turnover\_income\_consistency} = \frac{\min(T, I)}{\max(T, I)}$$
-  Declared amounts are never rewarded; only the consistency between self-reported and bank-observed income earns points. Business profile fields are available to Vendors, Farmers, Gig Workers, and Homemakers stating a `small_home_business` purpose.
+  Extracts `business_vintage_years` and monthly declared turnover ($T$) from free-text descriptions via LLM parsing (with a local regex fallback). Declared turnover is compared to bank-verified cash inflow ($I$) using the cash-heavy, vintage-aware consistency ratio detailed in the Self-Report Honesty Feature section (adapting to cohort-specific digital ratios). Declared amounts are never rewarded; only the consistency between self-reported and bank-observed income earns points. Business profile fields are available to Vendors, Farmers, Gig Workers, and Homemakers stating a `small_home_business` purpose.
+
+### 7. Live Location Verification
+* **File:** [api/routes/consent.py](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/api/routes/consent.py)
+* **Under the Hood:**
+  The portal provides a `/verify-live-location` endpoint that acts as a check-in validation. It takes HTML5 latitude and longitude coordinates submitted during onboarding, converts them to a PIN code using `latlong_to_pincode`, and compares them with the user's most frequent e-commerce delivery PIN code from historical order records. If they match, the location is verified; if they mismatch, a `location_mismatch` warning is raised.
+
+### 8. ONDC & Partner UPI Merchant Sourcing
+* **Under the Hood:**
+  To retrieve transaction velocity and business credit features for informal micro-merchants (street vendors, small shop owners) who lack formal bank statements, the system integrates with ONDC APIs (ratings and order volumes), partner UPI QR dashboards (e.g., BharatPe / PhonePe payment velocities), and B2B distributor platforms (purchase invoicing histories) to extract features like `daily_transaction_count` and `average_ticket_size`.
 
 ---
 
@@ -303,24 +335,47 @@ To address this, we re-center the contributions against the typical applicant's 
   * **Subprime Auto-Reject:** If the CIBIL score is $< 600$, the application is immediately rejected (`REJECT`) with a default probability of 0.99, bypassing all models.
   * **Alternative Routing Fallback:** If the CIBIL score is between 600 and 749, or is missing/thin-file (`-1` or None), the application is routed to the alternate credit scorecard pipeline.
 
-### 2. Decision Band Cutoffs
+### 2. Cohort Score Range Limits & Calibration Adjustment
+* **File:** [convergence/score_engine.py](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/convergence/score_engine.py)
+* **Under the Hood:**
+  Each borrower cohort is constrained to a specific score range (`COHORT_SCORE_RANGES`) based on historical risk caps and lending policies:
+  * **Student:** 330–720
+  * **Homemaker:** 360–730
+  * **Farmer:** 330–800
+  * **Vendor:** 330–850
+  * **Salaried:** 400–850
+  * **GigWorker:** 350–760
+
+  If the raw score calculated from the champion's default probability falls outside these limits, it is clamped:
+  $$\text{Credit Score} = \text{clamp}(\text{Raw Score}, \text{Min Score}, \text{Max Score})$$
+  When a clamp occurs, the difference is recorded as a `cohort_adjustment` ("Cohort-level risk cap adjustment") and the default probability is back-calculated from the clamped score to maintain exact scorecard mathematical reconciliation:
+  $$\text{log\_odds\_calibrated} = \frac{\text{SCORE\_OFFSET} - \text{Credit Score}}{\text{PDO\_FACTOR}}$$
+  $$PD_{\text{calibrated}} = \frac{1}{1 + e^{-\text{log\_odds\_calibrated}}}$$
+
+### 3. Decision Band Cutoffs
 * **File:** [convergence/panel.py](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/convergence/panel.py)
 * **Under the Hood:**
   * **APPROVE Cutoff:** Credit score $\ge 700$ (representing PD $\le 2.5\%$).
   * **REVIEW Cutoff:** Credit score $\ge 560$.
   * **REJECT Cutoff:** Credit score $< 560$.
 
-### 3. Model Committee Agreement Gate
+### 4. Model Committee Agreement Gate
 * **File:** [convergence/panel.py](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/convergence/panel.py)
 * **Under the Hood:**
   Auto-decisions require panel support. The system only overrules the EBM champion when the panel **genuinely conflicts**, not for adjacent boundary scatter (e.g., EBM says `APPROVE`, and a challenger says `REVIEW`).
   * **Hard Conflict Veto:** If the champion (EBM) approves but any challenger (CatBoost or Logistic) rejects (or vice versa), the application is routed to `REVIEW`.
 
-### 4. Actuarial Lending Terms Calibrations
+### 5. Actuarial Lending Terms Calibrations
 * **File:** [convergence/lending.py](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/convergence/lending.py)
 * **Under the Hood:**
   * **Risk-Based Interest Rate:**
     $$\text{rate} = 11.0\% + 20.0\% \cdot PD \quad (\text{clamped between } 11\% \text{ and } 26\%)$$
+  * **Tenure Selection:**
+    Tenures are dynamically recommended based on the final credit score to protect against default risk on lower-rated loans:
+    * Credit Score $\ge 640$: **36 months**
+    * Credit Score $\ge 580$: **24 months**
+    * Credit Score $\ge 480$: **18 months**
+    * Credit Score $< 480$: **12 months**
   * **Repayment Capacity (FOIR):**
     $$\text{FOIR} = 0.45 \cdot (1 - PD) \quad (\text{clamped between } 10\% \text{ and } 45\%)$$
     * **Review Adjustment:** If the decision is `REVIEW`, we reduce the FOIR by 30%:
@@ -335,7 +390,7 @@ To address this, we re-center the contributions against the typical applicant's 
     * **Maximum Loan Principal ($P$) for Tenure $N$:**
       $$P = \text{Income}_{\text{adjusted}} \cdot \text{FOIR} \cdot \frac{(1 + r)^N - 1}{r(1 + r)^N} \quad (\text{where } r = \text{rate}/1200)$$
 
-### 5. Post-Decision Affordability Gate
+### 6. Post-Decision Affordability Gate
 * **File:** [convergence/lending.py](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/convergence/lending.py)
 * **Under the Hood:**
   If the EBM champion approves the loan, but the requested loan amount exceeds the maximum serviceable principal ($P$):
@@ -343,7 +398,7 @@ To address this, we re-center the contributions against the typical applicant's 
   2. The final lending outcome is set to `REVIEW`.
   3. The audit trail stores the model's decision (`APPROVE`) and the final outcome (`REVIEW`) separately, ensuring policy overlays do not bias the core risk model.
 
-### 6. Deterministic Adverse-Action Letters
+### 7. Deterministic Adverse-Action Letters
 * **File:** [convergence/decision_letter.py](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/convergence/decision_letter.py)
 * **Under the Hood:**
   Rejections and review cases queue for a loan officer, who reviews and signs the letter. Approvals are auto-issued.
@@ -478,8 +533,8 @@ Both the Bank Officer Dashboard and the Borrower Portal translate raw numbers in
 * **Intake details:** Student, requests ₹15,000 for a skills course.
 * **Ingestion:** Consent given for `survey`, `geo`, and `campus` data. E-commerce and cash flow are missing.
 * **Preprocessing:**
-  * DBSCAN identifies 1 location cluster (campus/hostel). `anchor_count = 1`.
-  * Geolocation check-ins are clustered near this anchor. `spatial_variance_score = 0.2` (stable).
+  * Geolocation check-ins are mapped deterministically to a single grid cell (campus/hostel). `anchor_count = 1`.
+  * The check-in distribution results in a stable variance. `spatial_variance_score = 0.2` (stable).
   * Campus UPI transactions show consistent weekly activity. `upi_spend_consistency = 0.8`.
   * Survey answers are validated, yielding a high consistency score. `response_validity = 0.95`.
   * Missing variables are cohort-imputed (`monthly_income_mean` is replaced with the typical student average of ₹5,000).
@@ -492,11 +547,11 @@ Both the Bank Officer Dashboard and the Borrower Portal translate raw numbers in
 * **Committee Gate:** The credit score of 673 is below the APPROVE threshold of 700. The application is routed to `REVIEW` (borderline-good, routes to manual look).
 * **Lending Recommendation:**
   * Interest rate: $11\% + 20\% \cdot 0.035 = 11.7\%$.
-  * Tenure: Mapped to 24 months based on the score of 673.
+  * Tenure: Mapped to 36 months based on the score of 673 (since $673 \ge 640$).
   * FOIR limit: $0.45 \cdot (1 - 0.035) \cdot 0.7 \approx 30.4\%$ (FOIR discounted by 30% for `REVIEW`).
   * Affordable EMI: $\text{₹}5,000 \cdot 30.4\% = \text{₹}1,520$.
-  * Maximum serviceable loan: ₹32,000.
-* **Affordability Gate:** The requested ₹15,000 is below the ₹32,000 limit. The loan is routed to the loan officer queue for **manual review sign-off** with a recommended offer of ₹15,000 at 11.7% interest for 24 months.
+  * Maximum serviceable loan: ₹46,000.
+* **Affordability Gate:** The requested ₹15,000 is below the ₹46,000 limit. The loan is routed to the loan officer queue for **manual review sign-off** with a recommended offer of ₹15,000 at 11.7% interest for 36 months.
 
 ---
 

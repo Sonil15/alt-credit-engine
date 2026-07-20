@@ -13,47 +13,47 @@
     {
       "feature": "locus_of_control",
       "label": "Sense of financial control",
-      "contribution_value": 0.5208798039060276,
-      "points": -37.6
-    },
-    {
-      "feature": "debt_attitude",
-      "label": "Commitment to repaying debt",
-      "contribution_value": 0.17186632156276593,
-      "points": -12.4
+      "contribution_value": 0.5135631732286517,
+      "points": -37.0
     },
     {
       "feature": "daily_transaction_count",
       "label": "Daily transaction count",
-      "contribution_value": 0.15266760240739072,
-      "points": -11.0
+      "contribution_value": 0.18427173021347448,
+      "points": -13.3
+    },
+    {
+      "feature": "debt_attitude",
+      "label": "Commitment to repaying debt",
+      "contribution_value": 0.17220644108795832,
+      "points": -12.4
     }
   ],
   "reason_codes": [
     "Feels finances are outside their control",
-    "Weak commitment to timely debt repayment",
-    "Low business transaction volume"
+    "Low business transaction volume",
+    "Weak commitment to timely debt repayment"
   ],
-  "reason_codes_text": "Feels finances are outside their control; Weak commitment to timely debt repayment; Low business transaction volume",
-  "base_points": 683.7,
+  "reason_codes_text": "Feels finances are outside their control; Low business transaction volume; Weak commitment to timely debt repayment",
+  "base_points": 687.9,
   "factor_points": {
-    "avg_days_late": -66.8,
-    "missed_payments_count": 0.7,
-    "necessity_ratio": 2.9,
-    "avg_merchant_rating": -29.6,
-    "monthly_spend_volatility": -9.8,
-    "spatial_variance_score": -8.9,
+    "avg_days_late": -67.5,
+    "missed_payments_count": 1.0,
+    "necessity_ratio": 2.7,
+    "avg_merchant_rating": -30.0,
+    "monthly_spend_volatility": -9.2,
+    "spatial_variance_score": -9.4,
     "anchor_count": -0.0,
-    "monthly_income_mean": -13.4,
+    "monthly_income_mean": -13.1,
     "monthly_expense_mean": -0.0,
-    "cashflow_volatility": 38.8,
-    "cash_burn_rate": 3.4,
+    "cashflow_volatility": 38.6,
+    "cash_burn_rate": 3.5,
     "conscientiousness": -4.9,
-    "locus_of_control": -37.6,
+    "locus_of_control": -37.0,
     "financial_self_efficacy": -3.9,
-    "present_bias": -8.9,
+    "present_bias": -8.8,
     "debt_attitude": -12.4,
-    "response_validity": -2.4,
+    "response_validity": -2.3,
     "resilience_coefficient": 0.3,
     "adf_statistic": -0.1,
     "adf_pvalue": -0.1,
@@ -65,18 +65,18 @@
     "has_udyam_registration": -0.0,
     "years_informal": -0.0,
     "upi_spend_consistency": -0.5,
-    "small_dues_payment_promptness": -2.1,
-    "e_wallet_topup_frequency": -3.2,
-    "daily_transaction_count": -11.0,
-    "average_ticket_size": -0.7,
+    "small_dues_payment_promptness": -2.2,
+    "e_wallet_topup_frequency": -3.4,
+    "daily_transaction_count": -13.3,
+    "average_ticket_size": -1.1,
     "harvest_income_spike": -0.0,
     "input_purchase_consistency": -0.2,
-    "utility_payment_consistency": -4.4,
-    "grocery_spend_stability": -3.4,
+    "utility_payment_consistency": -5.2,
+    "grocery_spend_stability": -3.8,
     "upi_lite_txn_count": 0.0,
     "upi_lite_average_ticket": 0.7,
     "dbt_income_consistency": -0.0,
-    "sms_spend_total": -2.7,
+    "sms_spend_total": -2.6,
     "sms_bill_delay": -1.7,
     "enam_receipt_volume": -0.0
   },
@@ -90,8 +90,19 @@
         "direction": "high",
         "engine": "extraction",
         "value": 0.1813,
-        "points": -37.6,
-        "logodds": 0.5212
+        "points": -37.0,
+        "logodds": 0.5129
+      },
+      {
+        "feature": "daily_transaction_count",
+        "label": "Daily transaction count",
+        "source": "Micro-enterprise UPI/payment volumes",
+        "fmt": "count",
+        "direction": "high",
+        "engine": "extraction",
+        "value": 12.4,
+        "points": -13.3,
+        "logodds": 0.1844
       },
       {
         "feature": "debt_attitude",
@@ -105,17 +116,6 @@
         "logodds": 0.1719
       },
       {
-        "feature": "daily_transaction_count",
-        "label": "Daily transaction count",
-        "source": "Micro-enterprise UPI/payment volumes",
-        "fmt": "count",
-        "direction": "high",
-        "engine": "extraction",
-        "value": 12.4,
-        "points": -11.0,
-        "logodds": 0.1525
-      },
-      {
         "feature": "spatial_variance_score",
         "label": "Delivery address drift entropy",
         "source": "E-commerce shipping records",
@@ -123,8 +123,8 @@
         "direction": "low",
         "engine": "extraction",
         "value": 1.1991,
-        "points": -8.9,
-        "logodds": 0.1234
+        "points": -9.4,
+        "logodds": 0.1303
       },
       {
         "feature": "present_bias",
@@ -134,8 +134,8 @@
         "direction": "low",
         "engine": "extraction",
         "value": 0.9118,
-        "points": -8.9,
-        "logodds": 0.1234
+        "points": -8.8,
+        "logodds": 0.122
       },
       {
         "feature": "conscientiousness",
@@ -167,8 +167,8 @@
         "direction": "high",
         "engine": "extraction",
         "value": 0.8914,
-        "points": -2.4,
-        "logodds": 0.0333
+        "points": -2.3,
+        "logodds": 0.0319
       }
     ],
     "by_source": [
@@ -184,8 +184,8 @@
             "direction": "high",
             "engine": "extraction",
             "value": 0.1813,
-            "points": -37.6,
-            "logodds": 0.5212
+            "points": -37.0,
+            "logodds": 0.5129
           },
           {
             "feature": "debt_attitude",
@@ -206,8 +206,8 @@
             "direction": "low",
             "engine": "extraction",
             "value": 0.9118,
-            "points": -8.9,
-            "logodds": 0.1234
+            "points": -8.8,
+            "logodds": 0.122
           },
           {
             "feature": "conscientiousness",
@@ -239,8 +239,8 @@
             "direction": "high",
             "engine": "extraction",
             "value": 0.8914,
-            "points": -2.4,
-            "logodds": 0.0333
+            "points": -2.3,
+            "logodds": 0.0319
           }
         ]
       },
@@ -317,8 +317,8 @@
             "direction": "high",
             "engine": "extraction",
             "value": 12.4,
-            "points": -11.0,
-            "logodds": 0.1525
+            "points": -13.3,
+            "logodds": 0.1844
           },
           {
             "feature": "average_ticket_size",
@@ -328,8 +328,8 @@
             "direction": "high",
             "engine": "extraction",
             "value": 47.24,
-            "points": -0.7,
-            "logodds": 0.0097
+            "points": -1.1,
+            "logodds": 0.0152
           }
         ]
       },
@@ -345,8 +345,8 @@
             "direction": "low",
             "engine": "extraction",
             "value": 1.1991,
-            "points": -8.9,
-            "logodds": 0.1234
+            "points": -9.4,
+            "logodds": 0.1303
           },
           {
             "feature": "anchor_count",
