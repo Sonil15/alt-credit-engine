@@ -267,7 +267,9 @@
         }
       } catch (_) {
         // Non-fatal; assessment still works without a registered consent_id
-        document.getElementById('consent-id-display').textContent = '(offline, not registered)';
+        document.getElementById('consent-id-display').textContent =
+          (ALTCREDIT_DICTIONARY[getCurrentLanguage()] || {})['consent-offline-unregistered']
+          || ALTCREDIT_DICTIONARY['en']['consent-offline-unregistered'];
       }
       goToStep(2);
     }
@@ -308,30 +310,31 @@
       const csPill = document.getElementById('consent-pill');
       const revokeBtn = document.getElementById('revoke-btn');
 
+      const esc = (v) => String(v).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
       if (s.consent_status === 'active') {
         csText.textContent = t('consent-status-active');
-        csPill.innerHTML = '<span class="pill pill-active">ACTIVE</span>';
+        csPill.innerHTML = '<span class="pill pill-active">' + esc(t('consent-pill-active')) + '</span>';
         if (revokeBtn) {
           revokeBtn.disabled = false;
           revokeBtn.textContent = t('consent-btn-revoke');
         }
       } else if (s.consent_status === 'partial') {
-        csText.textContent = 'Partially Revoked';
-        csPill.innerHTML = '<span class="pill pill-partial">PARTIAL</span>';
+        csText.textContent = t('consent-status-partial');
+        csPill.innerHTML = '<span class="pill pill-partial">' + esc(t('consent-pill-partial')) + '</span>';
         if (revokeBtn) {
           revokeBtn.disabled = false;
           revokeBtn.textContent = t('consent-btn-revoke');
         }
       } else if (s.consent_status === 'revoked') {
         csText.textContent = t('consent-status-revoked');
-        csPill.innerHTML = '<span class="pill pill-revoked">REVOKED</span>';
+        csPill.innerHTML = '<span class="pill pill-revoked">' + esc(t('consent-pill-revoked')) + '</span>';
         if (revokeBtn) {
           revokeBtn.disabled = true;
           revokeBtn.textContent = t('consent-btn-revoked');
         }
       } else {
         csText.textContent = t('consent-status-unknown');
-        csPill.innerHTML = '<span class="pill pill-unknown">UNKNOWN</span>';
+        csPill.innerHTML = '<span class="pill pill-unknown">' + esc(t('consent-pill-unknown')) + '</span>';
         if (revokeBtn) {
           revokeBtn.disabled = false;
           revokeBtn.textContent = t('consent-btn-revoke');
@@ -371,7 +374,7 @@
               btn.style.padding = '6px 12px';
               btn.style.fontSize = '12px';
               btn.style.borderRadius = '6px';
-              btn.textContent = 'Revoke';
+              btn.textContent = t('consent-scope-revoke');
               btn.onclick = () => doRevokeScope(scope);
               
               div.appendChild(labelSpan);
@@ -400,7 +403,7 @@
               const span = document.createElement('span');
               span.className = 'pill pill-revoked';
               span.style.marginTop = '0';
-              span.textContent = 'REVOKED';
+              span.textContent = t('consent-scope-revoked-pill');
               
               div.appendChild(labelSpan);
               div.appendChild(span);
@@ -417,20 +420,21 @@
       const dsPill = document.getElementById('data-pill');
       const eraseBtn = document.getElementById('erase-btn');
 
+      const dateLocaleMap = { hi: 'hi-IN', bn: 'bn-IN', en: 'en-IN' };
       if (s.erasure_requested) {
-        const ts = s.erasure_timestamp ? ' (' + new Date(s.erasure_timestamp).toLocaleDateString('en-IN') + ')' : '';
+        const ts = s.erasure_timestamp ? ' (' + new Date(s.erasure_timestamp).toLocaleDateString(dateLocaleMap[lang] || 'en-IN') + ')' : '';
         dsText.textContent = t('consent-data-deleted') + ts;
-        dsPill.innerHTML = '<span class="pill pill-deleted">DELETED</span>';
+        dsPill.innerHTML = '<span class="pill pill-deleted">' + esc(t('consent-pill-deleted')) + '</span>';
         eraseBtn.disabled = true;
         eraseBtn.textContent = t('consent-btn-deleted');
       } else if (s.data_present) {
         dsText.textContent = t('consent-data-present');
-        dsPill.innerHTML = '<span class="pill pill-present">PRESENT</span>';
+        dsPill.innerHTML = '<span class="pill pill-present">' + esc(t('consent-pill-present')) + '</span>';
         eraseBtn.disabled = false;
         eraseBtn.textContent = t('consent-btn-erase');
       } else {
         dsText.textContent = t('consent-data-none');
-        dsPill.innerHTML = '<span class="pill pill-unknown">NONE</span>';
+        dsPill.innerHTML = '<span class="pill pill-unknown">' + esc(t('consent-pill-none')) + '</span>';
         eraseBtn.disabled = true;
         eraseBtn.textContent = t('consent-btn-erase');
       }

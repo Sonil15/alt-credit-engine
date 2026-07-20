@@ -92,6 +92,11 @@
           <span id="funding-gap-text"></span>
         </div>
 
+        <div id="review-reason-box" class="reason-box" style="display:none; background: #eff6ff; border-color: #bfdbfe; color: #1e40af;">
+          <strong data-i18n="borrower-review-reason-title">Why your application needs a review:</strong>
+          <span id="review-reason-text"></span>
+        </div>
+
         <div id="adverse-action-box" class="reason-box" style="display:none; background: #fee2e2; border-color: #fca5a5; color: #991b1b;">
           <strong data-i18n="borrower-adverse-title">Adverse Action Notice:</strong> 
           <span id="adverse-action-text" data-i18n="borrower-adverse-text">Based on your credit assessment, we are unable to approve your application at this time.</span>
@@ -151,7 +156,7 @@
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get('session');
 
-    const lang = getCurrentLanguage();
+    let lang = getCurrentLanguage();
     const t = (key) => (ALTCREDIT_DICTIONARY[lang] && ALTCREDIT_DICTIONARY[lang][key]) || ALTCREDIT_DICTIONARY['en'][key] || key;
 
     // Map dynamic backend insights strings to translation keys
@@ -269,12 +274,15 @@
       navigator.clipboard.writeText(id).then(() => {
         const btn = document.getElementById('copy-borrower-id-btn');
         const original = btn.textContent;
-        btn.textContent = 'Copied!';
+        btn.textContent = t('borrower-copied');
         setTimeout(() => { btn.textContent = original; }, 1500);
       });
     }
 
+    let lastScoreData = null;
+
     function renderScore(d) {
+      lastScoreData = d;
       document.getElementById('loading').style.display = 'none';
       document.getElementById('result-section').style.display = 'block';
 
@@ -287,7 +295,9 @@
       // falls back to the model decision for older payloads.
       const outcome = d.final_outcome || d.decision;
       const badge = document.getElementById('decision-badge');
-      badge.textContent = outcome;
+      // Translate the visible label but keep the raw outcome for the CSS class
+      // (badge-APPROVE / badge-REVIEW / badge-REJECT drive the colour).
+      badge.textContent = t('borrower-decision-' + outcome) || outcome;
       badge.className = 'badge badge-' + outcome;
 
       if (d.loan_purpose || d.requested_amount) {
@@ -311,11 +321,43 @@
             .replace(/\{max\}/g, maxAmt);
         box.style.display = 'block';
       }
-      
-      document.getElementById('likelihood-val').textContent = d.approval_likelihood || t('borrower-needs-review');
-      
+
+      // When a high-scoring application is still routed to REVIEW, tell the
+      // borrower the exact safety gate that flagged it — the same reason the
+      // loan officer sees on their dashboard. The affordability gate already
+      // has its own detailed box above, so it is not repeated here.
+      const reviewBox = document.getElementById('review-reason-box');
+      if (reviewBox) {
+        let reasonKey = null;
+        if (outcome === 'REVIEW') {
+          for (const r of (d.reason_codes || [])) {
+            if (r.includes('Model panel disagreement')) { reasonKey = 'borrower-review-reason-panel'; break; }
+            if (r.includes('Conformal abstention'))      { reasonKey = 'borrower-review-reason-conformal'; break; }
+            if (r.includes('Anomaly abstention'))        { reasonKey = 'borrower-review-reason-anomaly'; break; }
+            if (r.includes('Thin-file'))                 { reasonKey = 'borrower-review-reason-thinfile'; break; }
+          }
+          if (!reasonKey && !(d.funding_gap && d.funding_gap.gated)) {
+            reasonKey = 'borrower-review-reason-generic';
+          }
+        }
+        if (reasonKey) {
+          document.getElementById('review-reason-text').textContent = ' ' + (t(reasonKey) || reasonKey);
+          reviewBox.style.display = 'block';
+        } else {
+          reviewBox.style.display = 'none';
+        }
+      }
+
+      // Backend sends the likelihood as an English string ("High"/"Moderate"/
+      // "Needs Review"); map it to a localised label.
+      const likelihoodKeyMap = { 'High': 'borrower-likelihood-High', 'Moderate': 'borrower-likelihood-Moderate', 'Needs Review': 'borrower-needs-review' };
+      document.getElementById('likelihood-val').textContent =
+        (d.approval_likelihood && (t(likelihoodKeyMap[d.approval_likelihood]) || d.approval_likelihood)) || t('borrower-needs-review');
+
+      // Localise the date to the selected language rather than the browser locale.
+      const dateLocaleMap = { hi: 'hi-IN', bn: 'bn-IN', en: 'en-IN' };
       const now = new Date();
-      document.getElementById('assessment-date').textContent = now.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      document.getElementById('assessment-date').textContent = now.toLocaleDateString(dateLocaleMap[lang] || undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 
       if (d.decision === 'REJECT') {
         document.getElementById('adverse-action-box').style.display = 'block';
@@ -402,6 +444,16 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       setupLanguageSelector('language-selector-root');
+    });
+
+    // Re-render the dynamically-built content (badge, likelihood, date, drivers,
+    // insights) and re-fetch the language-specific letter when the borrower
+    // switches language after the result has already loaded. The static
+    // data-i18n text is handled by translatePage in translations.js.
+    window.addEventListener('altcreditLanguageChanged', (e) => {
+      lang = (e && e.detail) || getCurrentLanguage();
+      if (lastScoreData) renderScore(lastScoreData);
+      loadLetter();
     });
   </script>
   <script src="/static/session_timeout.js"></script>

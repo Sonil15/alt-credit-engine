@@ -71,6 +71,36 @@ async def test_application_rate_limit_allows_after_window():
 
 
 @pytest.mark.asyncio
+async def test_limit_endpoint_reports_status_before_onboarding():
+    # The pre-check endpoint gates the "Start New Application" button up front:
+    # allowed for a fresh borrower, refused (with a message) once over the limit.
+    user_id = str(uuid.uuid4())
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        allowed = await ac.get(f"/assessment/limit?user_id={user_id}&language=en")
+        assert allowed.status_code == 200
+        assert allowed.json() == {"allowed": True, "detail": None}
+
+        await _add_survey_record(user_id, _utcnow())
+
+        blocked = await ac.get(f"/assessment/limit?user_id={user_id}&language=en")
+        assert blocked.status_code == 200
+        body = blocked.json()
+        assert body["allowed"] is False
+        assert "Application limit" in body["detail"]
+
+
+@pytest.mark.asyncio
+async def test_limit_endpoint_allows_anonymous():
+    # No user_id => nothing to key the throttle on; must report allowed.
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        resp = await ac.get("/assessment/limit")
+        assert resp.status_code == 200
+        assert resp.json()["allowed"] is True
+
+
+@pytest.mark.asyncio
 async def test_application_rate_limit_skips_anonymous():
     # No user_id => nothing to key the throttle on; must not be blocked.
     transport = ASGITransport(app=app)

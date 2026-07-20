@@ -353,7 +353,7 @@
       try {
         document.getElementById('captcha-image').style.display = 'none';
         document.getElementById('captcha-loading').style.display = 'inline';
-        document.getElementById('captcha-loading').textContent = 'Loading...';
+        document.getElementById('captcha-loading').textContent = t('register-captcha-loading', 'Loading…');
 
         const resp = await fetch('/auth/captcha');
         const data = await resp.json();
@@ -366,7 +366,7 @@
         document.getElementById('captcha-token').value = data.token;
         document.getElementById('captcha-input').value = '';
       } catch (err) {
-        document.getElementById('captcha-loading').textContent = 'Error loading challenge';
+        document.getElementById('captcha-loading').textContent = t('register-captcha-error', 'Error loading challenge');
       }
     }
 
@@ -524,7 +524,7 @@
       hideError();
       const btn = document.getElementById('liveness-btn');
       btn.disabled = true;
-      btn.textContent = 'Analyzing Face Liveness...';
+      btn.textContent = t('register-face-analyzing', 'Analyzing Face Liveness…');
 
       const video = document.getElementById('webcam-video');
       const canvas = document.getElementById('webcam-canvas');
@@ -550,7 +550,7 @@
       }
 
       setTimeout(() => {
-        btn.textContent = 'Verified ✅';
+        btn.textContent = t('register-face-verified', 'Verified ✅');
         btn.style.background = '#10b981';
         btn.style.borderColor = '#10b981';
         
@@ -573,7 +573,9 @@
         
         // Dynamically update Step 2 Aadhaar Verified message with last 4 digits
         const formattedAadhaar = verifiedAadhaar ? `•••• •••• ${verifiedAadhaar.slice(-4)}` : '••••';
-        document.getElementById('aadhaar-verified-msg').innerHTML = `Aadhaar Verified: <strong>${formattedAadhaar}</strong> ✅`;
+        document.getElementById('aadhaar-verified-msg').innerHTML =
+          t('register-aadhaar-verified-msg', 'Aadhaar Verified: {aadhaar} ✅')
+            .replace('{aadhaar}', `<strong>${formattedAadhaar}</strong>`);
         
         startCameraMock();
       } else if (step === 3) {
@@ -682,7 +684,8 @@
         localStorage.setItem('altcredit_aadhaar_last4', verifiedAadhaar ? verifiedAadhaar.slice(-4) : '9012');
         localStorage.setItem('altcredit_full_name', loginId);
         // Also update the success banner with the chosen login ID
-        document.getElementById('success-message').textContent = `Identity Verified: ${loginId} ✅`;
+        document.getElementById('success-message').textContent =
+          t('register-identity-verified-msg', 'Identity Verified: {id} ✅').replace('{id}', loginId);
         
         // Final quick delay before redirect
         await delay(500);

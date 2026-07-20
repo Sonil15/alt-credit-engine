@@ -15,6 +15,7 @@ from models.db_models import SecureVault
 from models.pydantic_schemas import (
     AssessmentAnswerRequest,
     AssessmentAnswerResponse,
+    AssessmentLimitResponse,
     AssessmentStartRequest,
     AssessmentStartResponse,
     AssessmentTimeoutRequest,
@@ -65,8 +66,8 @@ _LIMIT_MESSAGE = {
 }
 
 
-async def _enforce_application_limit(db: AsyncSession, user_id: str | None, language: str = "en") -> None:
-    """Reject a new application if the borrower has applied too recently.
+async def _application_limit_detail(db: AsyncSession, user_id: str | None, language: str = "en") -> str | None:
+    """Return the refusal message if the borrower has applied too recently, else ``None``.
 
     A repeat applicant already knows the questionnaire and could rehearse answers,
     so we cap completed assessments to ``APPLICATION_LIMIT_COUNT`` per rolling
@@ -76,11 +77,11 @@ async def _enforce_application_limit(db: AsyncSession, user_id: str | None, lang
     """
     settings = get_settings()
     if not settings.application_limit_enabled or not user_id:
-        return
+        return None
     try:
         user_uuid = UUID(str(user_id))
     except (ValueError, AttributeError, TypeError):
-        return  # non-UUID identity has no vault trail to match against
+        return None  # non-UUID identity has no vault trail to match against
 
     window_days = settings.APPLICATION_LIMIT_WINDOW_DAYS
     window_start = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=window_days)
@@ -96,19 +97,41 @@ async def _enforce_application_limit(db: AsyncSession, user_id: str | None, lang
 
     recent = sorted(t for t in (_to_naive_utc(r) for r in rows) if t >= window_start)
     if len(recent) < settings.APPLICATION_LIMIT_COUNT:
-        return
+        return None
 
     retry_date = (recent[0] + timedelta(days=window_days)).date()
     retry_on = format_human_date(retry_date, language)
     template = _LIMIT_MESSAGE.get(language, _LIMIT_MESSAGE["en"])
-    raise HTTPException(
-        status_code=429,
-        detail=template.format(
-            count=settings.APPLICATION_LIMIT_COUNT,
-            window_days=window_days,
-            retry_on=retry_on,
-        ),
+    return template.format(
+        count=settings.APPLICATION_LIMIT_COUNT,
+        window_days=window_days,
+        retry_on=retry_on,
     )
+
+
+async def _enforce_application_limit(db: AsyncSession, user_id: str | None, language: str = "en") -> None:
+    """Raise ``429`` if the borrower is over the application limit (see
+    :func:`_application_limit_detail`)."""
+    detail = await _application_limit_detail(db, user_id, language)
+    if detail is not None:
+        raise HTTPException(status_code=429, detail=detail)
+
+
+@router.get("/limit", response_model=AssessmentLimitResponse)
+async def check_application_limit(
+    user_id: str | None = None,
+    language: str = "en",
+    db: AsyncSession = Depends(get_db),
+) -> AssessmentLimitResponse:
+    """Report whether the borrower may start a new application.
+
+    Lets the UI gate the "Start New Application" button up front, so a repeat
+    applicant is turned away before filling out the onboarding flow rather than
+    at ``/assessment/start``. This is a read-only pre-check; ``/assessment/start``
+    still enforces the same limit authoritatively.
+    """
+    detail = await _application_limit_detail(db, user_id, language)
+    return AssessmentLimitResponse(allowed=detail is None, detail=detail)
 
 
 @router.post("/start", response_model=AssessmentStartResponse)

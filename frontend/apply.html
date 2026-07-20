@@ -129,7 +129,32 @@
       window.location.reload();
     }
 
-    function startApplication() {
+    async function startApplication() {
+      // Turn a repeat applicant away here, before they fill out onboarding, rather
+      // than at /assessment/start. Only signed-in borrowers have a stable user_id
+      // to check; anonymous starts are still gated authoritatively at the server.
+      if (account && account.user_id) {
+        const btn = document.querySelector('.hero-cta');
+        if (btn) btn.disabled = true;
+        try {
+          const lang = getCurrentLanguage();
+          const resp = await fetch('/assessment/limit?user_id='
+            + encodeURIComponent(account.user_id) + '&language=' + encodeURIComponent(lang));
+          if (resp.ok) {
+            const data = await resp.json();
+            if (!data.allowed) {
+              alert(data.detail || t('apply-limit-fallback',
+                'You have reached the application limit. Please try again later.'));
+              return;
+            }
+          }
+        } catch (_) {
+          // Network hiccup on the pre-check shouldn't block a legitimate applicant;
+          // /assessment/start remains the authoritative gate.
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      }
       // Category, loan purpose and amount are collected on the onboarding page,
       // which then hands off to the consent flow with the chosen cohort.
       window.location.href = '/onboard';
@@ -198,6 +223,10 @@
       document.getElementById('empty-state').style.display = 'none';
       const list = document.getElementById('app-list');
       list.style.display = 'flex';
+      list.innerHTML = '';
+
+      const lang = getCurrentLanguage();
+      const dateLocaleMap = { hi: 'hi-IN', bn: 'bn-IN', en: 'en-IN' };
 
       // newest first
       [...apps].reverse().forEach(app => {
@@ -207,9 +236,12 @@
           ? '/borrower?session=' + encodeURIComponent(app.sessionId)
           : '/borrower';
 
-        const date = new Date(app.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-        const shortId = app.userId ? app.userId.slice(0, 8) + '…' : 'Unknown';
-        const badgeClass = 'badge-' + (app.decision || 'PENDING');
+        const date = new Date(app.date).toLocaleDateString(dateLocaleMap[lang] || 'en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        const shortId = app.userId ? app.userId.slice(0, 8) + '…' : t('apply-unknown-id', 'Unknown');
+        const decision = app.decision || 'PENDING';
+        const badgeClass = 'badge-' + decision;
+        // Translate the visible badge label; the raw decision keeps the CSS colour class.
+        const badgeText = t('borrower-decision-' + decision, decision);
         const scoreHtml = app.score ? `<div class="app-card-score">${app.score}</div>` : '<div class="app-card-score" style="color:#cbd5e1">—</div>';
 
         card.innerHTML = `
@@ -218,7 +250,7 @@
             <div class="uid">ID: ${shortId}</div>
           </div>
           ${scoreHtml}
-          <span class="badge ${badgeClass}">${app.decision || 'PENDING'}</span>
+          <span class="badge ${badgeClass}">${badgeText}</span>
           <span class="app-card-arrow">›</span>
         `;
         list.appendChild(card);
@@ -230,6 +262,10 @@
     document.addEventListener('DOMContentLoaded', () => {
       setupLanguageSelector('language-selector-root');
     });
+
+    // Re-render the JS-built application cards (dates, decision badges) when the
+    // borrower switches language; static data-i18n text is handled by translatePage.
+    window.addEventListener('altcreditLanguageChanged', () => render());
   </script>
   <script src="/static/session_timeout.js"></script>
 </body>

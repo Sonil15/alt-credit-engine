@@ -128,6 +128,11 @@ class AssessmentStartResponse(BaseModel):
     extension_seconds: int = 120
 
 
+class AssessmentLimitResponse(BaseModel):
+    allowed: bool
+    detail: str | None = None
+
+
 class AssessmentTimeoutRequest(BaseModel):
     session_id: str
 

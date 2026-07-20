@@ -1,0 +1,31 @@
+# Keep the build context small and the image lean (faster deploys, no mac-only
+# binaries leaking in). Nothing here is needed at runtime.
+.git
+.github
+.venv
+venv
+env
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.DS_Store
+
+# Local SQLite DBs — the server creates its own on the mounted volume.
+*.db
+*.db.bak
+
+# Training scratch + local artifacts not needed to serve.
+catboost_info
+
+# Demo/pitch collateral, tests, and misc — not served by the app.
+# NOTE: do NOT add `speech` here — speech/ is an imported Python package, not audio collateral.
+slide_images
+docs
+tests
+test_*.py
+*.docx
+changes.patch
+vendor_payload.json

@@ -111,7 +111,7 @@
         await Auth.login(loginId, password);
         window.location.assign(nextUrl);
       } catch (err) {
-        showError(err.message || 'Something went wrong.');
+        showError(err.message || t('login-err-generic', 'Something went wrong. Please try again.'));
         btn.disabled = false;
         btn.textContent = original;
       }

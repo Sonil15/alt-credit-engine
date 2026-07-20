@@ -137,6 +137,30 @@ Copy this block for each feature:
   exactly why the gate routes to a human rather than rejecting. Per-cohort distance
   models are the natural next step.
 
+### Symmetric review transparency (borrower sees the same gate reason as the officer)
+- **Judge problem it answers:** "A borrower scores 850 but gets 'Review, not Approved'.
+  The officer dashboard tells the officer *which* safety gate flagged it — does the
+  borrower get told anything, or just left confused by a good score that didn't approve?"
+- **Pitch line:** "Whatever the officer sees, the borrower sees. When a high score is
+  routed to review, the borrower's own result page names the exact gate that flagged it,
+  not a vague 'pending' — the same reason the officer reads, in plain language and in the
+  borrower's language."
+- **Differentiator:** The result page already surfaced the affordability gate in a
+  dedicated box; we extended that transparency to the *model* safety gates. When the final
+  outcome is REVIEW, the borrower page scans the same `reason_codes` the officer dashboard
+  uses and names the specific trigger — panel disagreement, conformal abstention, anomaly
+  abstention, or thin-file — mapped to plain, reassuring borrower-facing copy ("your score
+  is strong, but …") and fully localized across all three languages. The affordability
+  gate keeps its own richer box, so the reasons never double up. No new backend surface:
+  the reason codes were already in the `/score/me` payload, we just stopped hiding them
+  from the person the decision is about.
+- **Demo moment:** Show the same gamed/anomalous applicant from the borrower's side — a
+  strong score, a REVIEW badge, and a blue "Why your application needs a review" box that
+  says a human will personally review it, mirroring exactly what the officer sees.
+- **Honest caveat:** The borrower copy is deliberately plain-language and reassuring rather
+  than a verbatim dump of the technical reason string the officer reads, so the two
+  audiences see the *same reason* at different levels of detail, by design.
+
 ### Honest scorecard re-anchoring & numerical prior shift calibration
 - **Judge problem it answers:** "Did you tune the cutoffs or models to make the demo look good? And what stops the EBM champion from overfitting small datasets and saturating all credit scores at exactly 300 or 900?"
 - **Pitch line:** "Our honest model needed an honest scorecard. We resolved the extreme score saturation (300/900 splits) by correcting the math of prior probability calibration and aligning model training capacity with cross-validation."
@@ -199,6 +223,17 @@ Copy this block for each feature:
   on-screen keyboard (Devanagari/Bengali layouts, including matras, with translated
   Space/Backspace/Clear keys) sits next to the open-ended answer box, so typing in
   the borrower's own script never depends on OS-level input support.
+  Localization is **end-to-end across the whole borrower journey, not just the
+  questionnaire**: every JS-rendered value is translated too, not only the static
+  labels. The result page localizes the decision badge, approval-likelihood label
+  and top-driver rows; the portal localizes each past-application card's decision
+  badge; the privacy page localizes its consent/data status text and colour pills;
+  and the sign-up flow localizes its verification-status messages. Dates everywhere
+  format with the selected language's own month names and numerals (e.g.
+  `२० जुल॰ २०२६` in Hindi, `২০ জুল, ২০২৬` in Bengali). Every page that shows a
+  language switcher re-renders its dynamic content live when the borrower changes
+  language mid-session, so no stray English survives on a page a borrower receives.
+  (The bank-officer dashboard is intentionally English-only.)
 - **Demo moment:** Take the assessment live in Hindi. The question is *read aloud in a
   natural Hindi voice*, then tap the mic and speak the answer, and show it land as
   editable text. Then toggle "AI voice" off and note the device falls silent on Hindi:
@@ -253,10 +288,15 @@ Copy this block for each feature:
   The refusal is explicit (a 429 with the date they can re-apply) not a silent failure,
   and it's fully localised (EN/HI/BN) with a human-readable date ("5 August 2026", not a
   raw "2026-08-05"), since this message is read aloud by the assessment's TTS, a spoken
-  ISO date reads as disconnected digits, not a date.
-- **Demo moment:** Complete an assessment, immediately try to start another for the same
-  borrower, and show the block with the concrete "apply again on or after 5 August 2026"
-  message, spoken correctly by the AI voice in Hindi or Bengali.
+  ISO date reads as disconnected digits, not a date. The block fires at the front door: a
+  read-only `/assessment/limit` pre-check gates the "Start New Application" button itself,
+  so a repeat applicant is turned away *before* filling out onboarding rather than after,
+  while `/assessment/start` still enforces the same limit authoritatively (defence in depth,
+  not a client-only guard).
+- **Demo moment:** Complete an assessment, immediately click "Start New Application" for the
+  same borrower, and show the block firing right at the button with the concrete "apply again
+  on or after 5 August 2026" message, no wasted onboarding, spoken correctly by the AI voice
+  in Hindi or Bengali.
 - **Resolution:** The limit is keyed to a verified identity. Registration is gated by a compliant Aadhaar + OTP check (Aadhaar eKYC), preventing a user from simply creating duplicate accounts to bypass the throttle.
 
 ### Cohort-specific dynamic facet sub-scores + thin-file confidence indicator

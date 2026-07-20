@@ -1,0 +1,32 @@
+# Fly.io config for the Alt-Credit Engine demo (SQLite + persistent volume).
+# App name must be globally unique — change `app` below if `fly apps create` says
+# it's taken (and keep it in sync with the create/deploy commands).
+app = "alt-credit-demo"
+primary_region = "bom"  # Mumbai, India
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  USE_SQLITE = "true"
+  SQLITE_PATH = "/data/alt_credit.db"   # lives on the mounted volume (survives restarts/redeploys)
+  SEED_ON_STARTUP = "true"              # seeds the demo cohort into an empty DB (idempotent)
+  AUTO_SEED_ON_STARTUP = "false"        # no training at boot — uses the committed model artifacts
+  PORT = "8000"
+  CORS_ORIGINS = "*"
+
+# Persistent disk for the SQLite file. Single-attach, so keep to one machine.
+[[mounts]]
+  source = "alt_credit_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = false     # stay always-on during the demo (no cold-start latency)
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"                 # the fix for the 512MB OOM
