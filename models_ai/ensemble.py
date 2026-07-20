@@ -25,6 +25,7 @@ from core.feature_store import fetch_features_wide
 from core.seeds import CATBOOST_RANDOM_SEED
 from models_ai.catboost_model import extract_labels, save_model as save_catboost, train_catboost
 from models_ai.conformal import DEFAULT_ALPHA, fit_calibration, save_calibration
+from models_ai.ood import fit_ood, save_calibration as save_ood_calibration
 from models_ai.constants import FEATURE_COLUMNS, fill_missing_features
 from models_ai.imputation import build_imputation_stats, save_imputation_stats
 from models_ai.ebm_model import save_ebm, train_ebm
@@ -128,6 +129,11 @@ async def train_all_from_db(session: AsyncSession) -> dict[str, Any]:
     temperatures = {"ebm": round(t_ebm, 2)}
     conformal_calibration = fit_calibration(ebm, X_cal, y_cal, alpha=DEFAULT_ALPHA)
     save_calibration(conformal_calibration)
+    # OOD integrity gate: learn the joint training manifold the champion actually saw
+    # (X_train), so anomalous feature *combinations* at serve time abstain to REVIEW.
+    # It never touches PD — purely an eligibility filter sitting outside the glass box.
+    ood_calibration = fit_ood(X_train)
+    save_ood_calibration(ood_calibration)
     champion_metrics = evaluate_model(ebm, X_test, y_test)  # only uses predict_proba
     save_ebm(ebm)
 
@@ -163,6 +169,7 @@ async def train_all_from_db(session: AsyncSession) -> dict[str, Any]:
             "review_pd_max": round(pd_cutoff_for_score(decision_thresholds()["review_score"]), 4),
         },
         "conformal": conformal_calibration,
+        "ood": {k: v for k, v in ood_calibration.items() if k not in ("mean", "precision")},
         "temperatures": temperatures,
     }
     save_model_card(card)

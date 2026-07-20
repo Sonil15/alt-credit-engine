@@ -107,6 +107,36 @@ Copy this block for each feature:
 - **Honest caveat:** With ~18 calibration rows the guarantee is structurally correct but
   empirically noisy on synthetic data, say so before a judge asks.
 
+### Out-of-distribution anomaly gate (anti-gaming an additive model)
+- **Judge problem it answers:** "Your champion is *additive* — each feature adds its
+  points independently. What stops a fraudster from pushing one or two features to
+  flattering extremes to override the rest, and scoring in a region your model never
+  saw?"
+- **Pitch line:** "We measure how far an applicant's *whole* feature profile sits from
+  the training population; a profile that's individually plausible but jointly
+  impossible is abstained to human review, never silently auto-approved."
+- **Differentiator:** A multivariate Mahalanobis-distance gate (shrunk covariance, so the
+  ~40-feature matrix stays invertible) that closes the one structural blind spot of an
+  additive glass box — its indifference to feature *combinations*. It sits **outside**
+  the score: it never edits a feature or touches PD, so the EBM stays a clean glass box
+  and fairness parity still slices on the model's own call. The gate itself is auditable
+  — it persists as a plain mean-vector + precision-matrix a risk officer can read, not a
+  pickled black box. The abstention budget is explicit and tunable (99th-percentile
+  distance ⇒ ~1% of the training population would itself route to review).
+- **Demo moment:** On the Decision Explainer, hit the one-click **"Simulate gamed
+  applicant"** toggle. It re-scores a real approved applicant through the *genuine* engine
+  with a tampered feature vector — income pushed to ₹5,00,000/mo, payment delay, volatility
+  and missed payments zeroed, psychometrics maxed. Each edit is individually flattering, so
+  the credit score actually *rises* (757 → 850) and PD *drops* (1.12% → 0.31%) — yet the
+  joint profile lands ~622× past the anomaly threshold and the decision flips
+  `APPROVE → REVIEW` with the reason code *"applicant's joint feature profile is
+  statistically out-of-distribution versus the training population."* The score going *up*
+  while the decision gets *safer* is the memorable beat.
+- **Honest caveat:** The training population is a *mixture* of cohorts, so a single
+  global distance can flag a legitimately rare-but-honest cohort profile — which is
+  exactly why the gate routes to a human rather than rejecting. Per-cohort distance
+  models are the natural next step.
+
 ### Honest scorecard re-anchoring & numerical prior shift calibration
 - **Judge problem it answers:** "Did you tune the cutoffs or models to make the demo look good? And what stops the EBM champion from overfitting small datasets and saturating all credit scores at exactly 300 or 900?"
 - **Pitch line:** "Our honest model needed an honest scorecard. We resolved the extreme score saturation (300/900 splits) by correcting the math of prior probability calibration and aligning model training capacity with cross-validation."

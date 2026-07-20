@@ -9,7 +9,7 @@ AA Consent Gateway → Ingest API → AES-256 Vault → Preprocessing → ml_fea
                                                                         ↓
                                                     ECM + EBM Champion & Challenger Panel (CatBoost/Logistic)
                                                                         ↓
-           Convergence (PDO scorecard + facets + Native Explanations + Conformal Abstention + lending) → Audit Trail
+           Convergence (PDO scorecard + facets + Native Explanations + Conformal + OOD Abstention + lending) → Audit Trail
                                                                         ↓
                                                     Bank Dashboard (portfolio, model card, fairness)
 ```
@@ -22,6 +22,7 @@ AA Consent Gateway → Ingest API → AES-256 Vault → Preprocessing → ml_fea
 | **Real econometrics** | ADF/ECM on actual monthly cashflow / telecom payment series |
 | **PDO scorecard** | Log-odds to points (base 600, PDO 50, range 300–900) |
 | **Model Panel & Conformal Abstention** | Glass-box EBM (Explainable Boosting Machine) champion model is audited by a panel of challengers (CatBoost + Logistic). Split conformal prediction provides statistical guarantees; disagreements/abstentions route to human review rather than silent auto-lending. |
+| **Out-of-distribution anomaly gate** | A multivariate Mahalanobis-distance gate (shrunk covariance) flags applicants whose *joint* feature profile never occurred in training — the anti-gaming defense for an additive model. Individually-plausible-but-jointly-impossible profiles abstain to review; the gate sits outside the score and never touches PD. |
 | **Model card** | Holdout AUC, Gini, KS, calibration, CV metrics for the ensemble models at `/score/model/card` |
 | **Reason codes** | Plain-language adverse action reasons derived directly from EBM native additive terms |
 | **Fairness report** | Disparate impact ratio across protected groups |
@@ -192,7 +193,7 @@ Implemented in [`convergence/fairness.py`](convergence/fairness.py); threshold `
 
 ## Bureau-Aware Routing & Operational Safety Gates
 
-To ensure institutional compliance and reliability, the system evaluates applications through a sequential process: first checking traditional bureau history, and fallback to the alternative credit scorecard which is guarded by a multi-layered safety net of **4 Operational Gates**.
+To ensure institutional compliance and reliability, the system evaluates applications through a sequential process: first checking traditional bureau history, and fallback to the alternative credit scorecard which is guarded by a multi-layered safety net of **5 Operational Gates**.
 
 ```mermaid
 graph TD
@@ -211,10 +212,13 @@ graph TD
     Gate2 -->|Disagreement / Conflict| Review
     
     Gate3 -->|Ambiguous Set: default, no_default| Review
-    Gate3 -->|Single Set: no_default| Gate4[Gate 4: Affordability Gate]
+    Gate3 -->|Single Set: no_default| Gate4[Gate 4: Anomaly / OOD Check]
     
-    Gate4 -->|Requested <= Max Serviceable| AutoApprove[Auto-Approve]
-    Gate4 -->|Requested > Max Serviceable| Review
+    Gate4 -->|Joint profile in-distribution| Gate5[Gate 5: Affordability Gate]
+    Gate4 -->|Joint profile out-of-distribution| Review
+    
+    Gate5 -->|Requested <= Max Serviceable| AutoApprove[Auto-Approve]
+    Gate5 -->|Requested > Max Serviceable| Review
 ```
 
 ### Bureau-Aware Routing (Pre-Screening Gate)
@@ -226,7 +230,7 @@ graph TD
 * **Implementation:**
   * [`convergence/score_engine.py::score_user`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/score_engine.py#L454) queries the `BorrowerAccount` record for CIBIL history and applies these routing logic before initializing feature extraction or model runs.
 
-### The 4 Operational Safety Gates
+### The 5 Operational Safety Gates
 
 #### 1. Data-Sufficiency / Thin-File Check (Gate 1)
 * **Goal:** Abstains from auto-approving borrowers who submit extremely sparse alternative data payloads.
@@ -254,7 +258,16 @@ graph TD
   * At scoring time, if $PD^*$ satisfies both $PD^*$ $\le q$ (include `no_default` in prediction set) and $PD^*$ $\ge 1-q$ (include `default` in prediction set), the set contains both labels.
   * [`apply_conformal_gate`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/conformal.py#L103) changes the outcome to `REVIEW` if `abstain` is True and the tentative decision was `APPROVE`.
 
-#### 4. Affordability Gate Check (Gate 4)
+#### 4. Anomaly / Out-of-Distribution Check (Gate 4)
+* **Goal:** Abstain if the applicant's *joint* feature profile is statistically anomalous versus the training population — the structural blind spot of an **additive** glass box. Because `logit(PD) = β₀ + Σ fᵢ(xᵢ) + Σ f_ij(xᵢ,xⱼ)` sums term contributions independently, a gamed profile can push one or two features to flattering extremes and be scored in a feature-combination region the model never saw. Each coordinate looks plausible; the combination is impossible.
+* **Condition:** Squared Mahalanobis distance of the feature vector from the training manifold exceeds a calibrated threshold (99th-percentile distance ⇒ ~1% of the training population itself would route to review).
+* **Implementation:**
+  * [`models_ai/ood.py::fit_ood`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/ood.py) learns the training location + a **shrunk (Ledoit-Wolf) precision matrix** — the shrinkage keeps the ~42-feature, partly-collinear covariance invertible — on the same rows the champion trained on.
+  * The gate persists as **plain JSON** (mean vector + precision matrix + threshold), so a risk officer can read it; no pickled estimator at serve time.
+  * [`apply_ood_gate`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/ood.py) only ever routes `APPROVE → REVIEW`; it never edits a feature, never touches PD, and never overturns a rejection. It is an integrity filter **outside** the score, so the EBM stays a clean glass box and fairness parity still slices on the model's own call.
+  * **Honest caveat:** the training population is a mixture of cohorts, so a single global distance can flag a legitimately rare-but-honest profile — which is exactly why the gate routes to a human rather than rejecting. Per-cohort distance models are the natural next step.
+
+#### 5. Affordability Gate Check (Gate 5)
 * **Goal:** Post-decision lending-policy overlay that prevents auto-approving a loan value that exceeds the borrower's serviceable limit.
 * **Condition:** Requested loan amount > Max Serviceable Amount.
 * **Implementation:**

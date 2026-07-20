@@ -452,9 +452,10 @@
           let mainReason = "Flagged for manual review due to institutional safety gates.";
           const reasons = d.reason_codes || [];
           for (const r of reasons) {
-            if (r.includes("Model panel disagreement") || 
-                r.includes("Conformal abstention") || 
-                r.includes("Affordability gate") || 
+            if (r.includes("Model panel disagreement") ||
+                r.includes("Conformal abstention") ||
+                r.includes("Anomaly abstention") ||
+                r.includes("Affordability gate") ||
                 r.includes("Thin-file")) {
               mainReason = r;
               break;

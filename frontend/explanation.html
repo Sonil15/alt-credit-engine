@@ -256,6 +256,17 @@
         </select>
       </div>
 
+      <div class="selector-group" style="margin-left: auto;">
+        <button id="gamed-toggle" type="button" onclick="toggleGamed()"
+          style="padding: 9px 16px; border-radius: 8px; border: 1.5px solid #c0392b; background: #fff; color: #c0392b; font-weight: 700; font-size: 14px; cursor: pointer;">
+          🎭 Simulate gamed applicant
+        </button>
+      </div>
+
+    </div>
+
+    <div id="gamed-banner" style="display:none; margin: 0 0 18px; padding: 12px 16px; border-radius: 10px; background: #fbeaea; border: 1px solid #e6b0aa; color: #922b21; font-size: 14px;">
+      <strong>Red-team mode:</strong> this applicant's features were tampered — income pushed to ₹5,00,000/mo, payment delays, volatility and missed payments zeroed, psychometrics maxed. Each edit is individually flattering; watch the anomaly gate (Step&nbsp;6) catch the impossible <em>combination</em> and flip the decision to REVIEW.
     </div>
 
     <div id="loading-spinner" style="display:none; text-align:center; padding: 48px;">
@@ -388,7 +399,7 @@
       <div class="step-card">
         <div class="step-badge">Step 6</div>
         <h2 class="step-title">Conformal Prediction & Multi-Model Panel Audit</h2>
-        <p class="step-description">To avoid false trust, the system executes two challenger models (CatBoost and Logistic Regression) alongside the EBM champion. A conformal prediction gate evaluates uncertainty. If the challengers disagree with the champion, or the conformal prediction set contains high variance, the decision is routed to manual review.</p>
+        <p class="step-description">To avoid false trust, the system executes two challenger models (CatBoost and Logistic Regression) alongside the EBM champion. A conformal prediction gate evaluates uncertainty, and an anomaly gate measures how far the applicant's <em>joint</em> feature profile sits from the training population (Mahalanobis distance) &mdash; catching gamed profiles that push one feature to a flattering extreme while the combination never occurred in training. If the challengers disagree, the conformal set is ambiguous, or the profile is out-of-distribution, the decision is routed to manual review. None of these gates edit the score &mdash; they are integrity filters sitting outside the glass box.</p>
         
         <div class="comparison-grid">
           <div class="comp-card">
@@ -413,7 +424,15 @@
               <div><strong>Abstain Triggered:</strong> <span id="step6-conformal-abstain">—</span></div>
             </div>
           </div>
-          <div class="comp-card" style="grid-column: span 2;">
+          <div class="comp-card">
+            <div class="comp-title">Anomaly / Out-of-Distribution Gate</div>
+            <div style="margin-top: 6px; font-size: 13px;">
+              <div><strong>Distance from training profile:</strong> <span id="step6-ood-distance">—</span></div>
+              <div><strong>Review threshold:</strong> <span id="step6-ood-threshold">—</span></div>
+              <div><strong>Out-of-distribution:</strong> <span id="step6-ood-flag">—</span></div>
+            </div>
+          </div>
+          <div class="comp-card">
             <div class="comp-title">Panel Consensus Verdict</div>
             <div id="step6-consensus-verdict" style="font-size: 15px; font-weight: 700; margin-top: 6px; color: var(--text-dark);">—</div>
           </div>
@@ -495,12 +514,30 @@
       loadDemoCohort(cohortParam);
     };
 
+    let gamedMode = false;
+
+    function toggleGamed() {
+      gamedMode = !gamedMode;
+      const btn = document.getElementById('gamed-toggle');
+      document.getElementById('gamed-banner').style.display = gamedMode ? 'block' : 'none';
+      if (gamedMode) {
+        btn.textContent = '↩ Restore honest applicant';
+        btn.style.background = '#c0392b';
+        btn.style.color = '#fff';
+      } else {
+        btn.textContent = '🎭 Simulate gamed applicant';
+        btn.style.background = '#fff';
+        btn.style.color = '#c0392b';
+      }
+      loadDemoCohort(document.getElementById('cohort-select').value);
+    }
+
     async function loadDemoCohort(cohort) {
       document.getElementById('loading-spinner').style.display = 'block';
       document.getElementById('steps-content').style.display = 'none';
 
       try {
-        const response = await fetch(`/score/demo/audit_trail?cohort=${cohort}`);
+        const response = await fetch(`/score/demo/audit_trail?cohort=${cohort}&gamed=${gamedMode}`);
         if (!response.ok) {
           throw new Error('Failed to load demo data');
         }
@@ -759,6 +796,24 @@
       const conformal = scoreResult.conformal || {};
       document.getElementById('step6-conformal-set').textContent = conformal.prediction_set ? JSON.stringify(conformal.prediction_set) : '["APPROVE"]';
       document.getElementById('step6-conformal-abstain').textContent = conformal.abstain ? 'YES (Triggered Review)' : 'NO';
+
+      // Out-of-distribution / anomaly gate
+      const ood = scoreResult.ood || {};
+      const oodDist = document.getElementById('step6-ood-distance');
+      const oodThresh = document.getElementById('step6-ood-threshold');
+      const oodFlag = document.getElementById('step6-ood-flag');
+      if (ood.enabled === false) {
+        oodDist.textContent = oodThresh.textContent = oodFlag.textContent = 'n/a (gate not calibrated)';
+      } else {
+        oodDist.textContent = ood.distance_sq;
+        oodThresh.textContent = ood.threshold_dsq;
+        if (ood.ood) {
+          oodFlag.innerHTML = '<span style="color:#c0392b;font-weight:700;">YES &mdash; ' +
+            ood.severity + '× threshold, routed to review</span>';
+        } else {
+          oodFlag.innerHTML = '<span style="color:#1e8449;font-weight:700;">NO &mdash; within training population</span>';
+        }
+      }
 
       // Consensus verdict text
       let consensusText = '';

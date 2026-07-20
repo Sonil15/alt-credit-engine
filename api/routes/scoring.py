@@ -319,9 +319,28 @@ DEMO_INTAKE_PROFILES = {
 }
 
 
+# Red-team overlay for the "gamed applicant" demo: each edit is individually flattering
+# (huge income, zero delays, zero volatility, textbook psychometrics) but the *joint*
+# profile never occurred in training — the exact signature the OOD anomaly gate catches.
+GAMED_FEATURE_OVERRIDES = {
+    "monthly_income_mean": 500000.0,
+    "avg_days_late": 0.0,
+    "missed_payments_count": 0.0,
+    "monthly_spend_volatility": 0.0,
+    "cashflow_volatility": 0.0,
+    "cash_burn_rate": 0.0,
+    "present_bias": 0.0,
+    "conscientiousness": 1.0,
+    "financial_self_efficacy": 1.0,
+    "locus_of_control": 1.0,
+    "debt_attitude": 1.0,
+}
+
+
 @router.get("/demo/audit_trail")
 async def get_demo_audit_trail(
     cohort: str = Query(..., description="The cohort to demo: Salaried, GigWorker, Student, Vendor, Farmer, Homemaker"),
+    gamed: bool = Query(False, description="Apply the red-team 'gamed applicant' feature overlay to demo the OOD anomaly gate"),
     db: AsyncSession = Depends(get_db)
 ):
     from models.db_models import MLFeature, SecureVault, ApplicationIntake
@@ -419,8 +438,11 @@ async def get_demo_audit_trail(
             logger.error(f"Failed to decrypt vault record {record.id}: {exc}")
 
     # 5. Run the scoring engine on the user to get the final E2E result
+    overrides = GAMED_FEATURE_OVERRIDES if gamed else None
     try:
-        score_payload = await score_user(db, str(user_uuid), persist=False)
+        score_payload = await score_user(
+            db, str(user_uuid), persist=False, feature_overrides=overrides
+        )
     except Exception as exc:
         logger.exception(f"Scoring failed for demo user {user_uuid}")
         raise HTTPException(status_code=500, detail=f"Scoring engine error: {exc}")
@@ -428,6 +450,7 @@ async def get_demo_audit_trail(
     return {
         "user_id": str(user_uuid),
         "cohort": cohort,
+        "gamed": gamed,
         "raw_data": raw_data,
         "score_result": score_payload
     }

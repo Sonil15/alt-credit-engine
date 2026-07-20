@@ -37,9 +37,11 @@ from core.model_cache import (
     get_cached_challengers,
     get_cached_champion,
     get_cached_conformal_calibration,
+    get_cached_ood_calibration,
     get_model_version,
 )
 from models_ai.conformal import apply_conformal_gate, conformal_report
+from models_ai.ood import apply_ood_gate, ood_report
 from models.db_models import ScoreDecision, BorrowerAccount
 from sqlalchemy import select
 from convergence.lending import _emi
@@ -373,6 +375,13 @@ def _build_payload(
     pre_conformal_decision = decision
     decision = apply_conformal_gate(decision, auto_reject, conformal)
 
+    # OOD integrity gate: an anomalous *joint* feature vector (each coordinate plausible,
+    # the combination absent from training) is where an additive model extrapolates
+    # blindly — the signature of a gamed profile. Abstain to REVIEW, never reject.
+    ood = ood_report(feature_row, get_cached_ood_calibration())
+    pre_ood_decision = decision
+    decision = apply_ood_gate(decision, auto_reject, ood)
+
     contributions, base_value = _champion_contributions(champion, feature_row, baseline_contrib)
     base_points = safe_round(expected_value_to_base_points(base_value), 1)
     factor_points = {item["feature"]: item["points"] for item in contributions}
@@ -416,8 +425,16 @@ def _build_payload(
     reason_codes = drivers_to_reason_codes(negative_drivers)
     gated_to_review = decision == "REVIEW" and champion_decision != "REVIEW" and not auto_reject
     conformal_gated = decision == "REVIEW" and pre_conformal_decision == "APPROVE" and conformal.get("abstain")
+    ood_gated = decision == "REVIEW" and pre_ood_decision == "APPROVE" and ood.get("ood")
     if auto_reject and reject_reason:
         reason_codes.insert(0, reject_reason)
+    elif ood_gated:
+        reason_codes.insert(
+            0,
+            "Anomaly abstention: applicant's joint feature profile is statistically "
+            "out-of-distribution versus the training population (Mahalanobis distance "
+            f"{ood.get('severity', 0)}× the review threshold), routed to manual review",
+        )
     elif conformal_gated:
         coverage_pct = round(float(conformal.get("coverage_target", 0.9)) * 100)
         reason_codes.insert(
@@ -497,6 +514,7 @@ def _build_payload(
             "funding_gap": funding_gap,
             "panel": agreement,
             "conformal": conformal,
+            "ood": ood,
             "explanation_method": "ebm-additive-terms",
             "model_version": get_model_version(),
             "is_simulated": is_simulated,
@@ -505,8 +523,21 @@ def _build_payload(
     )
 
 
-async def score_user(session: AsyncSession, user_id: str, *, pan: str | None = None, persist: bool = True) -> dict[str, Any]:
-    """Compute full credit score payload for a single user, routing through CIBIL gate if set."""
+async def score_user(
+    session: AsyncSession,
+    user_id: str,
+    *,
+    pan: str | None = None,
+    persist: bool = True,
+    feature_overrides: dict[str, float] | None = None,
+) -> dict[str, Any]:
+    """Compute full credit score payload for a single user, routing through CIBIL gate if set.
+
+    ``feature_overrides`` (demo/red-team only): overwrite specific feature columns on the
+    real feature vector *before* PD prediction, so a tampered profile is scored by the
+    genuine engine — champion, panel, conformal, and the OOD gate all run for real. Never
+    used on the persisted scoring path.
+    """
     # First check the user's CIBIL score in BorrowerAccount
     result = await session.execute(
         select(BorrowerAccount).where(BorrowerAccount.user_id == UUID(str(user_id)))
@@ -563,6 +594,7 @@ async def score_user(session: AsyncSession, user_id: str, *, pan: str | None = N
             "funding_gap": {"gated": False},
             "panel": {"hard_conflict": False, "unanimous": True},
             "conformal": {"prediction_set": ["APPROVE"], "abstain": False, "enabled": False},
+            "ood": {"ood": False, "enabled": False},
             "explanation_method": "bureau-gating",
             "model_version": "bureau-gate-1.0",
             "is_simulated": True,
@@ -616,6 +648,7 @@ async def score_user(session: AsyncSession, user_id: str, *, pan: str | None = N
                 "funding_gap": {"gated": False},
                 "panel": {"hard_conflict": False, "unanimous": True},
                 "conformal": {"prediction_set": ["APPROVE"], "abstain": False, "enabled": False},
+                "ood": {"ood": False, "enabled": False},
                 "explanation_method": "bureau-gating",
                 "model_version": "bureau-gate-1.0",
                 "is_simulated": True,
@@ -663,6 +696,7 @@ async def score_user(session: AsyncSession, user_id: str, *, pan: str | None = N
                 "funding_gap": {"gated": False},
                 "panel": {"hard_conflict": False, "unanimous": True},
                 "conformal": {"prediction_set": ["REJECT"], "abstain": False, "enabled": False},
+                "ood": {"ood": False, "enabled": False},
                 "explanation_method": "bureau-gating",
                 "model_version": "bureau-gate-1.0",
                 "is_simulated": True,
@@ -686,6 +720,13 @@ async def score_user(session: AsyncSession, user_id: str, *, pan: str | None = N
     baseline_contrib = ebm_mean_contributions(champion, wide)
 
     user_wide = wide[user_mask].copy()
+
+    # Demo/red-team overlay: tamper the real feature vector before it hits the models, so
+    # the gamed profile flows through the genuine PD → panel → conformal → OOD gate path.
+    if feature_overrides:
+        for feat, val in feature_overrides.items():
+            if feat in user_wide.columns:
+                user_wide[feat] = float(val)
 
     # Mask features for revoked scopes
     from api.routes.consent import get_revoked_scopes
@@ -801,6 +842,7 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
                         "funding_gap": {"gated": False},
                         "panel": {"hard_conflict": False, "unanimous": True},
                         "conformal": {"prediction_set": ["APPROVE"], "abstain": False, "enabled": False},
+                        "ood": {"ood": False, "enabled": False},
                         "explanation_method": "bureau-gating",
                         "model_version": "bureau-gate-1.0",
                         "is_simulated": True,
@@ -848,6 +890,7 @@ async def score_all_users(session: AsyncSession) -> list[dict[str, Any]]:
                         "funding_gap": {"gated": False},
                         "panel": {"hard_conflict": False, "unanimous": True},
                         "conformal": {"prediction_set": ["REJECT"], "abstain": False, "enabled": False},
+                        "ood": {"ood": False, "enabled": False},
                         "explanation_method": "bureau-gating",
                         "model_version": "bureau-gate-1.0",
                         "is_simulated": True,
