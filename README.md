@@ -193,7 +193,7 @@ Implemented in [`convergence/fairness.py`](convergence/fairness.py); threshold `
 
 ## Bureau-Aware Routing & Operational Safety Gates
 
-To ensure institutional compliance and reliability, the system evaluates applications through a sequential process: first checking traditional bureau history, and fallback to the alternative credit scorecard which is guarded by a multi-layered safety net of **5 Operational Gates**.
+To ensure institutional compliance and reliability, the system evaluates applications through a sequential process: first checking traditional bureau history, and fallback to the alternative credit scorecard which is guarded by a **hard-policy red-flag screen** followed by a multi-layered safety net of **5 Operational Gates**.
 
 ```mermaid
 graph TD
@@ -202,8 +202,11 @@ graph TD
     Bureau -->|CIBIL Score < 600| Reject[Immediate REJECT]
     Bureau -->|Thin-File / No History / 600 <= CIBIL < 750| AltCredit[Alternate Credit Scorecard]
     
-    AltCredit -->|Alternative Score >= 650?| Gate1[Gate 1: Data Confidence Check]
-    AltCredit -->|Alternative Score < 650?| Review[Route to REVIEW / REJECT]
+    AltCredit --> RedFlag[Hard-Policy Red-Flag Screen]
+    RedFlag -->|Transience + zero income, OR Salaried with 5+ missed telecom| Reject
+    RedFlag -->|No red flag| Score{Alternative Score}
+    Score -->|Alternative Score >= 650?| Gate1[Gate 1: Data Confidence Check]
+    Score -->|Alternative Score < 650?| Review[Route to REVIEW / REJECT]
     
     Gate1 -->|Confidence >= 60%| Gate2[Gate 2: Challenger Panel Agreement]
     Gate1 -->|Confidence < 60%| Review
@@ -229,6 +232,15 @@ graph TD
   * Missing CIBIL score (`-1` or null) or thin/borderline file (`600 <= cibil_score < 750`): Fallback to full alternative credit scoring pipeline.
 * **Implementation:**
   * [`convergence/score_engine.py::score_user`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/score_engine.py#L454) queries the `BorrowerAccount` record for CIBIL history and applies these routing logic before initializing feature extraction or model runs.
+
+### Hard-Policy Red-Flag Screen (Pre-Model Override)
+
+Before the model's score is trusted, two deterministic policy rules can veto to `REJECT`. Both are explicit, auditable lending-policy overrides that sit *outside* the model, are shown to borrowers on **Step 4** of the Score Explainer, and are implemented in [`convergence/score_engine.py::check_red_flags`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/score_engine.py#L91).
+
+* **Transience-without-Income** — fires only when `spatial_variance_score > 50` **AND** `monthly_income_mean <= 0`. The rule is a two-condition **AND**, by design: high mobility *alone* never rejects anyone, so a field-sales rep, consultant, or migrant worker who moves *for* work passes straight through to the model. It screens rootlessness *without a verifiable income anchor*, not movement itself.
+* **Salaried telecom default** — fires when the applicant's cohort is `Salaried` **AND** `missed_payments_count >= 5`. A salaried borrower with five or more missed billing cycles is a hard policy reject.
+
+When a red flag fires, the outcome is forced to `REJECT` and PD is set to `1.0`; the model score is still computed and shown, so the borrower sees *why* the veto applied. **Honest caveat:** the thresholds (50 / ₹0 / 5 cycles) are hand-tuned policy rules on synthetic data, not learned boundaries — they demonstrate the two-condition design and would be recalibrated against real reject-inference data in production.
 
 ### The 5 Operational Safety Gates
 
