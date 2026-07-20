@@ -1,1259 +1,692 @@
 {
-  "user_id": "1d0bc9bd-e9b5-45cf-9766-5cdafe049059",
-  "cohort": "Vendor",
-  "raw_data": {
-    "geo": {
-      "user_id": "1d0bc9bd-e9b5-45cf-9766-5cdafe049059",
-      "locations": [
-        {
-          "timestamp": "2026-06-19T11:02:02.599017",
-          "lat": 36.963462,
-          "long": 72.03879,
-          "accuracy_meters": 36
-        },
-        {
-          "timestamp": "2026-06-19T17:02:02.599017",
-          "lat": 36.962344,
-          "long": 72.038544,
-          "accuracy_meters": 50
-        },
-        {
-          "timestamp": "2026-06-19T23:02:02.599017",
-          "lat": 36.962679,
-          "long": 72.039125,
-          "accuracy_meters": 9
-        },
-        {
-          "timestamp": "2026-06-20T05:02:02.599017",
-          "lat": 36.963324,
-          "long": 72.038422,
-          "accuracy_meters": 19
-        },
-        {
-          "timestamp": "2026-06-20T11:02:02.599017",
-          "lat": 36.962727,
-          "long": 72.039675,
-          "accuracy_meters": 26
-        },
-        {
-          "timestamp": "2026-06-20T17:02:02.599017",
-          "lat": 36.962649,
-          "long": 72.039623,
-          "accuracy_meters": 8
-        },
-        {
-          "timestamp": "2026-06-20T23:02:02.599017",
-          "lat": 37.010845,
-          "long": 72.030768,
-          "accuracy_meters": 25
-        },
-        {
-          "timestamp": "2026-06-21T05:02:02.599017",
-          "lat": 36.962388,
-          "long": 72.037729,
-          "accuracy_meters": 29
-        },
-        {
-          "timestamp": "2026-06-21T11:02:02.599017",
-          "lat": 37.011222,
-          "long": 72.030264,
-          "accuracy_meters": 29
-        },
-        {
-          "timestamp": "2026-06-21T17:02:02.599017",
-          "lat": 36.96391,
-          "long": 72.038367,
-          "accuracy_meters": 47
-        },
-        {
-          "timestamp": "2026-06-21T23:02:02.599017",
-          "lat": 36.963326,
-          "long": 72.038401,
-          "accuracy_meters": 28
-        },
-        {
-          "timestamp": "2026-06-22T05:02:02.599017",
-          "lat": 36.954589,
-          "long": 72.058003,
-          "accuracy_meters": 14
-        },
-        {
-          "timestamp": "2026-06-22T11:02:02.599017",
-          "lat": 36.963617,
-          "long": 72.038287,
-          "accuracy_meters": 15
-        },
-        {
-          "timestamp": "2026-06-22T17:02:02.599017",
-          "lat": 36.963481,
-          "long": 72.039429,
-          "accuracy_meters": 20
-        },
-        {
-          "timestamp": "2026-06-22T23:02:02.599017",
-          "lat": 36.962886,
-          "long": 72.039485,
-          "accuracy_meters": 10
-        },
-        {
-          "timestamp": "2026-06-23T05:02:02.599017",
-          "lat": 36.962823,
-          "long": 72.038903,
-          "accuracy_meters": 15
-        },
-        {
-          "timestamp": "2026-06-23T11:02:02.599017",
-          "lat": 37.01052,
-          "long": 72.030892,
-          "accuracy_meters": 39
-        },
-        {
-          "timestamp": "2026-06-23T17:02:02.599017",
-          "lat": 36.962334,
-          "long": 72.038279,
-          "accuracy_meters": 11
-        },
-        {
-          "timestamp": "2026-06-23T23:02:02.599017",
-          "lat": 37.01162,
-          "long": 72.03108,
-          "accuracy_meters": 42
-        },
-        {
-          "timestamp": "2026-06-24T05:02:02.599017",
-          "lat": 36.963579,
-          "long": 72.037801,
-          "accuracy_meters": 49
-        },
-        {
-          "timestamp": "2026-06-24T11:02:02.599017",
-          "lat": 36.962224,
-          "long": 72.038931,
-          "accuracy_meters": 43
-        },
-        {
-          "timestamp": "2026-06-24T17:02:02.599017",
-          "lat": 36.962778,
-          "long": 72.038389,
-          "accuracy_meters": 5
-        },
-        {
-          "timestamp": "2026-06-24T23:02:02.599017",
-          "lat": 36.962165,
-          "long": 72.039327,
-          "accuracy_meters": 11
-        },
-        {
-          "timestamp": "2026-06-25T05:02:02.599017",
-          "lat": 36.963613,
-          "long": 72.039317,
-          "accuracy_meters": 37
-        },
-        {
-          "timestamp": "2026-06-25T11:02:02.599017",
-          "lat": 36.963206,
-          "long": 72.038612,
-          "accuracy_meters": 40
-        },
-        {
-          "timestamp": "2026-06-25T17:02:02.599017",
-          "lat": 36.962296,
-          "long": 72.038061,
-          "accuracy_meters": 36
-        },
-        {
-          "timestamp": "2026-06-25T23:02:02.599017",
-          "lat": 36.962817,
-          "long": 72.038065,
-          "accuracy_meters": 42
-        },
-        {
-          "timestamp": "2026-06-26T05:02:02.599017",
-          "lat": 36.962476,
-          "long": 72.03964,
-          "accuracy_meters": 26
-        },
-        {
-          "timestamp": "2026-06-26T11:02:02.599017",
-          "lat": 36.962587,
-          "long": 72.039374,
-          "accuracy_meters": 11
-        },
-        {
-          "timestamp": "2026-06-26T17:02:02.599017",
-          "lat": 36.954375,
-          "long": 72.058645,
-          "accuracy_meters": 12
-        },
-        {
-          "timestamp": "2026-06-26T23:02:02.599017",
-          "lat": 36.962925,
-          "long": 72.038477,
-          "accuracy_meters": 14
-        },
-        {
-          "timestamp": "2026-06-27T05:02:02.599017",
-          "lat": 37.011229,
-          "long": 72.031121,
-          "accuracy_meters": 18
-        },
-        {
-          "timestamp": "2026-06-27T11:02:02.599017",
-          "lat": 36.954831,
-          "long": 72.058862,
-          "accuracy_meters": 19
-        },
-        {
-          "timestamp": "2026-06-27T17:02:02.599017",
-          "lat": 36.962947,
-          "long": 72.037847,
-          "accuracy_meters": 25
-        },
-        {
-          "timestamp": "2026-06-27T23:02:02.599017",
-          "lat": 36.964016,
-          "long": 72.03966,
-          "accuracy_meters": 19
-        },
-        {
-          "timestamp": "2026-06-28T05:02:02.599017",
-          "lat": 36.963748,
-          "long": 72.038511,
-          "accuracy_meters": 30
-        },
-        {
-          "timestamp": "2026-06-28T11:02:02.599017",
-          "lat": 37.010278,
-          "long": 72.031233,
-          "accuracy_meters": 30
-        },
-        {
-          "timestamp": "2026-06-28T17:02:02.599017",
-          "lat": 37.011252,
-          "long": 72.031368,
-          "accuracy_meters": 19
-        },
-        {
-          "timestamp": "2026-06-28T23:02:02.599017",
-          "lat": 36.954024,
-          "long": 72.05947,
-          "accuracy_meters": 31
-        },
-        {
-          "timestamp": "2026-06-29T05:02:02.599017",
-          "lat": 37.011329,
-          "long": 72.031225,
-          "accuracy_meters": 27
-        },
-        {
-          "timestamp": "2026-06-29T11:02:02.599017",
-          "lat": 36.963409,
-          "long": 72.038483,
-          "accuracy_meters": 17
-        },
-        {
-          "timestamp": "2026-06-29T17:02:02.599017",
-          "lat": 36.964116,
-          "long": 72.038599,
-          "accuracy_meters": 16
-        },
-        {
-          "timestamp": "2026-06-29T23:02:02.599017",
-          "lat": 36.963721,
-          "long": 72.038279,
-          "accuracy_meters": 5
-        },
-        {
-          "timestamp": "2026-06-30T05:02:02.599017",
-          "lat": 36.963799,
-          "long": 72.039555,
-          "accuracy_meters": 33
-        },
-        {
-          "timestamp": "2026-06-30T11:02:02.599017",
-          "lat": 36.962219,
-          "long": 72.039263,
-          "accuracy_meters": 12
-        },
-        {
-          "timestamp": "2026-06-30T17:02:02.599017",
-          "lat": 36.963447,
-          "long": 72.038596,
-          "accuracy_meters": 28
-        },
-        {
-          "timestamp": "2026-06-30T23:02:02.599017",
-          "lat": 36.96271,
-          "long": 72.039203,
-          "accuracy_meters": 8
-        },
-        {
-          "timestamp": "2026-07-01T05:02:02.599017",
-          "lat": 36.964064,
-          "long": 72.037895,
-          "accuracy_meters": 34
-        },
-        {
-          "timestamp": "2026-07-01T11:02:02.599017",
-          "lat": 36.962224,
-          "long": 72.038259,
-          "accuracy_meters": 30
-        },
-        {
-          "timestamp": "2026-07-01T17:02:02.599017",
-          "lat": 36.962368,
-          "long": 72.038516,
-          "accuracy_meters": 7
-        }
-      ]
+  "user_id": "b17cdd1f-6667-4b74-8666-b13cf6ca66a1",
+  "credit_score": 503,
+  "probability_of_default": 0.2786,
+  "decision": "REJECT",
+  "approval_likelihood": "Needs Review",
+  "actionable_insights": [
+    "Tip: Higher transaction volume indicates a healthier micro-enterprise."
+  ],
+  "auto_reject": false,
+  "reject_reason": null,
+  "feature_drivers": [
+    {
+      "feature": "locus_of_control",
+      "label": "Sense of financial control",
+      "contribution_value": 0.5135631732286517,
+      "points": -37.0
     },
-    "cashflow": {
-      "user_id": "1d0bc9bd-e9b5-45cf-9766-5cdafe049059",
-      "transactions": [
-        {
-          "txn_date": "2026-03-30",
-          "type": "CREDIT",
-          "amount": 31379.44,
-          "narration": "NEFT/SALARY/161920DE"
-        },
-        {
-          "txn_date": "2026-03-31",
-          "type": "DEBIT",
-          "amount": 3161.75,
-          "narration": "UPI/MERCHANT/5264544F/Fuel"
-        },
-        {
-          "txn_date": "2026-03-31",
-          "type": "DEBIT",
-          "amount": 3319.57,
-          "narration": "UPI/P2A/4ECC7565/Grocery"
-        },
-        {
-          "txn_date": "2026-04-01",
-          "type": "DEBIT",
-          "amount": 71.61,
-          "narration": "UPI-LITE/MERCHANT/F0F68334/Tea"
-        },
-        {
-          "txn_date": "2026-04-04",
-          "type": "DEBIT",
-          "amount": 3385.5,
-          "narration": "DEBIT/ATM/WDL/F8991485"
-        },
-        {
-          "txn_date": "2026-04-05",
-          "type": "DEBIT",
-          "amount": 73.86,
-          "narration": "UPI-LITE/MERCHANT/202BFD8F/Tea"
-        },
-        {
-          "txn_date": "2026-04-05",
-          "type": "DEBIT",
-          "amount": 2121.51,
-          "narration": "CREDIT/CASHBACK/B89E8765"
-        },
-        {
-          "txn_date": "2026-04-06",
-          "type": "DEBIT",
-          "amount": 5197.2,
-          "narration": "UPI/MERCHANT/0CC7AFAB/Fuel"
-        },
-        {
-          "txn_date": "2026-04-08",
-          "type": "DEBIT",
-          "amount": 2193.08,
-          "narration": "UPI/BILLPAY/74B7EDC1/Electricity"
-        },
-        {
-          "txn_date": "2026-04-13",
-          "type": "DEBIT",
-          "amount": 1780.58,
-          "narration": "UPI/P2A/2270D623/Grocery"
-        },
-        {
-          "txn_date": "2026-04-18",
-          "type": "DEBIT",
-          "amount": 1167.38,
-          "narration": "NEFT/SALARY/C21550B5"
-        },
-        {
-          "txn_date": "2026-04-29",
-          "type": "CREDIT",
-          "amount": 33168.67,
-          "narration": "NEFT/SALARY/1BAC7EC9"
-        },
-        {
-          "txn_date": "2026-05-02",
-          "type": "DEBIT",
-          "amount": 1724.46,
-          "narration": "UPI/P2P/8F692827/Rent"
-        },
-        {
-          "txn_date": "2026-05-03",
-          "type": "DEBIT",
-          "amount": 3649.72,
-          "narration": "UPI/P2A/1BA1E0E0/Grocery"
-        },
-        {
-          "txn_date": "2026-05-03",
-          "type": "DEBIT",
-          "amount": 157.0,
-          "narration": "UPI/LITE-WALLET/D772945D/Auto"
-        },
-        {
-          "txn_date": "2026-05-04",
-          "type": "DEBIT",
-          "amount": 2310.49,
-          "narration": "UPI/P2P/AF02A308/Rent"
-        },
-        {
-          "txn_date": "2026-05-06",
-          "type": "DEBIT",
-          "amount": 3828.77,
-          "narration": "UPI/MERCHANT/B22AA334/Fuel"
-        },
-        {
-          "txn_date": "2026-05-11",
-          "type": "DEBIT",
-          "amount": 1949.67,
-          "narration": "IMPS/TRANSFER/60E66A20/Self"
-        },
-        {
-          "txn_date": "2026-05-13",
-          "type": "DEBIT",
-          "amount": 2426.94,
-          "narration": "DEBIT/ATM/WDL/22F5FE03"
-        },
-        {
-          "txn_date": "2026-05-16",
-          "type": "DEBIT",
-          "amount": 169.1,
-          "narration": "LITE-WALLET/TRANSFER/8A874F95/Snacks"
-        },
-        {
-          "txn_date": "2026-05-19",
-          "type": "DEBIT",
-          "amount": 2062.95,
-          "narration": "UPI/P2A/3D8A5580/Grocery"
-        },
-        {
-          "txn_date": "2026-05-21",
-          "type": "DEBIT",
-          "amount": 197.58,
-          "narration": "LITE-WALLET/TRANSFER/7696E66B/Snacks"
-        },
-        {
-          "txn_date": "2026-05-29",
-          "type": "CREDIT",
-          "amount": 34431.84,
-          "narration": "NEFT/SALARY/70FED640"
-        },
-        {
-          "txn_date": "2026-06-01",
-          "type": "DEBIT",
-          "amount": 142.73,
-          "narration": "UPI/LITE-WALLET/AB0F29A1/Auto"
-        },
-        {
-          "txn_date": "2026-06-01",
-          "type": "DEBIT",
-          "amount": 4423.18,
-          "narration": "NEFT/SALARY/668A7E22"
-        },
-        {
-          "txn_date": "2026-06-01",
-          "type": "DEBIT",
-          "amount": 3921.9,
-          "narration": "NEFT/SALARY/51479D1B"
-        },
-        {
-          "txn_date": "2026-06-04",
-          "type": "DEBIT",
-          "amount": 2046.3,
-          "narration": "NEFT/SALARY/B915BA38"
-        },
-        {
-          "txn_date": "2026-06-06",
-          "type": "DEBIT",
-          "amount": 2329.96,
-          "narration": "IMPS/TRANSFER/4237A6B9/Self"
-        },
-        {
-          "txn_date": "2026-06-06",
-          "type": "DEBIT",
-          "amount": 1544.0,
-          "narration": "UPI/P2A/8E1A1E36/Grocery"
-        },
-        {
-          "txn_date": "2026-06-18",
-          "type": "DEBIT",
-          "amount": 1552.19,
-          "narration": "DEBIT/ATM/WDL/D7066177"
-        },
-        {
-          "txn_date": "2026-06-22",
-          "type": "DEBIT",
-          "amount": 151.85,
-          "narration": "UPI-LITE/MERCHANT/4D628D8C/Tea"
-        },
-        {
-          "txn_date": "2026-06-26",
-          "type": "DEBIT",
-          "amount": 96.72,
-          "narration": "LITE-WALLET/TRANSFER/9AC7E03F/Snacks"
-        },
-        {
-          "txn_date": "2026-06-27",
-          "type": "DEBIT",
-          "amount": 39.85,
-          "narration": "LITE-WALLET/TRANSFER/8A067E9E/Snacks"
-        },
-        {
-          "txn_date": "2026-06-28",
-          "type": "CREDIT",
-          "amount": 33584.97,
-          "narration": "NEFT/SALARY/A4B2601E"
-        },
-        {
-          "txn_date": "2026-07-01",
-          "type": "DEBIT",
-          "amount": 3754.92,
-          "narration": "UPI/MERCHANT/1BA66379/Fuel"
-        },
-        {
-          "txn_date": "2026-07-02",
-          "type": "DEBIT",
-          "amount": 2298.55,
-          "narration": "DEBIT/ATM/WDL/9687951C"
-        },
-        {
-          "txn_date": "2026-07-03",
-          "type": "DEBIT",
-          "amount": 3697.52,
-          "narration": "UPI/P2P/24AF092C/Rent"
-        },
-        {
-          "txn_date": "2026-07-08",
-          "type": "DEBIT",
-          "amount": 1426.38,
-          "narration": "CREDIT/CASHBACK/6443E7EA"
-        },
-        {
-          "txn_date": "2026-07-09",
-          "type": "DEBIT",
-          "amount": 132.1,
-          "narration": "UPI/LITE-WALLET/EF98616B/Auto"
-        },
-        {
-          "txn_date": "2026-07-10",
-          "type": "DEBIT",
-          "amount": 2593.71,
-          "narration": "DEBIT/ATM/WDL/12D608E4"
-        },
-        {
-          "txn_date": "2026-07-12",
-          "type": "DEBIT",
-          "amount": 1784.77,
-          "narration": "DEBIT/ATM/WDL/D148363B"
-        },
-        {
-          "txn_date": "2026-07-21",
-          "type": "DEBIT",
-          "amount": 1252.86,
-          "narration": "DEBIT/ATM/WDL/7E81F8ED"
-        },
-        {
-          "txn_date": "2026-07-22",
-          "type": "DEBIT",
-          "amount": 2451.14,
-          "narration": "IMPS/TRANSFER/2DFBAB60/Self"
-        },
-        {
-          "txn_date": "2026-07-27",
-          "type": "DEBIT",
-          "amount": 101.76,
-          "narration": "UPI-LITE/MERCHANT/645A5027/Tea"
-        }
-      ]
+    {
+      "feature": "daily_transaction_count",
+      "label": "Daily transaction count",
+      "contribution_value": 0.18427173021347448,
+      "points": -13.3
     },
-    "survey": {
-      "user_id": "1d0bc9bd-e9b5-45cf-9766-5cdafe049059",
-      "language": "en",
-      "assessment_version": "1.0",
-      "traits": {
-        "conscientiousness": 0.4799,
-        "locus_of_control": 0.6475,
-        "financial_self_efficacy": 0.4815,
-        "present_bias": 0.4497,
-        "debt_attitude": 0.5683,
-        "risk_tolerance": 0.4998,
-        "delayed_gratification": 0.6969,
-        "honesty": 0.3369,
-        "cognitive_reflection": 0.5649,
-        "resourcefulness": 0.7129,
-        "response_validity": 0.88,
-        "cohort_code": 3.0,
-        "daily_transaction_count": 57.62,
-        "average_ticket_size": 341.47,
-        "business_vintage_years": 7.0,
-        "turnover_income_consistency": 0.8155
-      },
-      "conscientiousness": 0.4799,
-      "locus_of_control": 0.6475,
-      "financial_self_efficacy": 0.4815,
-      "present_bias": 0.4497,
-      "debt_attitude": 0.5683,
-      "risk_tolerance": 0.4998,
-      "delayed_gratification": 0.6969,
-      "honesty": 0.3369,
-      "cognitive_reflection": 0.5649,
-      "resourcefulness": 0.7129,
-      "response_validity": 0.88,
-      "cohort_code": 3.0,
-      "daily_transaction_count": 57.62,
-      "average_ticket_size": 341.47,
-      "business_vintage_years": 7.0,
-      "turnover_income_consistency": 0.8155,
-      "answers": {
-        "open_1": "I had a sudden medical expense; I worried about the debt but managed to pay it off slowly over the month."
-      },
-      "transcript": [
-        {
-          "role": "user",
-          "text": "I had a sudden medical expense; I worried about the debt but managed to pay it off slowly over the month."
-        }
-      ]
-    },
-    "intake": {
-      "business_description": "I run a small fast food joint near the railway station. I have been in this business for 5 years and have a steady flow of customers. I want to buy a refrigerator and expand the shop capacity.",
-      "cohort": "Vendor"
+    {
+      "feature": "debt_attitude",
+      "label": "Commitment to repaying debt",
+      "contribution_value": 0.17220644108795832,
+      "points": -12.4
     }
+  ],
+  "reason_codes": [
+    "Feels finances are outside their control",
+    "Low business transaction volume",
+    "Weak commitment to timely debt repayment"
+  ],
+  "reason_codes_text": "Feels finances are outside their control; Low business transaction volume; Weak commitment to timely debt repayment",
+  "base_points": 687.9,
+  "factor_points": {
+    "avg_days_late": -67.5,
+    "missed_payments_count": 1.0,
+    "necessity_ratio": 2.7,
+    "avg_merchant_rating": -30.0,
+    "monthly_spend_volatility": -9.2,
+    "spatial_variance_score": -9.4,
+    "anchor_count": -0.0,
+    "monthly_income_mean": -13.1,
+    "monthly_expense_mean": -0.0,
+    "cashflow_volatility": 38.6,
+    "cash_burn_rate": 3.5,
+    "conscientiousness": -4.9,
+    "locus_of_control": -37.0,
+    "financial_self_efficacy": -3.9,
+    "present_bias": -8.8,
+    "debt_attitude": -12.4,
+    "response_validity": -2.3,
+    "resilience_coefficient": 0.3,
+    "adf_statistic": -0.1,
+    "adf_pvalue": -0.1,
+    "is_stationary": -0.0,
+    "trend_slope": 2.1,
+    "business_vintage_years": -1.2,
+    "is_new_business": -0.0,
+    "turnover_income_consistency": 0.1,
+    "has_udyam_registration": -0.0,
+    "years_informal": -0.0,
+    "upi_spend_consistency": -0.5,
+    "small_dues_payment_promptness": -2.2,
+    "e_wallet_topup_frequency": -3.4,
+    "daily_transaction_count": -13.3,
+    "average_ticket_size": -1.1,
+    "harvest_income_spike": -0.0,
+    "input_purchase_consistency": -0.2,
+    "utility_payment_consistency": -5.2,
+    "grocery_spend_stability": -3.8,
+    "upi_lite_txn_count": 0.0,
+    "upi_lite_average_ticket": 0.7,
+    "dbt_income_consistency": -0.0,
+    "sms_spend_total": -2.6,
+    "sms_bill_delay": -1.7,
+    "enam_receipt_volume": -0.0
   },
-  "score_result": {
-    "user_id": "1d0bc9bd-e9b5-45cf-9766-5cdafe049059",
-    "credit_score": 559,
-    "probability_of_default": 0.1502,
-    "decision": "REVIEW",
-    "approval_likelihood": "Moderate",
-    "actionable_insights": [
-      "Tip: Showing location stability over time helps build your profile."
-    ],
-    "auto_reject": false,
-    "reject_reason": null,
-    "feature_drivers": [
+  "feature_trace": {
+    "top_drivers": [
+      {
+        "feature": "locus_of_control",
+        "label": "Sense of financial control",
+        "source": "Psychometric assessment",
+        "fmt": "score01",
+        "direction": "high",
+        "engine": "extraction",
+        "value": 0.1813,
+        "points": -37.0,
+        "logodds": 0.5129
+      },
       {
         "feature": "daily_transaction_count",
-        "contribution_value": -0.025975739098053632,
-        "points": 1.9
+        "label": "Daily transaction count",
+        "source": "Micro-enterprise UPI/payment volumes",
+        "fmt": "count",
+        "direction": "high",
+        "engine": "extraction",
+        "value": 12.4,
+        "points": -13.3,
+        "logodds": 0.1844
       },
       {
-        "feature": "turnover_income_consistency",
-        "contribution_value": -0.02444915063613016,
-        "points": 1.8
+        "feature": "debt_attitude",
+        "label": "Commitment to repaying debt",
+        "source": "Psychometric assessment",
+        "fmt": "score01",
+        "direction": "high",
+        "engine": "extraction",
+        "value": 0.0448,
+        "points": -12.4,
+        "logodds": 0.1719
       },
       {
-        "feature": "business_vintage_years",
-        "contribution_value": -0.011243865825560083,
-        "points": 0.8
+        "feature": "spatial_variance_score",
+        "label": "Delivery address drift entropy",
+        "source": "E-commerce shipping records",
+        "fmt": "number",
+        "direction": "low",
+        "engine": "extraction",
+        "value": 1.1991,
+        "points": -9.4,
+        "logodds": 0.1303
+      },
+      {
+        "feature": "present_bias",
+        "label": "Tendency to spend impulsively",
+        "source": "Psychometric assessment",
+        "fmt": "score01",
+        "direction": "low",
+        "engine": "extraction",
+        "value": 0.9118,
+        "points": -8.8,
+        "logodds": 0.122
+      },
+      {
+        "feature": "conscientiousness",
+        "label": "Careful financial planning",
+        "source": "Psychometric assessment",
+        "fmt": "score01",
+        "direction": "high",
+        "engine": "extraction",
+        "value": 0.217,
+        "points": -4.9,
+        "logodds": 0.0679
+      },
+      {
+        "feature": "financial_self_efficacy",
+        "label": "Confidence managing money",
+        "source": "Psychometric assessment",
+        "fmt": "score01",
+        "direction": "high",
+        "engine": "extraction",
+        "value": 0.1351,
+        "points": -3.9,
+        "logodds": 0.0541
+      },
+      {
+        "feature": "response_validity",
+        "label": "Answer consistency check",
+        "source": "Psychometric assessment",
+        "fmt": "score01",
+        "direction": "high",
+        "engine": "extraction",
+        "value": 0.8914,
+        "points": -2.3,
+        "logodds": 0.0319
       }
     ],
-    "reason_codes": [
-      "Model panel disagreement: champion (EBM) and challengers did not reach consensus, routed to manual review",
-      "High shipping address drift",
-      "Signs of less careful financial planning",
-      "Inconsistent answers in the assessment"
-    ],
-    "reason_codes_text": "Model panel disagreement: champion (EBM) and challengers did not reach consensus, routed to manual review; High shipping address drift; Signs of less careful financial planning; Inconsistent answers in the assessment",
-    "base_points": 559.3,
-    "factor_points": {
-      "avg_days_late": 0.1,
-      "missed_payments_count": 0.2,
-      "necessity_ratio": -0.4,
-      "avg_merchant_rating": -0.0,
-      "monthly_spend_volatility": -0.6,
-      "spatial_variance_score": -0.8,
-      "anchor_count": -0.0,
-      "monthly_income_mean": -0.8,
-      "monthly_expense_mean": 0.2,
-      "cashflow_volatility": 0.1,
-      "cash_burn_rate": -0.4,
-      "conscientiousness": -0.3,
-      "locus_of_control": 0.3,
-      "financial_self_efficacy": 0.3,
-      "present_bias": 0.2,
-      "debt_attitude": 0.2,
-      "response_validity": -0.0,
-      "resilience_coefficient": -0.0,
-      "adf_statistic": 0.1,
-      "adf_pvalue": 0.1,
-      "is_stationary": -0.8,
-      "trend_slope": -1.0,
-      "business_vintage_years": 0.8,
-      "is_new_business": -0.0,
-      "turnover_income_consistency": 1.8,
-      "has_udyam_registration": -0.0,
-      "years_informal": -0.0,
-      "upi_spend_consistency": -0.6,
-      "small_dues_payment_promptness": -0.4,
-      "e_wallet_topup_frequency": -0.2,
-      "daily_transaction_count": 1.9,
-      "average_ticket_size": 0.2,
-      "harvest_income_spike": -0.0,
-      "input_purchase_consistency": -0.1,
-      "utility_payment_consistency": -0.1,
-      "grocery_spend_stability": -0.1,
-      "upi_lite_txn_count": 0.5,
-      "upi_lite_average_ticket": -0.2,
-      "dbt_income_consistency": -0.9,
-      "sms_spend_total": 0.2,
-      "sms_bill_delay": 0.0,
-      "enam_receipt_volume": -0.0
-    },
-    "feature_trace": {
-      "top_drivers": [
-        {
-          "feature": "spatial_variance_score",
-          "label": "Delivery address drift entropy",
-          "source": "E-commerce shipping records",
-          "fmt": "number",
-          "direction": "low",
-          "engine": "extraction",
-          "value": 0.6343,
-          "points": -0.8,
-          "logodds": 0.0111
-        },
-        {
-          "feature": "conscientiousness",
-          "label": "Careful financial planning",
-          "source": "Psychometric assessment",
-          "fmt": "score01",
-          "direction": "high",
-          "engine": "extraction",
-          "value": 0.4799,
-          "points": -0.3,
-          "logodds": 0.0042
-        },
-        {
-          "feature": "daily_transaction_count",
-          "label": "Daily transaction count",
-          "source": "Micro-enterprise UPI/payment volumes",
-          "fmt": "count",
-          "direction": "high",
-          "engine": "extraction",
-          "value": 57.62,
-          "points": 1.9,
-          "logodds": -0.0263
-        },
-        {
-          "feature": "turnover_income_consistency",
-          "label": "Consistency of reported income",
-          "source": "Borrower onboarding, business profile",
-          "fmt": "score01",
-          "direction": "high",
-          "engine": "extraction",
-          "value": 0.8155,
-          "points": 1.8,
-          "logodds": -0.025
-        },
-        {
-          "feature": "business_vintage_years",
-          "label": "Years in business",
-          "source": "Borrower onboarding, business profile",
-          "fmt": "count",
-          "direction": "high",
-          "engine": "extraction",
-          "value": 7.0,
-          "points": 0.8,
-          "logodds": -0.0111
-        },
-        {
-          "feature": "locus_of_control",
-          "label": "Sense of financial control",
-          "source": "Psychometric assessment",
-          "fmt": "score01",
-          "direction": "high",
-          "engine": "extraction",
-          "value": 0.6475,
-          "points": 0.3,
-          "logodds": -0.0042
-        },
-        {
-          "feature": "financial_self_efficacy",
-          "label": "Confidence managing money",
-          "source": "Psychometric assessment",
-          "fmt": "score01",
-          "direction": "high",
-          "engine": "extraction",
-          "value": 0.4815,
-          "points": 0.3,
-          "logodds": -0.0042
-        },
-        {
-          "feature": "present_bias",
-          "label": "Tendency to spend impulsively",
-          "source": "Psychometric assessment",
-          "fmt": "score01",
-          "direction": "low",
-          "engine": "extraction",
-          "value": 0.4497,
-          "points": 0.2,
-          "logodds": -0.0028
-        }
-      ],
-      "by_source": [
-        {
-          "source": "Psychometric assessment",
-          "engine": "extraction",
-          "signals": [
-            {
-              "feature": "conscientiousness",
-              "label": "Careful financial planning",
-              "source": "Psychometric assessment",
-              "fmt": "score01",
-              "direction": "high",
-              "engine": "extraction",
-              "value": 0.4799,
-              "points": -0.3,
-              "logodds": 0.0042
-            },
-            {
-              "feature": "locus_of_control",
-              "label": "Sense of financial control",
-              "source": "Psychometric assessment",
-              "fmt": "score01",
-              "direction": "high",
-              "engine": "extraction",
-              "value": 0.6475,
-              "points": 0.3,
-              "logodds": -0.0042
-            },
-            {
-              "feature": "financial_self_efficacy",
-              "label": "Confidence managing money",
-              "source": "Psychometric assessment",
-              "fmt": "score01",
-              "direction": "high",
-              "engine": "extraction",
-              "value": 0.4815,
-              "points": 0.3,
-              "logodds": -0.0042
-            },
-            {
-              "feature": "present_bias",
-              "label": "Tendency to spend impulsively",
-              "source": "Psychometric assessment",
-              "fmt": "score01",
-              "direction": "low",
-              "engine": "extraction",
-              "value": 0.4497,
-              "points": 0.2,
-              "logodds": -0.0028
-            },
-            {
-              "feature": "debt_attitude",
-              "label": "Commitment to repaying debt",
-              "source": "Psychometric assessment",
-              "fmt": "score01",
-              "direction": "high",
-              "engine": "extraction",
-              "value": 0.5683,
-              "points": 0.2,
-              "logodds": -0.0028
-            },
-            {
-              "feature": "response_validity",
-              "label": "Answer consistency check",
-              "source": "Psychometric assessment",
-              "fmt": "score01",
-              "direction": "high",
-              "engine": "extraction",
-              "value": 0.88,
-              "points": -0.0,
-              "logodds": 0.0
-            }
-          ]
-        },
-        {
-          "source": "Borrower onboarding, business profile",
-          "engine": "extraction",
-          "signals": [
-            {
-              "feature": "turnover_income_consistency",
-              "label": "Consistency of reported income",
-              "source": "Borrower onboarding, business profile",
-              "fmt": "score01",
-              "direction": "high",
-              "engine": "extraction",
-              "value": 0.8155,
-              "points": 1.8,
-              "logodds": -0.025
-            },
-            {
-              "feature": "business_vintage_years",
-              "label": "Years in business",
-              "source": "Borrower onboarding, business profile",
-              "fmt": "count",
-              "direction": "high",
-              "engine": "extraction",
-              "value": 7.0,
-              "points": 0.8,
-              "logodds": -0.0111
-            },
-            {
-              "feature": "is_new_business",
-              "label": "New business status",
-              "source": "Borrower onboarding, business profile",
-              "fmt": "bool",
-              "direction": "low",
-              "engine": "extraction",
-              "value": 0.0,
-              "points": -0.0,
-              "logodds": 0.0
-            },
-            {
-              "feature": "has_udyam_registration",
-              "label": "Udyam registration status",
-              "source": "Borrower onboarding, business profile",
-              "fmt": "bool",
-              "direction": "high",
-              "engine": "extraction",
-              "value": 0.0,
-              "points": -0.0,
-              "logodds": 0.0
-            },
-            {
-              "feature": "years_informal",
-              "label": "Years of informal operation",
-              "source": "Borrower onboarding, business profile",
-              "fmt": "count",
-              "direction": "high",
-              "engine": "extraction",
-              "value": 0.0,
-              "points": -0.0,
-              "logodds": 0.0
-            }
-          ]
-        },
-        {
-          "source": "Micro-enterprise UPI/payment volumes",
-          "engine": "extraction",
-          "signals": [
-            {
-              "feature": "daily_transaction_count",
-              "label": "Daily transaction count",
-              "source": "Micro-enterprise UPI/payment volumes",
-              "fmt": "count",
-              "direction": "high",
-              "engine": "extraction",
-              "value": 57.62,
-              "points": 1.9,
-              "logodds": -0.0263
-            },
-            {
-              "feature": "average_ticket_size",
-              "label": "Average ticket size",
-              "source": "Micro-enterprise UPI/payment volumes",
-              "fmt": "rupee",
-              "direction": "high",
-              "engine": "extraction",
-              "value": 341.47,
-              "points": 0.2,
-              "logodds": -0.0028
-            }
-          ]
-        },
-        {
-          "source": "E-commerce shipping records",
-          "engine": "extraction",
-          "signals": [
-            {
-              "feature": "spatial_variance_score",
-              "label": "Delivery address drift entropy",
-              "source": "E-commerce shipping records",
-              "fmt": "number",
-              "direction": "low",
-              "engine": "extraction",
-              "value": 0.6343,
-              "points": -0.8,
-              "logodds": 0.0111
-            },
-            {
-              "feature": "anchor_count",
-              "label": "Unique delivery destinations",
-              "source": "E-commerce shipping records",
-              "fmt": "count",
-              "direction": "high",
-              "engine": "extraction",
-              "value": 2.0,
-              "points": -0.0,
-              "logodds": 0.0
-            }
-          ]
-        }
-      ]
-    },
-    "facet_scores": [
+    "by_source": [
       {
-        "key": "location_stability",
-        "label": "Location Stability",
-        "source": "E-commerce shipping records",
-        "score": 38.3,
-        "grade": "Weak",
-        "has_data": true,
-        "features": [
-          {
-            "feature": "spatial_variance_score",
-            "value": 0.6343095546405662,
-            "goodness": 0.268
-          },
-          {
-            "feature": "anchor_count",
-            "value": 2.0,
-            "goodness": 0.556
-          }
-        ]
-      },
-      {
-        "key": "cashflow_resilience",
-        "label": "Cashflow Resilience",
-        "source": "Bank cash-flow (econometric ECM)",
-        "score": 44.6,
-        "grade": "Weak",
-        "has_data": true,
-        "features": [
-          {
-            "feature": "monthly_income_mean",
-            "value": 29534.314000000002,
-            "goodness": 0.399
-          },
-          {
-            "feature": "cash_burn_rate",
-            "value": 0.4262061083480577,
-            "goodness": 0.356
-          },
-          {
-            "feature": "cashflow_volatility",
-            "value": 14303.15561510273,
-            "goodness": 0.345
-          },
-          {
-            "feature": "resilience_coefficient",
-            "value": 1.0,
-            "goodness": 1.0
-          },
-          {
-            "feature": "trend_slope",
-            "value": -0.39910051574504013,
-            "goodness": 0.036
-          },
-          {
-            "feature": "is_stationary",
-            "value": 0.0,
-            "goodness": 0.0
-          },
-          {
-            "feature": "upi_lite_txn_count",
-            "value": 11.0,
-            "goodness": 1.0
-          },
-          {
-            "feature": "upi_lite_average_ticket",
-            "value": 121.28727272727274,
-            "goodness": 0.862
-          },
-          {
-            "feature": "dbt_income_consistency",
-            "value": 0.0,
-            "goodness": 0.0
-          }
-        ]
-      },
-      {
-        "key": "psychometric_character",
-        "label": "Character & Money Mindset",
-        "source": "Behavioural assessment",
-        "score": 55.5,
-        "grade": "Adequate",
-        "has_data": true,
-        "features": [
-          {
-            "feature": "conscientiousness",
-            "value": 0.4799,
-            "goodness": 0.465
-          },
+        "source": "Psychometric assessment",
+        "engine": "extraction",
+        "signals": [
           {
             "feature": "locus_of_control",
-            "value": 0.6475,
-            "goodness": 0.714
-          },
-          {
-            "feature": "financial_self_efficacy",
-            "value": 0.4815,
-            "goodness": 0.449
-          },
-          {
-            "feature": "present_bias",
-            "value": 0.4497,
-            "goodness": 0.558
+            "label": "Sense of financial control",
+            "source": "Psychometric assessment",
+            "fmt": "score01",
+            "direction": "high",
+            "engine": "extraction",
+            "value": 0.1813,
+            "points": -37.0,
+            "logodds": 0.5129
           },
           {
             "feature": "debt_attitude",
-            "value": 0.5683,
-            "goodness": 0.573
+            "label": "Commitment to repaying debt",
+            "source": "Psychometric assessment",
+            "fmt": "score01",
+            "direction": "high",
+            "engine": "extraction",
+            "value": 0.0448,
+            "points": -12.4,
+            "logodds": 0.1719
           },
           {
-            "feature": "risk_tolerance",
-            "value": 0.4998,
-            "goodness": 0.489
+            "feature": "present_bias",
+            "label": "Tendency to spend impulsively",
+            "source": "Psychometric assessment",
+            "fmt": "score01",
+            "direction": "low",
+            "engine": "extraction",
+            "value": 0.9118,
+            "points": -8.8,
+            "logodds": 0.122
           },
           {
-            "feature": "delayed_gratification",
-            "value": 0.6969,
-            "goodness": 0.744
+            "feature": "conscientiousness",
+            "label": "Careful financial planning",
+            "source": "Psychometric assessment",
+            "fmt": "score01",
+            "direction": "high",
+            "engine": "extraction",
+            "value": 0.217,
+            "points": -4.9,
+            "logodds": 0.0679
           },
           {
-            "feature": "honesty",
-            "value": 0.3369,
-            "goodness": 0.18
+            "feature": "financial_self_efficacy",
+            "label": "Confidence managing money",
+            "source": "Psychometric assessment",
+            "fmt": "score01",
+            "direction": "high",
+            "engine": "extraction",
+            "value": 0.1351,
+            "points": -3.9,
+            "logodds": 0.0541
           },
           {
-            "feature": "cognitive_reflection",
-            "value": 0.5649,
-            "goodness": 0.574
-          },
-          {
-            "feature": "resourcefulness",
-            "value": 0.7129,
-            "goodness": 0.805
+            "feature": "response_validity",
+            "label": "Answer consistency check",
+            "source": "Psychometric assessment",
+            "fmt": "score01",
+            "direction": "high",
+            "engine": "extraction",
+            "value": 0.8914,
+            "points": -2.3,
+            "logodds": 0.0319
           }
         ]
       },
       {
-        "key": "vendor_transaction_velocity",
-        "label": "Vendor Transaction Velocity",
-        "source": "Micro-enterprise UPI/payment volumes",
-        "score": 97.0,
-        "grade": "Strong",
-        "has_data": true,
-        "features": [
-          {
-            "feature": "daily_transaction_count",
-            "value": 57.62,
-            "goodness": 1.0
-          },
-          {
-            "feature": "average_ticket_size",
-            "value": 341.47,
-            "goodness": 0.94
-          }
-        ]
-      },
-      {
-        "key": "business_credentials",
-        "label": "Business Credentials",
         "source": "Borrower onboarding, business profile",
-        "score": 72.6,
-        "grade": "Adequate",
-        "has_data": true,
-        "features": [
+        "engine": "extraction",
+        "signals": [
           {
             "feature": "business_vintage_years",
-            "value": 7.0,
-            "goodness": 0.524
+            "label": "Years in business",
+            "source": "Borrower onboarding, business profile",
+            "fmt": "count",
+            "direction": "high",
+            "engine": "extraction",
+            "value": 3.0,
+            "points": -1.2,
+            "logodds": 0.0166
           },
           {
             "feature": "turnover_income_consistency",
-            "value": 0.8155,
-            "goodness": 0.877
-          },
-          {
-            "feature": "has_udyam_registration",
-            "value": null,
-            "goodness": null
-          },
-          {
-            "feature": "years_informal",
-            "value": null,
-            "goodness": null
+            "label": "Consistency of reported income",
+            "source": "Borrower onboarding, business profile",
+            "fmt": "score01",
+            "direction": "high",
+            "engine": "extraction",
+            "value": 0.6693,
+            "points": 0.1,
+            "logodds": -0.0014
           },
           {
             "feature": "is_new_business",
-            "value": null,
-            "goodness": null
+            "label": "New business status",
+            "source": "Borrower onboarding, business profile",
+            "fmt": "bool",
+            "direction": "low",
+            "engine": "extraction",
+            "value": 0.0,
+            "points": -0.0,
+            "logodds": 0.0
+          },
+          {
+            "feature": "has_udyam_registration",
+            "label": "Udyam registration status",
+            "source": "Borrower onboarding, business profile",
+            "fmt": "bool",
+            "direction": "high",
+            "engine": "extraction",
+            "value": 0.0,
+            "points": -0.0,
+            "logodds": 0.0
+          },
+          {
+            "feature": "years_informal",
+            "label": "Years of informal operation",
+            "source": "Borrower onboarding, business profile",
+            "fmt": "count",
+            "direction": "high",
+            "engine": "extraction",
+            "value": 0.0,
+            "points": -0.0,
+            "logodds": 0.0
+          }
+        ]
+      },
+      {
+        "source": "Micro-enterprise UPI/payment volumes",
+        "engine": "extraction",
+        "signals": [
+          {
+            "feature": "daily_transaction_count",
+            "label": "Daily transaction count",
+            "source": "Micro-enterprise UPI/payment volumes",
+            "fmt": "count",
+            "direction": "high",
+            "engine": "extraction",
+            "value": 12.4,
+            "points": -13.3,
+            "logodds": 0.1844
+          },
+          {
+            "feature": "average_ticket_size",
+            "label": "Average ticket size",
+            "source": "Micro-enterprise UPI/payment volumes",
+            "fmt": "rupee",
+            "direction": "high",
+            "engine": "extraction",
+            "value": 47.24,
+            "points": -1.1,
+            "logodds": 0.0152
+          }
+        ]
+      },
+      {
+        "source": "E-commerce shipping records",
+        "engine": "extraction",
+        "signals": [
+          {
+            "feature": "spatial_variance_score",
+            "label": "Delivery address drift entropy",
+            "source": "E-commerce shipping records",
+            "fmt": "number",
+            "direction": "low",
+            "engine": "extraction",
+            "value": 1.1991,
+            "points": -9.4,
+            "logodds": 0.1303
+          },
+          {
+            "feature": "anchor_count",
+            "label": "Unique delivery destinations",
+            "source": "E-commerce shipping records",
+            "fmt": "count",
+            "direction": "high",
+            "engine": "extraction",
+            "value": 1.0,
+            "points": -0.0,
+            "logodds": 0.0
           }
         ]
       }
-    ],
-    "confidence": {
-      "confidence_pct": 100.0,
-      "features_with_data": 28,
-      "features_total": 19,
-      "facets_with_data": 5,
-      "facets_total": 5,
-      "thin_file": false,
-      "missing_sources": [],
-      "cohort": "Vendor"
-    },
-    "confidence_pct": 100.0,
-    "thin_file": false,
-    "lending": {
-      "eligible": true,
-      "max_loan_amount": 128000.0,
-      "interest_rate_pct": 14.0,
-      "tenure_months": 18,
-      "monthly_emi": 7925.14,
-      "borrower_type": "individual",
-      "rationale": "Risk-priced at 14.0% p.a. over 18 months; EMI capped at 27% of assessed monthly income (\u20b929,534)."
-    },
-    "requested_amount": 60000.0,
-    "loan_purpose": "shop_expansion",
-    "loan_purpose_other_text": null,
-    "purpose_consistent": false,
-    "final_outcome": "REVIEW",
-    "funding_gap": {
-      "gated": false,
-      "requested_amount": 60000.0
-    },
-    "panel": {
-      "champion": {
-        "name": "ebm",
-        "pd": 0.1502,
-        "band": "REJECT"
-      },
-      "challengers": [
+    ]
+  },
+  "facet_scores": [
+    {
+      "key": "telecom_reliability",
+      "label": "Telecom Reliability",
+      "source": "Mobile & broadband payments",
+      "score": 30.8,
+      "grade": "Poor",
+      "has_data": true,
+      "features": [
         {
-          "name": "catboost",
-          "pd": 0.1368,
-          "band": "REVIEW"
+          "feature": "avg_days_late",
+          "value": 5.545454545454546,
+          "goodness": 0.052
         },
         {
-          "name": "logistic",
-          "pd": 0.0039,
-          "band": "APPROVE"
+          "feature": "missed_payments_count",
+          "value": 1.0,
+          "goodness": 0.5
+        },
+        {
+          "feature": "sms_bill_delay",
+          "value": null,
+          "goodness": null
         }
-      ],
-      "unanimous": false,
-      "hard_conflict": true,
-      "n_models": 3,
-      "agreement_pct": 33.3,
-      "pd_dispersion": 0.066,
-      "pd_min": 0.0039,
-      "pd_max": 0.1502
+      ]
     },
-    "conformal": {
-      "prediction_set": [
-        "no_default"
-      ],
-      "abstain": false,
-      "alpha": 0.1,
-      "coverage_target": 0.9,
-      "threshold_q": 0.835817,
-      "nonconformity_default": 0.8498,
-      "nonconformity_no_default": 0.1502
+    {
+      "key": "spending_behaviour",
+      "label": "Spending Behaviour",
+      "source": "E-commerce purchase patterns",
+      "score": 38.7,
+      "grade": "Weak",
+      "has_data": true,
+      "features": [
+        {
+          "feature": "necessity_ratio",
+          "value": 0.75488118222259,
+          "goodness": 0.428
+        },
+        {
+          "feature": "avg_merchant_rating",
+          "value": 3.1799999999999997,
+          "goodness": 0.016
+        },
+        {
+          "feature": "monthly_spend_volatility",
+          "value": 19030.4512048212,
+          "goodness": 0.697
+        },
+        {
+          "feature": "sms_spend_total",
+          "value": null,
+          "goodness": null
+        }
+      ]
     },
-    "explanation_method": "ebm-additive-terms",
-    "model_version": "1.0.0",
-    "is_simulated": false,
+    {
+      "key": "location_stability",
+      "label": "Location Stability",
+      "source": "E-commerce shipping records",
+      "score": 32.2,
+      "grade": "Poor",
+      "has_data": true,
+      "features": [
+        {
+          "feature": "spatial_variance_score",
+          "value": 1.1991454740621033,
+          "goodness": 0.204
+        },
+        {
+          "feature": "anchor_count",
+          "value": 1.0,
+          "goodness": 0.5
+        }
+      ]
+    },
+    {
+      "key": "cashflow_resilience",
+      "label": "Cashflow Resilience",
+      "source": "Bank cash-flow (econometric ECM)",
+      "score": 53.3,
+      "grade": "Weak",
+      "has_data": true,
+      "features": [
+        {
+          "feature": "monthly_income_mean",
+          "value": 30240.0875,
+          "goodness": 0.0
+        },
+        {
+          "feature": "cash_burn_rate",
+          "value": null,
+          "goodness": null
+        },
+        {
+          "feature": "cashflow_volatility",
+          "value": 12114.582665655107,
+          "goodness": 1.0
+        },
+        {
+          "feature": "resilience_coefficient",
+          "value": 1.0,
+          "goodness": 0.5
+        },
+        {
+          "feature": "trend_slope",
+          "value": 0.8053764634310447,
+          "goodness": 0.967
+        },
+        {
+          "feature": "is_stationary",
+          "value": 0.0,
+          "goodness": 0.0
+        },
+        {
+          "feature": "upi_lite_txn_count",
+          "value": null,
+          "goodness": null
+        },
+        {
+          "feature": "upi_lite_average_ticket",
+          "value": null,
+          "goodness": null
+        },
+        {
+          "feature": "dbt_income_consistency",
+          "value": null,
+          "goodness": null
+        }
+      ]
+    },
+    {
+      "key": "psychometric_character",
+      "label": "Character & Money Mindset",
+      "source": "Behavioural assessment",
+      "score": 8.3,
+      "grade": "Poor",
+      "has_data": true,
+      "features": [
+        {
+          "feature": "conscientiousness",
+          "value": 0.217,
+          "goodness": 0.0
+        },
+        {
+          "feature": "locus_of_control",
+          "value": 0.1813,
+          "goodness": 0.0
+        },
+        {
+          "feature": "financial_self_efficacy",
+          "value": 0.1351,
+          "goodness": 0.002
+        },
+        {
+          "feature": "present_bias",
+          "value": 0.9118,
+          "goodness": 0.0
+        },
+        {
+          "feature": "debt_attitude",
+          "value": 0.0448,
+          "goodness": 0.0
+        },
+        {
+          "feature": "risk_tolerance",
+          "value": 0.6276,
+          "goodness": 0.33
+        },
+        {
+          "feature": "delayed_gratification",
+          "value": 0.225,
+          "goodness": 0.026
+        },
+        {
+          "feature": "honesty",
+          "value": 0.0928,
+          "goodness": 0.0
+        },
+        {
+          "feature": "cognitive_reflection",
+          "value": 0.2968,
+          "goodness": 0.18
+        },
+        {
+          "feature": "resourcefulness",
+          "value": 0.3673,
+          "goodness": 0.289
+        }
+      ]
+    },
+    {
+      "key": "vendor_transaction_velocity",
+      "label": "Vendor Transaction Velocity",
+      "source": "Micro-enterprise UPI/payment volumes",
+      "score": 0.5,
+      "grade": "Poor",
+      "has_data": true,
+      "features": [
+        {
+          "feature": "daily_transaction_count",
+          "value": 12.4,
+          "goodness": 0.01
+        },
+        {
+          "feature": "average_ticket_size",
+          "value": 47.24,
+          "goodness": 0.0
+        }
+      ]
+    },
+    {
+      "key": "business_credentials",
+      "label": "Business Credentials",
+      "source": "Borrower onboarding, business profile",
+      "score": 20.4,
+      "grade": "Poor",
+      "has_data": true,
+      "features": [
+        {
+          "feature": "business_vintage_years",
+          "value": 3.0,
+          "goodness": 0.0
+        },
+        {
+          "feature": "turnover_income_consistency",
+          "value": 0.6693,
+          "goodness": 0.358
+        },
+        {
+          "feature": "has_udyam_registration",
+          "value": null,
+          "goodness": null
+        },
+        {
+          "feature": "years_informal",
+          "value": null,
+          "goodness": null
+        },
+        {
+          "feature": "is_new_business",
+          "value": null,
+          "goodness": null
+        }
+      ]
+    }
+  ],
+  "confidence": {
+    "confidence_pct": 100.0,
+    "features_with_data": 35,
+    "features_total": 19,
+    "facets_with_data": 7,
+    "facets_total": 7,
+    "thin_file": false,
+    "missing_sources": [],
     "cohort": "Vendor"
-  }
+  },
+  "confidence_pct": 100.0,
+  "thin_file": false,
+  "lending": {
+    "eligible": false,
+    "max_loan_amount": 0.0,
+    "interest_rate_pct": null,
+    "tenure_months": null,
+    "monthly_emi": 0.0,
+    "borrower_type": "individual",
+    "rationale": "Does not meet minimum risk/affordability criteria for an offer."
+  },
+  "requested_amount": 60000.0,
+  "loan_purpose": "shop_expansion",
+  "loan_purpose_other_text": null,
+  "purpose_consistent": false,
+  "final_outcome": "REJECT",
+  "funding_gap": {
+    "gated": false,
+    "requested_amount": 60000.0
+  },
+  "panel": {
+    "champion": {
+      "name": "ebm",
+      "pd": 0.2786,
+      "band": "REJECT"
+    },
+    "challengers": [
+      {
+        "name": "catboost",
+        "pd": 0.1641,
+        "band": "REJECT"
+      },
+      {
+        "name": "logistic",
+        "pd": 0.9509,
+        "band": "REJECT"
+      }
+    ],
+    "unanimous": true,
+    "hard_conflict": false,
+    "n_models": 3,
+    "agreement_pct": 100.0,
+    "pd_dispersion": 0.347,
+    "pd_min": 0.1641,
+    "pd_max": 0.9509
+  },
+  "conformal": {
+    "prediction_set": [
+      "no_default"
+    ],
+    "abstain": false,
+    "alpha": 0.1,
+    "coverage_target": 0.9,
+    "threshold_q": 0.70945,
+    "nonconformity_default": 0.7214,
+    "nonconformity_no_default": 0.2786
+  },
+  "ood": {
+    "enabled": true,
+    "ood": true,
+    "distance_sq": 45.0933,
+    "threshold_dsq": 18.939,
+    "severity": 2.381,
+    "quantile": 0.99
+  },
+  "explanation_method": "ebm-additive-terms",
+  "model_version": "1.0.0",
+  "is_simulated": false,
+  "cohort": "Vendor"
 }
