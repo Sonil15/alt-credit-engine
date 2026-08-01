@@ -46,5 +46,5 @@ For each `user_id` in `borrower_accounts`:
 
 ## After running
 
-1. **Restart the API server** if it is running — consent and assessment session state live in memory and are not cleared by this script.
-2. **Browser localStorage** — the apply portal may still list old applications under `altcredit_applications` until you clear site data or use a fresh browser session.
+1. **Restart the API server** if it is running - consent and assessment session state live in memory and are not cleared by this script.
+2. **Browser localStorage** - the apply portal may still list old applications under `altcredit_applications` until you clear site data or use a fresh browser session.

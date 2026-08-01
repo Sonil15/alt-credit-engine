@@ -22,7 +22,7 @@ AA Consent Gateway → Ingest API → AES-256 Vault → Preprocessing → ml_fea
 | **Real econometrics** | ADF/ECM on actual monthly cashflow / telecom payment series |
 | **PDO scorecard** | Log-odds to points (base 600, PDO 50, range 300–900) |
 | **Model Panel & Conformal Abstention** | Glass-box EBM (Explainable Boosting Machine) champion model is audited by a panel of challengers (CatBoost + Logistic). Split conformal prediction provides statistical guarantees; disagreements/abstentions route to human review rather than silent auto-lending. |
-| **Out-of-distribution anomaly gate** | A multivariate Mahalanobis-distance gate (shrunk covariance) flags applicants whose *joint* feature profile never occurred in training — the anti-gaming defense for an additive model. Individually-plausible-but-jointly-impossible profiles abstain to review; the gate sits outside the score and never touches PD. |
+| **Out-of-distribution anomaly gate** | A multivariate Mahalanobis-distance gate (shrunk covariance) flags applicants whose *joint* feature profile never occurred in training - the anti-gaming defense for an additive model. Individually-plausible-but-jointly-impossible profiles abstain to review; the gate sits outside the score and never touches PD. |
 | **Model card** | Holdout AUC, Gini, KS, calibration, CV metrics for the ensemble models at `/score/model/card` |
 | **Reason codes** | Plain-language adverse action reasons derived directly from EBM native additive terms |
 | **Fairness report** | Disparate impact ratio across protected groups |
@@ -50,7 +50,7 @@ AA Consent Gateway → Ingest API → AES-256 Vault → Preprocessing → ml_fea
 - Python 3.11+
 - Groq API key (optional; survey NLP falls back to keyword heuristics)
 
-## Quick Start (zero-dependency local laptop demo — this is how we demo)
+## Quick Start (zero-dependency local laptop demo - this is how we demo)
 
 For a quick offline run with **no Docker and no Postgres**, set `USE_SQLITE=true`. The engine uses a local SQLite file and self-seeds on first boot:
 
@@ -64,7 +64,7 @@ Open http://localhost:8000/dashboard, populated automatically.
 
 Seeding is idempotent (it skips if the database already has data), so restarts are safe. Training stays an explicit action (`POST /score/train` or `python -m models_ai.train`) so you can demo the full ECM + EBM ensemble pipeline live. `SEED_ON_STARTUP` defaults to `true`; set it to `false` if you want an empty database on boot.
 
-## Docker + Postgres (production-shaped configuration — currently broken, fix planned)
+## Docker + Postgres (production-shaped configuration - currently broken, fix planned)
 
 This is the configuration meant for managed Postgres hosts (e.g. Render): same self-seeding behaviour, but against Postgres instead of SQLite. It's currently not working locally; SQLite is the path actually used for demos until this is fixed.
 
@@ -237,10 +237,10 @@ graph TD
 
 Before the model's score is trusted, two deterministic policy rules can veto to `REJECT`. Both are explicit, auditable lending-policy overrides that sit *outside* the model, are shown to borrowers on **Step 4** of the Score Explainer, and are implemented in [`convergence/score_engine.py::check_red_flags`](file:///Users/sonil/Desktop/alt-credit-engine/convergence/score_engine.py#L91).
 
-* **Transience-without-Income** — fires only when `spatial_variance_score > 50` **AND** `monthly_income_mean <= 0`. The rule is a two-condition **AND**, by design: high mobility *alone* never rejects anyone, so a field-sales rep, consultant, or migrant worker who moves *for* work passes straight through to the model. It screens rootlessness *without a verifiable income anchor*, not movement itself.
-* **Salaried telecom default** — fires when the applicant's cohort is `Salaried` **AND** `missed_payments_count >= 5`. A salaried borrower with five or more missed billing cycles is a hard policy reject.
+* **Transience-without-Income** - fires only when `spatial_variance_score > 50` **AND** `monthly_income_mean <= 0`. The rule is a two-condition **AND**, by design: high mobility *alone* never rejects anyone, so a field-sales rep, consultant, or migrant worker who moves *for* work passes straight through to the model. It screens rootlessness *without a verifiable income anchor*, not movement itself.
+* **Salaried telecom default** - fires when the applicant's cohort is `Salaried` **AND** `missed_payments_count >= 5`. A salaried borrower with five or more missed billing cycles is a hard policy reject.
 
-When a red flag fires, the outcome is forced to `REJECT` and PD is set to `1.0`; the model score is still computed and shown, so the borrower sees *why* the veto applied. **Honest caveat:** the thresholds (50 / ₹0 / 5 cycles) are hand-tuned policy rules on synthetic data, not learned boundaries — they demonstrate the two-condition design and would be recalibrated against real reject-inference data in production.
+When a red flag fires, the outcome is forced to `REJECT` and PD is set to `1.0`; the model score is still computed and shown, so the borrower sees *why* the veto applied. **Honest caveat:** the thresholds (50 / ₹0 / 5 cycles) are hand-tuned policy rules on synthetic data, not learned boundaries - they demonstrate the two-condition design and would be recalibrated against real reject-inference data in production.
 
 ### The 5 Operational Safety Gates
 
@@ -271,13 +271,13 @@ When a red flag fires, the outcome is forced to `REJECT` and PD is set to `1.0`;
   * [`apply_conformal_gate`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/conformal.py#L103) changes the outcome to `REVIEW` if `abstain` is True and the tentative decision was `APPROVE`.
 
 #### 4. Anomaly / Out-of-Distribution Check (Gate 4)
-* **Goal:** Abstain if the applicant's *joint* feature profile is statistically anomalous versus the training population — the structural blind spot of an **additive** glass box. Because `logit(PD) = β₀ + Σ fᵢ(xᵢ) + Σ f_ij(xᵢ,xⱼ)` sums term contributions independently, a gamed profile can push one or two features to flattering extremes and be scored in a feature-combination region the model never saw. Each coordinate looks plausible; the combination is impossible.
+* **Goal:** Abstain if the applicant's *joint* feature profile is statistically anomalous versus the training population - the structural blind spot of an **additive** glass box. Because `logit(PD) = β₀ + Σ fᵢ(xᵢ) + Σ f_ij(xᵢ,xⱼ)` sums term contributions independently, a gamed profile can push one or two features to flattering extremes and be scored in a feature-combination region the model never saw. Each coordinate looks plausible; the combination is impossible.
 * **Condition:** Squared Mahalanobis distance of the feature vector from the training manifold exceeds a calibrated threshold (99th-percentile distance ⇒ ~1% of the training population itself would route to review).
 * **Implementation:**
-  * [`models_ai/ood.py::fit_ood`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/ood.py) learns the training location + a **shrunk (Ledoit-Wolf) precision matrix** — the shrinkage keeps the ~42-feature, partly-collinear covariance invertible — on the same rows the champion trained on.
+  * [`models_ai/ood.py::fit_ood`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/ood.py) learns the training location + a **shrunk (Ledoit-Wolf) precision matrix** - the shrinkage keeps the ~42-feature, partly-collinear covariance invertible - on the same rows the champion trained on.
   * The gate persists as **plain JSON** (mean vector + precision matrix + threshold), so a risk officer can read it; no pickled estimator at serve time.
   * [`apply_ood_gate`](file:///Users/sonil/Desktop/alt-credit-engine/models_ai/ood.py) only ever routes `APPROVE → REVIEW`; it never edits a feature, never touches PD, and never overturns a rejection. It is an integrity filter **outside** the score, so the EBM stays a clean glass box and fairness parity still slices on the model's own call.
-  * **Honest caveat:** the training population is a mixture of cohorts, so a single global distance can flag a legitimately rare-but-honest profile — which is exactly why the gate routes to a human rather than rejecting. Per-cohort distance models are the natural next step.
+  * **Honest caveat:** the training population is a mixture of cohorts, so a single global distance can flag a legitimately rare-but-honest profile - which is exactly why the gate routes to a human rather than rejecting. Per-cohort distance models are the natural next step.
 
 #### 5. Affordability Gate Check (Gate 5)
 * **Goal:** Post-decision lending-policy overlay that prevents auto-approving a loan value that exceeds the borrower's serviceable limit.

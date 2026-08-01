@@ -44,7 +44,7 @@ def generate_bad_captcha(text: str) -> str:
         "/System/Library/Fonts/Supplemental/Arial.ttf",
         "/System/Library/Fonts/Supplemental/Verdana.ttf",
         "/System/Library/Fonts/SFNSMono.ttf",
-        # Linux/container (Debian fonts-dejavu-core) — keeps the CAPTCHA looking
+        # Linux/container (Debian fonts-dejavu-core) - keeps the CAPTCHA looking
         # the same when deployed as it does on macOS locally.
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",

@@ -2,8 +2,8 @@
 
 The champion is an *additive* glass box: ``logit(PD) = β₀ + Σ fᵢ(xᵢ) + Σ f_ij(xᵢ,xⱼ)``.
 Additive terms extrapolate independently, so a *joint* feature vector that never
-occurred in training — each coordinate individually plausible, the combination
-impossible — is scored by summing curves in a region the model never saw. That is
+occurred in training - each coordinate individually plausible, the combination
+impossible - is scored by summing curves in a region the model never saw. That is
 exactly the shape of a gamed applicant: push one or two features to flattering
 extremes while the rest stay mediocre.
 
@@ -11,11 +11,11 @@ This gate measures the applicant's Mahalanobis distance from the training manifo
 (shrunk covariance, so the ~40-feature / partly-collinear matrix stays invertible)
 and, above a calibrated distance threshold, routes the case to manual ``REVIEW``.
 It is an *integrity filter that sits outside the score*: it never edits a feature,
-never touches PD, and never turns a rejection into an approval — it only declines to
+never touches PD, and never turns a rejection into an approval - it only declines to
 auto-approve a statistically anomalous joint profile. The EBM stays a clean glass box.
 
 Persistence is plain JSON (mean vector + precision matrix + threshold): the gate is
-itself auditable — a risk officer can read the matrix — and needs no pickled estimator
+itself auditable - a risk officer can read the matrix - and needs no pickled estimator
 at serve time.
 
 Caveat (documented, not hidden): the training population is a *mixture* of cohorts,

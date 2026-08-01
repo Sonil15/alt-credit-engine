@@ -138,7 +138,7 @@ FACETS: tuple[Facet, ...] = (
     ),
     Facet(
         key="psychometric_character",
-        label="Character & Money Mindset",
+        label="Psychometric Questionnaire",
         source="Behavioural assessment",
         features=(
             ("conscientiousness", "high", 0.1),

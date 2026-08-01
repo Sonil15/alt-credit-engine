@@ -91,10 +91,10 @@ Copy this block for each feature:
   ~0.6, different function families, nowhere near lockstep). The gate is *calibrated,
   not trigger-happy*: it demotes an approval to review only on a genuine hard
   conflict (a challenger would REJECT what the champion would APPROVE), not when a
-  challenger merely lands one band lower in REVIEW — adjacent-band scatter is model
+  challenger merely lands one band lower in REVIEW - adjacent-band scatter is model
   noise, and treating it as a veto would route away almost every sound approval.
 - **Demo moment:** Find a borrower a challenger would REJECT while the champion would
-  APPROVE — the panel catches the genuine split and routes to REVIEW: "the black box
+  APPROVE - the panel catches the genuine split and routes to REVIEW: "the black box
   alone would have lent; the committee caught the one that actually mattered."
 
 ### Conformal abstention (statistically-grounded "I don't know")
@@ -108,7 +108,7 @@ Copy this block for each feature:
   empirically noisy on synthetic data, say so before a judge asks.
 
 ### Out-of-distribution anomaly gate (anti-gaming an additive model)
-- **Judge problem it answers:** "Your champion is *additive* — each feature adds its
+- **Judge problem it answers:** "Your champion is *additive* - each feature adds its
   points independently. What stops a fraudster from pushing one or two features to
   flattering extremes to override the rest, and scoring in a region your model never
   saw?"
@@ -117,44 +117,44 @@ Copy this block for each feature:
   impossible is abstained to human review, never silently auto-approved."
 - **Differentiator:** A multivariate Mahalanobis-distance gate (shrunk covariance, so the
   ~40-feature matrix stays invertible) that closes the one structural blind spot of an
-  additive glass box — its indifference to feature *combinations*. It sits **outside**
+  additive glass box - its indifference to feature *combinations*. It sits **outside**
   the score: it never edits a feature or touches PD, so the EBM stays a clean glass box
   and fairness parity still slices on the model's own call. The gate itself is auditable
-  — it persists as a plain mean-vector + precision-matrix a risk officer can read, not a
+  - it persists as a plain mean-vector + precision-matrix a risk officer can read, not a
   pickled black box. The abstention budget is explicit and tunable (99th-percentile
   distance ⇒ ~1% of the training population would itself route to review).
 - **Demo moment:** On the Decision Explainer, hit the one-click **"Simulate gamed
   applicant"** toggle. It re-scores a real approved applicant through the *genuine* engine
-  with a tampered feature vector — income pushed to ₹5,00,000/mo, payment delay, volatility
+  with a tampered feature vector - income pushed to ₹5,00,000/mo, payment delay, volatility
   and missed payments zeroed, psychometrics maxed. Each edit is individually flattering, so
-  the credit score actually *rises* (757 → 850) and PD *drops* (1.12% → 0.31%) — yet the
+  the credit score actually *rises* (757 → 850) and PD *drops* (1.12% → 0.31%) - yet the
   joint profile lands ~622× past the anomaly threshold and the decision flips
   `APPROVE → REVIEW` with the reason code *"applicant's joint feature profile is
   statistically out-of-distribution versus the training population."* The score going *up*
   while the decision gets *safer* is the memorable beat.
 - **Honest caveat:** The training population is a *mixture* of cohorts, so a single
-  global distance can flag a legitimately rare-but-honest cohort profile — which is
+  global distance can flag a legitimately rare-but-honest cohort profile - which is
   exactly why the gate routes to a human rather than rejecting. Per-cohort distance
   models are the natural next step.
 
 ### Symmetric review transparency (borrower sees the same gate reason as the officer)
 - **Judge problem it answers:** "A borrower scores 850 but gets 'Review, not Approved'.
-  The officer dashboard tells the officer *which* safety gate flagged it — does the
+  The officer dashboard tells the officer *which* safety gate flagged it - does the
   borrower get told anything, or just left confused by a good score that didn't approve?"
 - **Pitch line:** "Whatever the officer sees, the borrower sees. When a high score is
   routed to review, the borrower's own result page names the exact gate that flagged it,
-  not a vague 'pending' — the same reason the officer reads, in plain language and in the
+  not a vague 'pending' - the same reason the officer reads, in plain language and in the
   borrower's language."
 - **Differentiator:** The result page already surfaced the affordability gate in a
   dedicated box; we extended that transparency to the *model* safety gates. When the final
   outcome is REVIEW, the borrower page scans the same `reason_codes` the officer dashboard
-  uses and names the specific trigger — panel disagreement, conformal abstention, anomaly
-  abstention, or thin-file — mapped to plain, reassuring borrower-facing copy ("your score
+  uses and names the specific trigger - panel disagreement, conformal abstention, anomaly
+  abstention, or thin-file - mapped to plain, reassuring borrower-facing copy ("your score
   is strong, but …") and fully localized across all three languages. The affordability
   gate keeps its own richer box, so the reasons never double up. No new backend surface:
   the reason codes were already in the `/score/me` payload, we just stopped hiding them
   from the person the decision is about.
-- **Demo moment:** Show the same gamed/anomalous applicant from the borrower's side — a
+- **Demo moment:** Show the same gamed/anomalous applicant from the borrower's side - a
   strong score, a REVIEW badge, and a blue "Why your application needs a review" box that
   says a human will personally review it, mirroring exactly what the officer sees.
 - **Honest caveat:** The borrower copy is deliberately plain-language and reassuring rather
@@ -165,7 +165,7 @@ Copy this block for each feature:
 - **Judge problem it answers:** "Did you tune the cutoffs or models to make the demo look good? And what stops the EBM champion from overfitting small datasets and saturating all credit scores at exactly 300 or 900?"
 - **Pitch line:** "Our honest model needed an honest scorecard. We resolved the extreme score saturation (300/900 splits) by correcting the math of prior probability calibration and aligning model training capacity with cross-validation."
 - **Differentiator:** Most teams ignore class-weight prior calibration or use naive log-odds average shifts that collapse on saturated small-sample predictions. We implemented a numerically exact **binary search solver** that matches the average predicted default probability to the actual population default rate ($12.0\%$). We also aligned EBM training to use the full `X_train` training split ($84$ rows) to match the CV fold size. This allows the temperature scaling optimizer to fit a healthy, robust temperature ($T \approx 2.64$) rather than defaulting to $T = 1.0$. Together, this yielded a **$15.7\%$ boost in holdout AUC** and a **$5.9\%$ boost in CV AUC**, while generating a realistic, balanced credit score distribution.
-- **Demo moment:** The portfolio's credit score distribution showing a clean, realistic spread from `300` to `850` (mean `661`, standard dev `132`) with **zero** artificial 900s and only the chronic defaulters floored at 300, yielding a `51 / 31 / 18` approve / review / reject split — the approve cutoff (`700`) reserves auto-lending for the clearly-safe and routes the borderline-good to a human, so it is neither a portfolio piled into one band nor a demo where everyone is auto-approved.
+- **Demo moment:** The portfolio's credit score distribution showing a clean, realistic spread from `300` to `850` (mean `661`, standard dev `132`) with **zero** artificial 900s and only the chronic defaulters floored at 300, yielding a `51 / 31 / 18` approve / review / reject split - the approve cutoff (`700`) reserves auto-lending for the clearly-safe and routes the borderline-good to a human, so it is neither a portfolio piled into one band nor a demo where everyone is auto-approved.
 
 ### Typical-applicant-centered drivers (honest "What Affected Your Score")
 - **Judge problem it answers:** "Your borrower explanation shows only positives, is
@@ -234,11 +234,7 @@ Copy this block for each feature:
   language switcher re-renders its dynamic content live when the borrower changes
   language mid-session, so no stray English survives on a page a borrower receives.
   (The bank-officer dashboard is intentionally English-only.)
-- **Demo moment:** Take the assessment live in Hindi. The question is *read aloud in a
-  natural Hindi voice*, then tap the mic and speak the answer, and show it land as
-  editable text. Then toggle "AI voice" off and note the device falls silent on Hindi:
-  "that silence is the inclusion gap; our voice layer closes it." Then open the
-  on-screen keyboard and type an answer directly in Devanagari.
+- **Demo moment:** Take the assessment live in Hindi. Point out the scoring flow: "Under the hood, this questionnaire calculates 10 distinct behavioral traits (such as planning discipline and impulse spending) scored 0-1, which map to a population-normalized 0-100 Psychometric Questionnaire facet score and feed directly into the credit model." The question is *read aloud in a natural Hindi voice*, then tap the mic and speak the answer, and show it land as editable text. Then toggle "AI voice" off and note the device falls silent on Hindi: "that silence is the inclusion gap; our voice layer closes it." Then open the on-screen keyboard and type an answer directly in Devanagari.
 - **Honest caveat:** No audio (spoken answers or synthesised prompts) is stored, only
   transcribed text, so there's no audio trail to show, by design. Server voices need a
   network round-trip (~0.6s per prompt); if a call fails it falls back to the device
@@ -349,17 +345,17 @@ Copy this block for each feature:
 ### Multi-dimension Fairness Monitor
 - **Judge problem it answers:** "Alternate data can encode bias, how do you know you're
   not discriminating, and against which groups?"
-- **Pitch line:** "We monitor approval-rate parity across four slices simultaneously:
-  borrower category, gender, geography, and social category, with a live 80% rule
-  check on each, and it applies to every borrower, not just the ones scored by the
-  alt-credit model."
+- **Pitch line:** "We monitor approval-rate parity across three slices simultaneously:
+  gender, geography, and social category, with a live 80% rule check on each, and it
+  applies to every borrower, not just the ones scored by the alt-credit model."
 - **Differentiator:** Most teams check one protected attribute. We built a configurable
   dimension framework: adding a new slice is a one-line entry, and the dashboard selector
   lets the loan officer or regulator switch views in one click. Demographic fields are
   self-declared at registration, optional, and monitoring-only, they are never model
   inputs and a borrower who skips them is simply excluded from parity groups rather than
-  assigned a guessed value. Default view is borrower category (Individual vs MSME), the
-  slice a loan officer reasons about, rather than leading with a sensitive attribute.
+  assigned a guessed value. Default view is gender. Borrower category (Individual vs
+  MSME) is a business-model split, not a protected class, so it was dropped from the
+  monitor to keep every slice reserved for actual fairness/parity attributes.
 - **Credibility fix:** Bureau-fast-track approvals (prime CIBIL, bypassing the alt-credit
   pipeline) used to have no demographic data at all, so every approval in that path was
   silently dropped from every parity group. We now capture the same self-declared
@@ -392,7 +388,7 @@ Copy this block for each feature:
   control' and 'Tendency to spend impulsively', not 'locus of control' and 'present bias'."
 - **Differentiator:** Construct names stay intact under the hood (auditable, in the item
   bank and model features), but every term the reviewer sees, the Signal Trace, the
-  five-facet profile ("Character & Money Mindset"), the reason codes, and the "Why this
+  five-facet profile ("Psychometric Questionnaire"), the reason codes, and the "Why this
   score" additive-contributions chart, is rephrased in plain English from one source of
   truth (`convergence/feature_meta.py`), so the explainability is usable, not just present.
   No dashboard surface renders a raw feature name like `locus_of_control`.
@@ -479,7 +475,7 @@ Copy this block for each feature:
   was informal user feedback (two individuals), not a structured usability study,
   so it's directional validation of the design approach, not a statistically
   representative sample.
-- **Data-integrity note:** The requested amount is captured faithfully end to end —
+- **Data-integrity note:** The requested amount is captured faithfully end to end -
   the value the borrower types is what's stored, scored, and shown back, with no
   rounding or transformation anywhere in the path. We hardened the amount field
   against a subtle native-browser footgun where a focused `<input type=number>`
@@ -536,7 +532,7 @@ Copy this block for each feature:
 ### Cash-Intensity Adjusted Honesty Check
 - **Judge problem it answers:** "Self-declared turnover is unverifiable and gameable. If you cross-check it against bank statements, don't you unfairly penalize cash-heavy merchants (MSMEs, street vendors, farmers) who receive most payments in cash?"
 - **Pitch line:** "We score the consistency of the self-report against observed bank cash flow, but we adjust the digital expectation based on the borrower's cohort. A farmer isn't penalized for having 80% of their business in cash."
-- **Differentiator:** Most platforms use a rigid 1-to-1 consistency check, which excludes cash-heavy segments. We use data-backed digital ratios—allowing farmers a 20% digital footprint and vendors a 40% digital footprint based on RBI and MSME Digital Index data—to create a fairer, highly inclusive alternative credit funnel.
+- **Differentiator:** Most platforms use a rigid 1-to-1 consistency check, which excludes cash-heavy segments. We use data-backed digital ratios-allowing farmers a 20% digital footprint and vendors a 40% digital footprint based on RBI and MSME Digital Index data-to create a fairer, highly inclusive alternative credit funnel.
 - **Demo moment:** Show a Vendor declaring ₹1,00,000 monthly turnover but showing only ₹40,000 in bank statements still getting a perfect 1.0 consistency score, while a Salaried applicant with the same discrepancy gets flagged.
 - **Honest caveat:** While this prevents unfair penalties, it relies on self-reports for the cash portion. This is why it is paired with psychometric assessment and behavioral features to verify character and truthfulness.
 
@@ -581,7 +577,7 @@ Copy this block for each feature:
 - **Judge problem it answers:** "What stops a single real business registration (Udyam number) from being used to back multiple fake credit applications?"
 - **Pitch line:** "We check the velocity and uniqueness of onboarding credentials across all platform identities, instantly rejecting any application that attempts to reuse a verified business credential."
 - **Differentiator:** Traditional credit scoring only checks if the credential is valid. We perform cross-borrower network checking: if a business ID (Udyam) is already associated with another identity, the intake submission is rejected immediately (HTTP 400), halting organized loan stacking.
-- **Demo moment:** Submit an application for Ravi Kumar with a verified Udyam number. Then register another user and attempt to submit the same Udyam number during onboarding—the system will block it with a clear 'Velocity Check Failed' alert.
+- **Demo moment:** Submit an application for Ravi Kumar with a verified Udyam number. Then register another user and attempt to submit the same Udyam number during onboarding-the system will block it with a clear 'Velocity Check Failed' alert.
 
 ### Safety Gate Review Explanations
 - **Judge problem it answers:** "If a borrower has a high credit score that passes the approval threshold, why are they still flagged for human review? How do you prevent silent, high-risk auto-approvals when models disagree or data is sparse?"
@@ -592,8 +588,8 @@ Copy this block for each feature:
 ### E2E Decision Audit Trail (Score Explainer)
 - **Judge problem it answers:** "Your multi-model, multi-stage architecture has many moving parts (LLM extraction, Econometrics, EBM scorecard, Conformal bounds, Affordability gates). How can a regulator or risk officer audit the exact step-by-step translation from a borrower's raw inputs to their final score and loan offer?"
 - **Pitch line:** "We visualize the complete end-to-end journey of an applicant's data through all 8 stages of our decision pipeline, making the complex multi-model scoring process transparent, auditable, and easy for any judge to verify."
-- **Differentiator:** Most platforms either show a static model prediction or clutter the screen with empty/irrelevant feature fields. We provide a dynamic, cohort-specific lineage trace (e.g. hiding telecom or e-commerce features for students) while aggregating their point contributions into a single transparent "Cohort Baseline Adjustment" line item. This keeps the audit math 100% correct without compromising clarity. It traces the exact lifecycle: raw text description -> LLM structured business profile -> encrypted vault payloads -> econometric and statistical feature store -> auto-reject checks -> EBM scorecard points -> conformal & challenger panel consensus -> affordability gate -> final dashboard radar facets.
-- **Demo moment:** Click the "Score Explainer" link in the dashboard header. Select different cohorts (like **Farmer** or **Gig Worker**) and trace exactly how raw alternative data payloads convert into econometric features and translate into scorecard points and dynamic loan limits live.
+- **Differentiator:** Most platforms either show a static model prediction or clutter the screen with empty/irrelevant feature fields. We provide a dynamic, cohort-specific lineage trace where **every stage is internally consistent**: Step 2 surfaces *only* the raw data sources a cohort is actually scored on, and **every cohort surfaces its own dedicated source** (a student shows a distinct campus-UPI vault — canteen spend, mess-due settlements, wallet top-ups — alongside geo + psychometrics, never a telecom bill the scorecard ignores; a vendor shows QR settlements, a farmer e-NAM mandi receipts, a homemaker BBPS utility bills). Each cohort-source payload is a transaction-level reconstruction whose aggregates reconcile *exactly* to that cohort's facet features in Step 3, and the EBM scorecard is **fully additive on-screen** — `base + Σ shown points = score` reconciles to the rupee for every applicant, with cohort risk-caps shown as their own labeled "risk cap adjustment" row rather than an opaque residual. Non-applicable contributions are absorbed into the transparent baseline anchor, so there is no unexplained "hidden adjustments" line for a judge to question. It traces the exact lifecycle: raw text description -> LLM structured business profile -> encrypted vault payloads -> econometric and statistical feature store -> auto-reject checks -> EBM scorecard points -> conformal & challenger panel consensus -> affordability gate -> final dashboard radar facets.
+- **Demo moment:** Click the "Score Explainer" link in the dashboard header. Select different cohorts (like **Farmer** or **Gig Worker**) and trace exactly how raw alternative data payloads convert into econometric features and translate into scorecard points and dynamic loan limits live — every Step 2 tab maps to a scorecard driver, and the Step 5 formula visibly adds up.
 - **Honest caveat:** The raw data displayed is synthetic sample data modeled from our mock borrowers to avoid exposing actual borrower PII in a live audit view.
 
 ### E-commerce Shipping Address Drift (Privacy-preserving Geolocation)
@@ -603,11 +599,11 @@ Copy this block for each feature:
 - **Demo moment:** Show a borrower who frequently orders to the same home/work PIN code scoring high, whereas a borrower who frequently ships packages to multiple random PIN codes gets flagged for address drift.
 
 ### Transience-without-Income auto-reject (a two-condition red flag, not a mobility penalty)
-- **Judge problem it answers:** "Won't a spatial-instability rule wrongly punish legitimately mobile earners — a field-sales rep, a consultant, a migrant worker who moves *for* work?"
-- **Pitch line:** "High mobility alone never rejects anyone: our geographic red flag fires only when transience is paired with *zero verifiable income* — it screens rootlessness without an anchor, not movement itself."
+- **Judge problem it answers:** "Won't a spatial-instability rule wrongly punish legitimately mobile earners - a field-sales rep, a consultant, a migrant worker who moves *for* work?"
+- **Pitch line:** "High mobility alone never rejects anyone: our geographic red flag fires only when transience is paired with *zero verifiable income* - it screens rootlessness without an anchor, not movement itself."
 - **Differentiator:** Most teams treat a single risky feature crossing a threshold as an instant reject. Our hard-policy gate is an explicit **AND** of two conditions (`spatial_variance_score > 50` **AND** `monthly_income_mean <= 0`), so mobile-but-employed applicants pass straight through to the model instead of being auto-rejected on geography.
-- **Demo moment:** On the Score Explainer, open Step 4. The "Transience-without-Income Check" card reads `High mobility (Spatial Variance X) AND no income anchor (₹Y)` — show a high-variance borrower *with* income passing, and one with high variance *and* zero income getting the REJECT pill.
-- **Honest caveat:** The threshold (50 / ₹0) is a hand-tuned policy rule on synthetic data, not a learned boundary — it demonstrates the two-condition design, and would be recalibrated against real reject-inference data in production.
+- **Demo moment:** On the Score Explainer, open Step 4. The "Transience-without-Income Check" card reads `High mobility (Spatial Variance X) AND no income anchor (₹Y)` - show a high-variance borrower *with* income passing, and one with high variance *and* zero income getting the REJECT pill.
+- **Honest caveat:** The threshold (50 / ₹0) is a hand-tuned policy rule on synthetic data, not a learned boundary - it demonstrates the two-condition design, and would be recalibrated against real reject-inference data in production.
 
 ### Prepaid Recharge Latency & SIM Vintage (Vernacular Telecom Scoring)
 - **Judge problem it answers:** "In low-income cohorts, postpaid billing doesn't exist: 95% of borrowers use prepaid SIMs. How do you score phone bill payment consistency for prepaid users?"
@@ -628,9 +624,9 @@ Copy this block for each feature:
 
 ### Granular Consent (Sahmati / Consent Manager integration)
 - **Judge problem it answers:** "DPDP Act 2023 requires consent to be specific, clear, and revocable. Under traditional systems, consent is all-or-nothing: if a borrower wants a loan, they must share everything. How do you implement compliant granular consent?"
-- **Pitch line:** "We implement India's Sahmati Account Aggregator framework with nested sub-scope toggles, allowing borrowers to selectively share specific data points (like UPI Lite pocket wallets or DBT transfer history) without revoking their entire bank statement."
-- **Differentiator:** Most platforms use monolithic consent gates. We provide nested toggles (e.g. opting out of SMS parsing or UPI Lite logs while still sharing telecom/cash-flow basics) with immediate cascade revocation logic, ensuring strict compliance with DPDP Section 6 guidelines.
-- **Demo moment:** Go to the borrower consent gateway, select a cohort, and uncheck "UPI Lite Wallet logs" under Bank Cash Flow. Submit and show that the dashboard updates to show that only UPI Lite features are masked and imputed with cohort averages, while the main cash-flow analysis remains active.
+- **Pitch line:** "We implement India's Sahmati Account Aggregator framework with nested sub-scope toggles. Borrowers can selectively share specific data points from India's Digital Public Infrastructure (e.g., ONDC retail orders, BBPS utility receipts, or UPI Lite pocket wallets) without revoking their entire base profile."
+- **Differentiator:** Most platforms use monolithic consent gates. We provide comprehensive nested toggles mapping directly to specific API integrations (ONDC, AA, BBPS, e-NAM) with immediate cascade revocation logic, ensuring strict compliance with DPDP Section 6 guidelines.
+- **Demo moment:** Go to the borrower consent gateway and show the rich hierarchy of data subsources (like "ONDC Merchant Ratings" under Micro-enterprise). Uncheck a specific subsource, submit, and show that the dashboard explicitly masks only the features tied to that specific DPI source (e.g., `average_ticket_size` for ONDC) while leaving the parent data untouched.
 
 ### UPI Lite Wallet Sourcing
 - **Judge problem it answers:** "In India, micro-payments (< ₹500) make up 70% of transactions and are increasingly shifted to on-device UPI Lite wallets to prevent bank statement clutter. Since UPI Lite transactions don't show up individually in regular bank statements, doesn't alternative scoring miss these crucial payment consistency signals?"

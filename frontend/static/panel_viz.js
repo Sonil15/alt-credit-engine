@@ -13,7 +13,7 @@
     ({ ebm: "EBM", catboost: "CatBoost", logistic: "Logistic" }[n] || n);
 
   function fmtValue(v, fmt) {
-    if (v === null || v === undefined) return "—";
+    if (v === null || v === undefined) return "-";
     switch (fmt) {
       case "rupee": return "₹" + Math.round(v).toLocaleString("en-IN");
       case "percent": return (v * 100).toFixed(0) + "%";
@@ -191,8 +191,8 @@
       const borrower = sig.value !== undefined ? { value: +sig.value, points: +(sig.points || 0) } : null;
       drawCurve(svg, curve, borrower);
       tabs.querySelectorAll(".acv-tab").forEach((t) => t.classList.toggle("on", t.dataset.f === feat));
-      const vtxt = borrower ? fmtValue(borrower.value, curve.fmt) : "—";
-      const ptxt = borrower ? (borrower.points >= 0 ? "+" : "") + borrower.points.toFixed(1) : "—";
+      const vtxt = borrower ? fmtValue(borrower.value, curve.fmt) : "-";
+      const ptxt = borrower ? (borrower.points >= 0 ? "+" : "") + borrower.points.toFixed(1) : "-";
       cap.innerHTML = `This curve <b>is the model</b>. The EBM's own term for <b>${curve.label}</b>, not a SHAP estimate.
         At this borrower's value <b>${vtxt}</b>, the model contributes <b>${ptxt} points</b> to the score.
         Green raises the score, red lowers it.`;

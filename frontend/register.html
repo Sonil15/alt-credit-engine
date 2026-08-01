@@ -6,7 +6,7 @@
   <title>Alt-Credit: eKYC Register</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/login.css?v=1.0.1">
-  <script src="/static/translations.js?v=1.0.4"></script>
+  <script src="/static/translations.js?v=1.0.5"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
   <style>
     /* Wizard steps style */
@@ -141,7 +141,7 @@
             </div>
             <div class="step-wrapper" id="step-ind-2">
               <div class="step-pill" id="pill-2">2</div>
-              <div class="step-label">2. Liveness Match</div>
+              <div class="step-label" data-i18n="register-step-liveness">2. Liveness Match</div>
             </div>
             <div class="step-wrapper" id="step-ind-3">
               <div class="step-pill" id="pill-3">3</div>
@@ -171,7 +171,7 @@
 
             <div id="manual-aadhaar-group" class="form-group">
               <label class="form-label" for="aadhaar-input" data-i18n="register-field-aadhaar">Aadhaar Number</label>
-              <input id="aadhaar-input" class="form-control" type="text" inputmode="numeric" maxlength="14" placeholder="12-digit Aadhaar (e.g. 1234 5678 9012)">
+              <input id="aadhaar-input" class="form-control" type="text" inputmode="numeric" maxlength="14" placeholder="12-digit Aadhaar (e.g. 1234 5678 9012)" data-i18n="register-aadhaar-placeholder">
             </div>
 
             <div class="form-group" style="margin-top: 15px;">
@@ -185,15 +185,15 @@
 
             <!-- CAPTCHA section -->
             <div class="form-group" style="margin-top: 15px;">
-              <label class="form-label" for="captcha-input">Security Challenge (CAPTCHA)</label>
+              <label class="form-label" for="captcha-input" data-i18n="register-captcha-label">Security Challenge (CAPTCHA)</label>
               <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
                 <div id="captcha-image-container" style="border: 1px solid #334155; border-radius: 6px; overflow: hidden; width: 180px; height: 60px; display: flex; align-items: center; justify-content: center; background: #1e293b;">
                   <img id="captcha-image" src="" alt="CAPTCHA Challenge" style="width: 100%; height: 100%; object-fit: contain; display: none;" />
-                  <span id="captcha-loading" style="font-size: 12px; color: #64748b;">Loading...</span>
+                  <span id="captcha-loading" style="font-size: 12px; color: #64748b;" data-i18n="register-captcha-loading">Loading...</span>
                 </div>
-                <button type="button" class="btn btn-secondary" onclick="loadCaptcha()" style="padding: 6px 12px; font-size: 12px; height: auto; background: #475569; border: none; color: #fff; border-radius: 6px; cursor: pointer;">↻ Refresh</button>
+                <button type="button" class="btn btn-secondary" onclick="loadCaptcha()" style="padding: 6px 12px; font-size: 12px; height: auto; background: #475569; border: none; color: #fff; border-radius: 6px; cursor: pointer;" data-i18n="register-captcha-refresh">↻ Refresh</button>
               </div>
-              <input id="captcha-input" class="form-control" type="text" placeholder="Enter answer here">
+              <input id="captcha-input" class="form-control" type="text" placeholder="Enter answer here" data-i18n="register-captcha-placeholder">
               <input id="captcha-token" type="hidden">
             </div>
 
@@ -213,10 +213,10 @@
           <!-- STEP 2: Liveness Match -->
           <div id="step-2" class="step-content">
             <div class="success-card" style="margin-bottom: 15px;">
-              <span>🔒</span> <span id="aadhaar-verified-msg">Aadhaar Verified ✅</span>
+              <span>🔒</span> <span id="aadhaar-verified-msg" data-i18n="register-aadhaar-verified-initial">Aadhaar Verified ✅</span>
             </div>
             
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;" data-i18n="register-liveness-desc">
               To prevent identity theft, please look at the camera and verify your liveness.
             </p>
 
@@ -224,7 +224,7 @@
               <!-- Camera simulation -->
               <div id="camera-overlay" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 14px; text-align: center; padding: 20px;">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 10px; color: #64748b;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                <span>Camera starting...</span>
+                <span data-i18n="register-camera-starting">Camera starting...</span>
               </div>
               <div id="camera-feed" style="display: none; width: 100%; height: 100%; position: relative; background: #0f172a;">
                 <video id="webcam-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block;"></video>
@@ -232,7 +232,7 @@
                 <!-- Glowing scanning line -->
                 <div id="scanning-line" style="position: absolute; left: 0; width: 100%; height: 2px; background: #22c55e; box-shadow: 0 0 8px #22c55e; animation: scan 2s linear infinite;"></div>
                 <div id="align-face-overlay" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;">
-                  <div style="width: 140px; height: 180px; border: 2px dashed #3b82f6; border-radius: 50%; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 11px; font-weight: bold; text-transform: uppercase;">Align Face</div>
+                  <div style="width: 140px; height: 180px; border: 2px dashed #3b82f6; border-radius: 50%; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 11px; font-weight: bold; text-transform: uppercase;" data-i18n="register-align-face">Align Face</div>
                 </div>
               </div>
             </div>
@@ -245,18 +245,18 @@
               }
             </style>
 
-            <button id="liveness-btn" class="btn btn-primary auth-submit" onclick="performLivenessCheck()">Verify Liveness</button>
+            <button id="liveness-btn" class="btn btn-primary auth-submit" onclick="performLivenessCheck()" data-i18n="register-liveness-btn">Verify Liveness</button>
           </div>
 
           <!-- STEP 3: Choose Username / Password -->
           <div id="step-3" class="step-content">
             <div class="success-card">
-              <span>🔒</span> <span id="success-message">Identity Verified ✅</span>
+              <span>🔒</span> <span id="success-message" data-i18n="register-verified-success">Identity Verified ✅</span>
             </div>
 
             <div class="form-group">
               <label class="form-label" for="login-id" data-i18n="register-field-loginid">Choose Login ID</label>
-              <input id="login-id" class="form-control" type="text" autocomplete="username" placeholder="e.g. ravi_kumar">
+              <input id="login-id" class="form-control" type="text" autocomplete="username" placeholder="e.g. ravi_kumar" data-i18n="register-loginid-placeholder">
             </div>
 
             <div class="form-group">
@@ -370,7 +370,7 @@
       }
     }
 
-    // MD5 helper — mirrors server-side hashlib.md5(f"{ans}-{secret}").hexdigest()
+    // MD5 helper - mirrors server-side hashlib.md5(f"{ans}-{secret}").hexdigest()
     async function md5Hex(str) {
       const buf = await crypto.subtle.digest(
         'SHA-1',  // SubtleCrypto doesn't expose MD5; use a JS polyfill instead
@@ -379,7 +379,7 @@
       return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    // Pure-JS MD5 (RFC 1321) — matches Python hashlib.md5 exactly
+    // Pure-JS MD5 (RFC 1321) - matches Python hashlib.md5 exactly
     function md5(str) {
       function safeAdd(x, y) { const l = (x & 0xffff) + (y & 0xffff); return (((x >> 16) + (y >> 16) + (l >> 16)) << 16) | (l & 0xffff); }
       function bitRotateLeft(num, cnt) { return (num << cnt) | (num >>> (32 - cnt)); }
@@ -436,7 +436,7 @@
         return;
       }
 
-      // Validate captcha immediately — same hash the server checks:
+      // Validate captcha immediately - same hash the server checks:
       // md5(answer + "-" + secret) must equal stored token
       const CAPTCHA_SECRET = 'hackathon-captcha-secret';
       const expectedToken = md5(`${captchaAns}-${CAPTCHA_SECRET}`);
@@ -564,6 +564,7 @@
       currentStep = step;
       document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
       document.getElementById('step-' + step).classList.add('active');
+      if (typeof translatePage === 'function') translatePage();
 
       if (step === 2) {
         document.getElementById('pill-1').classList.add('completed');
@@ -609,7 +610,7 @@
           btnText.textContent = t('register-btn-verified', 'Verified ✅');
           btn.style.background = '#10b981';
 
-          // Aadhaar already resolved via DigiLocker — hide manual entry
+          // Aadhaar already resolved via DigiLocker - hide manual entry
           document.getElementById('manual-divider').style.display = 'none';
           document.getElementById('manual-aadhaar-group').style.display = 'none';
 
@@ -702,6 +703,8 @@
       loadCaptcha();
       if (typeof setupLanguageSelector === 'function') setupLanguageSelector('language-selector-root');
     });
+
+    window.addEventListener('altcreditLanguageChanged', () => translatePage());
   </script>
 
   <!-- Bureau Check Overlay -->

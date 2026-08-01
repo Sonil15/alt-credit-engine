@@ -148,7 +148,7 @@ _NEGATION_WINDOW = 2
 # Splits on whitespace and common ASCII/Indic punctuation (including the
 # Devanagari/Bengali danda । ॥) while keeping apostrophes so contractions like
 # "don't" survive as a single token.
-_TOKEN_RE = re.compile(r"[^\s।॥,.;:!?()\[\]{}\"“”`/\\|—–…]+")
+_TOKEN_RE = re.compile(r"[^\s।॥,.;:!?()\[\]{}\"“”`/\\|\-–…]+")
 
 
 def _tokenize(text: str) -> list[str]:
@@ -306,6 +306,7 @@ def traits_to_ml_features(traits: dict[str, float]) -> dict[str, float]:
         "average_ticket_size",
         "harvest_income_spike",
         "input_purchase_consistency",
+        "enam_receipt_volume",
         "utility_payment_consistency",
         "grocery_spend_stability",
         "business_vintage_years",

@@ -34,7 +34,7 @@ from models.pydantic_schemas import (
 
 router = APIRouter(prefix="/intake", tags=["intake"])
 
-# Cohorts that describe a business rather than a personal/salaried applicant —
+# Cohorts that describe a business rather than a personal/salaried applicant -
 # used to derive the fairness-monitor "borrower_type" (individual vs MSME) group
 # from the cohort the borrower already picked, instead of asking a second time.
 MSME_COHORTS = {"Vendor", "Farmer"}
@@ -112,7 +112,7 @@ async def submit_intake(
     if request.cohort not in PURPOSES_BY_COHORT:
         raise HTTPException(status_code=422, detail=f"Unknown borrower category: {request.cohort}")
     # Purpose only needs to be a known code, not one recommended for this
-    # cohort — cross-cohort picks are allowed and surface downstream as a soft
+    # cohort - cross-cohort picks are allowed and surface downstream as a soft
     # `purpose_consistent=False` signal for the officer, not a hard block.
     if request.loan_purpose not in ALL_PURPOSES:
         raise HTTPException(

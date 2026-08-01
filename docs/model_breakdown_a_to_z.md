@@ -55,7 +55,7 @@ To satisfy risk officers, regulators, and data protection authorities, the platf
 
 ### 4. Out-of-Distribution (OOD) Anomaly Gate
 * **Auditor/Regulator Concern:** *What stops a gamed applicant from pushing one or two features to flattering extremes while others stay mediocre, resulting in a false auto-approval?*
-* **Our Solution:** Additive terms in an EBM extrapolate independently, meaning a joint feature vector that never occurred in training—where each coordinate is individually plausible but the combination is impossible—is scored blindly. We run a multivariate anomaly detector using **Mahalanobis Distance** on Ledoit-Wolf shrunk covariance. Anomalous feature combinations above a 99% training manifold threshold are blocked from auto-approval and routed to manual review.
+* **Our Solution:** Additive terms in an EBM extrapolate independently, meaning a joint feature vector that never occurred in training-where each coordinate is individually plausible but the combination is impossible-is scored blindly. We run a multivariate anomaly detector using **Mahalanobis Distance** on Ledoit-Wolf shrunk covariance. Anomalous feature combinations above a 99% training manifold threshold are blocked from auto-approval and routed to manual review.
 
 ### 5. Dynamic Population Re-Centering
 * **Auditor/Regulator Concern:** *Your borrower portal shows only positive score drivers. Is this real explainability, or is it a feel-good marketing wrapper?*
@@ -182,7 +182,7 @@ To satisfy risk officers, regulators, and data protection authorities, the platf
 
 ---
 
-## Section 4: Engine A — Time-Series Econometric Analysis
+## Section 4: Engine A - Time-Series Econometric Analysis
 
 * **File:** [models_econometric/ecm_model.py](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/models_econometric/ecm_model.py)
 * **Under the Hood:**
@@ -241,7 +241,7 @@ $$\Delta y_t^{\text{detrended}} = \alpha_0 + \gamma \left(y_{t-1}^{\text{detrend
 
 ---
 
-## Section 6: Engine B — AI Model Panel & Conformal Safety Net
+## Section 6: Engine B - AI Model Panel & Conformal Safety Net
 
 ### 1. Cohort-Aware Imputation Profile
 * **File:** [models_ai/imputation.py](file:///c:/Users/gsran/OneDrive/Desktop/alt-credit-engine/models_ai/imputation.py)
@@ -479,7 +479,7 @@ Every borrower is evaluated using a subset of the following 42 features:
 
 ### 3. Cohort UI Lineage Filtering
 * **Under the Hood:**
-  To prevent reviewer confusion, the score explainer page filters out features belonging to scopes not expected for the active cohort. To keep the scorecard points summing to the credit score exactly, all point contributions from the hidden, non-applicable features are aggregated into a single line item: **"Cohort Baseline Adjustments"**.
+  To prevent reviewer confusion, the score explainer page filters out features belonging to scopes not expected for the active cohort. Previously, all point contributions from the hidden, non-applicable features were aggregated into a single line item: **"Cohort Baseline Adjustments"**. This line item has been removed from the explainer page to streamline presentation, though all point contributions still sum correctly to the final credit score mathematically under the hood.
 
 ---
 
@@ -504,7 +504,7 @@ Both the Bank Officer Dashboard and the Borrower Portal translate raw numbers in
     2. **Spending Behaviour:** `necessity_ratio` (30%), `avg_merchant_rating` (20%), `monthly_spend_volatility` (20%), `sms_spend_total` (30%)
     3. **Location Stability:** `spatial_variance_score` (60%), `anchor_count` (40%)
     4. **Cashflow Resilience:** `monthly_income_mean` (15%), `cash_burn_rate` (15%), `cashflow_volatility` (10%), `resilience_coefficient` (15%), `trend_slope` (15%), `is_stationary` (5%), `upi_lite_txn_count` (10%), `upi_lite_average_ticket` (5%), `dbt_income_consistency` (10%)
-    5. **Character & Money Mindset:** 10 constructs (10% each)
+    5. **Psychometric Questionnaire:** 10 constructs (10% each)
     6. **Campus & UPI Transaction Behavior:** `upi_spend_consistency` (40%), `small_dues_payment_promptness` (40%), `e_wallet_topup_frequency` (20%)
     7. **Vendor Transaction Velocity:** `daily_transaction_count` (50%), `average_ticket_size` (50%)
     8. **Agricultural Seasonality:** `harvest_income_spike` (40%), `input_purchase_consistency` (30%), `enam_receipt_volume` (30%)

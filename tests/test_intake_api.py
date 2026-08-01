@@ -82,7 +82,7 @@ async def test_submit_happy_path_and_latest_wins():
 @pytest.mark.asyncio
 async def test_cross_cohort_purpose_is_allowed_not_blocked():
     """A purpose from another cohort's recommended list is a soft signal for the
-    officer (`purpose_consistent` downstream), not a hard 422 — real borrowers
+    officer (`purpose_consistent` downstream), not a hard 422 - real borrowers
     straddle categories (e.g. a student doing gig work)."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:

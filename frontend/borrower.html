@@ -6,7 +6,7 @@
   <title>Alt-Credit: Your Assessment Result</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/borrower.css?v=1.1.0">
-  <script src="/static/translations.js?v=1.0.4"></script>
+  <script src="/static/translations.js?v=1.0.5"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
   <script>
     // Login is mandatory to view a borrower's assessment. Redirect to sign-in
@@ -49,7 +49,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:16px;">
           <div style="min-width:0;">
             <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;" data-i18n="borrower-id-label">Borrower ID</div>
-            <div id="borrower-id-display" style="font-family:ui-monospace,monospace;font-size:13px;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</div>
+            <div id="borrower-id-display" style="font-family:ui-monospace,monospace;font-size:13px;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">-</div>
           </div>
           <button id="copy-borrower-id-btn" type="button" onclick="copyBorrowerId()"
             style="flex-shrink:0;padding:8px 12px;border-radius:8px;border:1px solid #cbd5e1;background:white;color:#2563eb;font-size:12px;font-weight:600;cursor:pointer;" data-i18n="borrower-copy-id-btn">
@@ -60,30 +60,30 @@
         <h2 data-i18n="borrower-score-title">Your Credit Score</h2>
 
         <div class="score-hero">
-          <div class="score-num" id="score-num">—</div>
+          <div class="score-num" id="score-num">-</div>
           <div class="score-label" data-i18n="borrower-out-of">Score Range: 300 - 900</div>
-          <div><span class="badge" id="decision-badge">—</span></div>
+          <div><span class="badge" id="decision-badge">-</span></div>
         </div>
 
         <div class="meta-grid">
           <div class="meta-box">
             <div class="k" data-i18n="borrower-likelihood-label">Approval Likelihood</div>
-            <div class="v" id="likelihood-val">—</div>
+            <div class="v" id="likelihood-val">-</div>
           </div>
           <div class="meta-box">
             <div class="k" data-i18n="borrower-date-label">Date of Assessment</div>
-            <div class="v" id="assessment-date" style="font-size: 18px;">—</div>
+            <div class="v" id="assessment-date" style="font-size: 18px;">-</div>
           </div>
         </div>
 
         <div class="meta-grid" id="intent-grid" style="display:none;">
           <div class="meta-box">
             <div class="k" data-i18n="borrower-purpose-label">Loan Purpose</div>
-            <div class="v" id="purpose-val" style="font-size: 18px;">—</div>
+            <div class="v" id="purpose-val" style="font-size: 18px;">-</div>
           </div>
           <div class="meta-box">
             <div class="k" data-i18n="borrower-requested-label">Amount Requested</div>
-            <div class="v" id="requested-val" style="font-size: 18px;">—</div>
+            <div class="v" id="requested-val" style="font-size: 18px;">-</div>
           </div>
         </div>
 
@@ -270,7 +270,7 @@
 
     function copyBorrowerId() {
       const id = document.getElementById('borrower-id-display').textContent;
-      if (!id || id === '—') return;
+      if (!id || id === '-') return;
       navigator.clipboard.writeText(id).then(() => {
         const btn = document.getElementById('copy-borrower-id-btn');
         const original = btn.textContent;
@@ -302,13 +302,13 @@
 
       if (d.loan_purpose || d.requested_amount) {
         document.getElementById('intent-grid').style.display = '';
-        let purposeText = d.loan_purpose ? (t('purpose-' + d.loan_purpose) || d.loan_purpose.replace(/_/g, ' ')) : '—';
+        let purposeText = d.loan_purpose ? (t('purpose-' + d.loan_purpose) || d.loan_purpose.replace(/_/g, ' ')) : '-';
         if (d.loan_purpose === 'other' && d.loan_purpose_other_text) {
           purposeText += ': ' + d.loan_purpose_other_text;
         }
         document.getElementById('purpose-val').textContent = purposeText;
         document.getElementById('requested-val').textContent =
-          d.requested_amount ? '₹' + Math.round(d.requested_amount).toLocaleString('en-IN') : '—';
+          d.requested_amount ? '₹' + Math.round(d.requested_amount).toLocaleString('en-IN') : '-';
       }
 
       if (d.funding_gap && d.funding_gap.gated) {
@@ -323,7 +323,7 @@
       }
 
       // When a high-scoring application is still routed to REVIEW, tell the
-      // borrower the exact safety gate that flagged it — the same reason the
+      // borrower the exact safety gate that flagged it - the same reason the
       // loan officer sees on their dashboard. The affordability gate already
       // has its own detailed box above, so it is not repeated here.
       const reviewBox = document.getElementById('review-reason-box');

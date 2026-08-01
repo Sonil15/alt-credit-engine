@@ -25,7 +25,7 @@ from core.config import get_settings
 from core.feature_store import fetch_user_features_wide, upsert_feature
 from models.db_models import ApplicationIntake
 
-# Loan purposes recommended per borrower category — used to order the
+# Loan purposes recommended per borrower category - used to order the
 # dropdown and to flag purpose–category *consistency* for the officer
 # (`purpose_consistent` in the score payload). The server no longer hard-blocks
 # a cross-cohort purpose (see ALL_PURPOSES below): a mismatch is a soft signal,
@@ -41,7 +41,7 @@ PURPOSES_BY_COHORT: dict[str, list[str]] = {
     "Homemaker": ["household", "small_home_business", "other"],
 }
 
-# Full set of known purpose codes, used only to reject typos/garbage — not to
+# Full set of known purpose codes, used only to reject typos/garbage - not to
 # enforce cohort membership (that's the soft `purpose_consistent` signal).
 ALL_PURPOSES: set[str] = {p for purposes in PURPOSES_BY_COHORT.values() for p in purposes}
 

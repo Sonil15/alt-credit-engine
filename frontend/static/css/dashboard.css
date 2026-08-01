@@ -483,6 +483,10 @@
   color: #dc2626;
 }
 
+.trace-pts.neutral {
+  color: #64748b;
+}
+
 .trace-toggle {
   margin-top: 14px;
   background: none;

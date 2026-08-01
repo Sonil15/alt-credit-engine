@@ -5,8 +5,7 @@ dimension is a way of slicing the portfolio (by borrower category, by social
 category, …); for every dimension we compute per-group approval rates and the
 disparate-impact (4/5ths) ratio.
 
-The dashboard defaults to the borrower-category view (Individual vs MSME): the
-slice a loan officer reasons about day to day, and can switch to any other
+The dashboard defaults to the gender view and can switch to any other
 configured dimension. Adding a dimension is a one-line entry in
 ``FAIRNESS_DIMENSIONS`` (plus the underlying column being present in the feature
 table).
@@ -39,12 +38,6 @@ MITIGATION_NARRATIVE = (
 #   code_map  -> code -> display label for each group
 # The first entry is the default the dashboard opens on.
 FAIRNESS_DIMENSIONS: list[dict[str, Any]] = [
-    {
-        "key": "borrower_category",
-        "label": "Borrower category",
-        "column": "borrower_type",
-        "code_map": {0.0: "Individual", 1.0: "MSME"},
-    },
     {
         "key": "gender",
         "label": "Gender",
@@ -135,7 +128,7 @@ def _compute_dimension(
     ]
     max_rate = max(rates) if rates else 0.0
     min_rate = min(rates) if rates else 0.0
-    # No group with enough members has a single approval yet — there is nothing to
+    # No group with enough members has a single approval yet - there is nothing to
     # evaluate the 4/5ths rule against. Reporting a ratio of 1.0 / "passes" here
     # would falsely read as a clean parity result rather than "no data".
     insufficient_data = max_rate <= 0

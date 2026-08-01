@@ -6,7 +6,7 @@
   <title>Alt-Credit: Borrower Portal</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/apply.css?v=1.1.0">
-  <script src="/static/translations.js?v=1.0.4"></script>
+  <script src="/static/translations.js?v=1.0.5"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
   <script>
     // Login is mandatory for the borrower portal. Redirect to sign-in before any
@@ -242,7 +242,7 @@
         const badgeClass = 'badge-' + decision;
         // Translate the visible badge label; the raw decision keeps the CSS colour class.
         const badgeText = t('borrower-decision-' + decision, decision);
-        const scoreHtml = app.score ? `<div class="app-card-score">${app.score}</div>` : '<div class="app-card-score" style="color:#cbd5e1">—</div>';
+        const scoreHtml = app.score ? `<div class="app-card-score">${app.score}</div>` : '<div class="app-card-score" style="color:#cbd5e1">-</div>';
 
         card.innerHTML = `
           <div class="app-card-left">

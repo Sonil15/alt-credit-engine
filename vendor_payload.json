@@ -1,7 +1,7 @@
 {
-  "user_id": "b17cdd1f-6667-4b74-8666-b13cf6ca66a1",
-  "credit_score": 503,
-  "probability_of_default": 0.2786,
+  "user_id": "a2814044-6f96-4882-95d8-2980ff37d19c",
+  "credit_score": 468,
+  "probability_of_default": 0.3832,
   "decision": "REJECT",
   "approval_likelihood": "Needs Review",
   "actionable_insights": [
@@ -13,20 +13,20 @@
     {
       "feature": "locus_of_control",
       "label": "Sense of financial control",
-      "contribution_value": 0.5135631732286517,
-      "points": -37.0
+      "contribution_value": 0.5055298938473416,
+      "points": -36.5
     },
     {
       "feature": "daily_transaction_count",
       "label": "Daily transaction count",
-      "contribution_value": 0.18427173021347448,
-      "points": -13.3
+      "contribution_value": 0.34282719780731874,
+      "points": -24.7
     },
     {
       "feature": "debt_attitude",
       "label": "Commitment to repaying debt",
-      "contribution_value": 0.17220644108795832,
-      "points": -12.4
+      "contribution_value": 0.16996462718397604,
+      "points": -12.3
     }
   ],
   "reason_codes": [
@@ -35,49 +35,49 @@
     "Weak commitment to timely debt repayment"
   ],
   "reason_codes_text": "Feels finances are outside their control; Low business transaction volume; Weak commitment to timely debt repayment",
-  "base_points": 687.9,
+  "base_points": 729.1,
   "factor_points": {
-    "avg_days_late": -67.5,
-    "missed_payments_count": 1.0,
-    "necessity_ratio": 2.7,
-    "avg_merchant_rating": -30.0,
-    "monthly_spend_volatility": -9.2,
-    "spatial_variance_score": -9.4,
-    "anchor_count": -0.0,
-    "monthly_income_mean": -13.1,
-    "monthly_expense_mean": -0.0,
-    "cashflow_volatility": 38.6,
-    "cash_burn_rate": 3.5,
-    "conscientiousness": -4.9,
-    "locus_of_control": -37.0,
-    "financial_self_efficacy": -3.9,
-    "present_bias": -8.8,
-    "debt_attitude": -12.4,
-    "response_validity": -2.3,
-    "resilience_coefficient": 0.3,
+    "avg_days_late": -65.7,
+    "missed_payments_count": -16.6,
+    "necessity_ratio": -14.9,
+    "avg_merchant_rating": -36.7,
+    "monthly_spend_volatility": -8.6,
+    "spatial_variance_score": -4.6,
+    "anchor_count": 0.0,
+    "monthly_income_mean": -46.3,
+    "monthly_expense_mean": 20.6,
+    "cashflow_volatility": 41.9,
+    "cash_burn_rate": -7.8,
+    "conscientiousness": -5.7,
+    "locus_of_control": -36.5,
+    "financial_self_efficacy": -3.7,
+    "present_bias": -9.1,
+    "debt_attitude": -12.3,
+    "response_validity": -2.1,
+    "resilience_coefficient": 0.5,
     "adf_statistic": -0.1,
     "adf_pvalue": -0.1,
     "is_stationary": -0.0,
-    "trend_slope": 2.1,
-    "business_vintage_years": -1.2,
+    "trend_slope": 2.0,
+    "business_vintage_years": -1.4,
     "is_new_business": -0.0,
-    "turnover_income_consistency": 0.1,
+    "turnover_income_consistency": -1.3,
     "has_udyam_registration": -0.0,
     "years_informal": -0.0,
-    "upi_spend_consistency": -0.5,
-    "small_dues_payment_promptness": -2.2,
-    "e_wallet_topup_frequency": -3.4,
-    "daily_transaction_count": -13.3,
-    "average_ticket_size": -1.1,
+    "upi_spend_consistency": -0.6,
+    "small_dues_payment_promptness": -3.2,
+    "e_wallet_topup_frequency": -4.0,
+    "daily_transaction_count": -24.7,
+    "average_ticket_size": -2.1,
     "harvest_income_spike": -0.0,
-    "input_purchase_consistency": -0.2,
-    "utility_payment_consistency": -5.2,
-    "grocery_spend_stability": -3.8,
-    "upi_lite_txn_count": 0.0,
-    "upi_lite_average_ticket": 0.7,
-    "dbt_income_consistency": -0.0,
-    "sms_spend_total": -2.6,
-    "sms_bill_delay": -1.7,
+    "input_purchase_consistency": -0.3,
+    "utility_payment_consistency": -10.5,
+    "grocery_spend_stability": -6.1,
+    "upi_lite_txn_count": 1.8,
+    "upi_lite_average_ticket": -3.6,
+    "dbt_income_consistency": -0.2,
+    "sms_spend_total": 14.0,
+    "sms_bill_delay": -13.1,
     "enam_receipt_volume": -0.0
   },
   "feature_trace": {
@@ -89,9 +89,9 @@
         "fmt": "score01",
         "direction": "high",
         "engine": "extraction",
-        "value": 0.1813,
-        "points": -37.0,
-        "logodds": 0.5129
+        "value": 0.1819,
+        "points": -36.5,
+        "logodds": 0.506
       },
       {
         "feature": "daily_transaction_count",
@@ -100,9 +100,9 @@
         "fmt": "count",
         "direction": "high",
         "engine": "extraction",
-        "value": 12.4,
-        "points": -13.3,
-        "logodds": 0.1844
+        "value": 24.38,
+        "points": -24.7,
+        "logodds": 0.3424
       },
       {
         "feature": "debt_attitude",
@@ -111,20 +111,9 @@
         "fmt": "score01",
         "direction": "high",
         "engine": "extraction",
-        "value": 0.0448,
-        "points": -12.4,
-        "logodds": 0.1719
-      },
-      {
-        "feature": "spatial_variance_score",
-        "label": "Delivery address drift entropy",
-        "source": "E-commerce shipping records",
-        "fmt": "number",
-        "direction": "low",
-        "engine": "extraction",
-        "value": 1.1991,
-        "points": -9.4,
-        "logodds": 0.1303
+        "value": 0.2347,
+        "points": -12.3,
+        "logodds": 0.1705
       },
       {
         "feature": "present_bias",
@@ -133,9 +122,9 @@
         "fmt": "score01",
         "direction": "low",
         "engine": "extraction",
-        "value": 0.9118,
-        "points": -8.8,
-        "logodds": 0.122
+        "value": 0.7393,
+        "points": -9.1,
+        "logodds": 0.1262
       },
       {
         "feature": "conscientiousness",
@@ -144,9 +133,9 @@
         "fmt": "score01",
         "direction": "high",
         "engine": "extraction",
-        "value": 0.217,
-        "points": -4.9,
-        "logodds": 0.0679
+        "value": 0.2913,
+        "points": -5.7,
+        "logodds": 0.079
       },
       {
         "feature": "financial_self_efficacy",
@@ -155,9 +144,9 @@
         "fmt": "score01",
         "direction": "high",
         "engine": "extraction",
-        "value": 0.1351,
-        "points": -3.9,
-        "logodds": 0.0541
+        "value": 0.2312,
+        "points": -3.7,
+        "logodds": 0.0513
       },
       {
         "feature": "response_validity",
@@ -166,9 +155,20 @@
         "fmt": "score01",
         "direction": "high",
         "engine": "extraction",
-        "value": 0.8914,
-        "points": -2.3,
-        "logodds": 0.0319
+        "value": 0.8992,
+        "points": -2.1,
+        "logodds": 0.0291
+      },
+      {
+        "feature": "average_ticket_size",
+        "label": "Average ticket size",
+        "source": "Micro-enterprise UPI/payment volumes",
+        "fmt": "rupee",
+        "direction": "high",
+        "engine": "extraction",
+        "value": 81.1,
+        "points": -2.1,
+        "logodds": 0.0291
       }
     ],
     "by_source": [
@@ -183,9 +183,9 @@
             "fmt": "score01",
             "direction": "high",
             "engine": "extraction",
-            "value": 0.1813,
-            "points": -37.0,
-            "logodds": 0.5129
+            "value": 0.1819,
+            "points": -36.5,
+            "logodds": 0.506
           },
           {
             "feature": "debt_attitude",
@@ -194,9 +194,9 @@
             "fmt": "score01",
             "direction": "high",
             "engine": "extraction",
-            "value": 0.0448,
-            "points": -12.4,
-            "logodds": 0.1719
+            "value": 0.2347,
+            "points": -12.3,
+            "logodds": 0.1705
           },
           {
             "feature": "present_bias",
@@ -205,9 +205,9 @@
             "fmt": "score01",
             "direction": "low",
             "engine": "extraction",
-            "value": 0.9118,
-            "points": -8.8,
-            "logodds": 0.122
+            "value": 0.7393,
+            "points": -9.1,
+            "logodds": 0.1262
           },
           {
             "feature": "conscientiousness",
@@ -216,9 +216,9 @@
             "fmt": "score01",
             "direction": "high",
             "engine": "extraction",
-            "value": 0.217,
-            "points": -4.9,
-            "logodds": 0.0679
+            "value": 0.2913,
+            "points": -5.7,
+            "logodds": 0.079
           },
           {
             "feature": "financial_self_efficacy",
@@ -227,9 +227,9 @@
             "fmt": "score01",
             "direction": "high",
             "engine": "extraction",
-            "value": 0.1351,
-            "points": -3.9,
-            "logodds": 0.0541
+            "value": 0.2312,
+            "points": -3.7,
+            "logodds": 0.0513
           },
           {
             "feature": "response_validity",
@@ -238,9 +238,9 @@
             "fmt": "score01",
             "direction": "high",
             "engine": "extraction",
-            "value": 0.8914,
-            "points": -2.3,
-            "logodds": 0.0319
+            "value": 0.8992,
+            "points": -2.1,
+            "logodds": 0.0291
           }
         ]
       },
@@ -256,8 +256,8 @@
             "direction": "high",
             "engine": "extraction",
             "value": 3.0,
-            "points": -1.2,
-            "logodds": 0.0166
+            "points": -1.4,
+            "logodds": 0.0194
           },
           {
             "feature": "turnover_income_consistency",
@@ -266,9 +266,9 @@
             "fmt": "score01",
             "direction": "high",
             "engine": "extraction",
-            "value": 0.6693,
-            "points": 0.1,
-            "logodds": -0.0014
+            "value": 0.4738,
+            "points": -1.3,
+            "logodds": 0.018
           },
           {
             "feature": "is_new_business",
@@ -316,9 +316,9 @@
             "fmt": "count",
             "direction": "high",
             "engine": "extraction",
-            "value": 12.4,
-            "points": -13.3,
-            "logodds": 0.1844
+            "value": 24.38,
+            "points": -24.7,
+            "logodds": 0.3424
           },
           {
             "feature": "average_ticket_size",
@@ -327,9 +327,9 @@
             "fmt": "rupee",
             "direction": "high",
             "engine": "extraction",
-            "value": 47.24,
-            "points": -1.1,
-            "logodds": 0.0152
+            "value": 81.1,
+            "points": -2.1,
+            "logodds": 0.0291
           }
         ]
       },
@@ -338,25 +338,14 @@
         "engine": "extraction",
         "signals": [
           {
-            "feature": "spatial_variance_score",
-            "label": "Delivery address drift entropy",
-            "source": "E-commerce shipping records",
-            "fmt": "number",
-            "direction": "low",
-            "engine": "extraction",
-            "value": 1.1991,
-            "points": -9.4,
-            "logodds": 0.1303
-          },
-          {
             "feature": "anchor_count",
             "label": "Unique delivery destinations",
             "source": "E-commerce shipping records",
             "fmt": "count",
             "direction": "high",
             "engine": "extraction",
-            "value": 1.0,
-            "points": -0.0,
+            "value": 2.0,
+            "points": 0.0,
             "logodds": 0.0
           }
         ]
@@ -368,24 +357,24 @@
       "key": "telecom_reliability",
       "label": "Telecom Reliability",
       "source": "Mobile & broadband payments",
-      "score": 30.8,
+      "score": 1.0,
       "grade": "Poor",
       "has_data": true,
       "features": [
         {
           "feature": "avg_days_late",
-          "value": 5.545454545454546,
-          "goodness": 0.052
+          "value": 7.380952380952381,
+          "goodness": 0.0
         },
         {
           "feature": "missed_payments_count",
-          "value": 1.0,
-          "goodness": 0.5
+          "value": 12.0,
+          "goodness": 0.024
         },
         {
           "feature": "sms_bill_delay",
-          "value": null,
-          "goodness": null
+          "value": 18.333333333333332,
+          "goodness": 0.0
         }
       ]
     },
@@ -393,29 +382,29 @@
       "key": "spending_behaviour",
       "label": "Spending Behaviour",
       "source": "E-commerce purchase patterns",
-      "score": 38.7,
-      "grade": "Weak",
+      "score": 34.3,
+      "grade": "Poor",
       "has_data": true,
       "features": [
         {
           "feature": "necessity_ratio",
-          "value": 0.75488118222259,
-          "goodness": 0.428
+          "value": 0.685895446194964,
+          "goodness": 0.218
         },
         {
           "feature": "avg_merchant_rating",
-          "value": 3.1799999999999997,
-          "goodness": 0.016
+          "value": 3.12,
+          "goodness": 0.0
         },
         {
           "feature": "monthly_spend_volatility",
-          "value": 19030.4512048212,
-          "goodness": 0.697
+          "value": 32069.432986895616,
+          "goodness": 0.0
         },
         {
           "feature": "sms_spend_total",
-          "value": null,
-          "goodness": null
+          "value": 243867.21,
+          "goodness": 0.926
         }
       ]
     },
@@ -423,19 +412,19 @@
       "key": "location_stability",
       "label": "Location Stability",
       "source": "E-commerce shipping records",
-      "score": 32.2,
-      "grade": "Poor",
+      "score": 48.1,
+      "grade": "Weak",
       "has_data": true,
       "features": [
         {
           "feature": "spatial_variance_score",
-          "value": 1.1991454740621033,
-          "goodness": 0.204
+          "value": 0.6343095546405662,
+          "goodness": 0.135
         },
         {
           "feature": "anchor_count",
-          "value": 1.0,
-          "goodness": 0.5
+          "value": 2.0,
+          "goodness": 1.0
         }
       ]
     },
@@ -443,34 +432,34 @@
       "key": "cashflow_resilience",
       "label": "Cashflow Resilience",
       "source": "Bank cash-flow (econometric ECM)",
-      "score": 53.3,
+      "score": 52.1,
       "grade": "Weak",
       "has_data": true,
       "features": [
         {
           "feature": "monthly_income_mean",
-          "value": 30240.0875,
+          "value": 11748.9275,
           "goodness": 0.0
         },
         {
           "feature": "cash_burn_rate",
-          "value": null,
-          "goodness": null
+          "value": 0.6441475025069262,
+          "goodness": 0.0
         },
         {
           "feature": "cashflow_volatility",
-          "value": 12114.582665655107,
+          "value": 4366.230167543687,
           "goodness": 1.0
         },
         {
           "feature": "resilience_coefficient",
           "value": 1.0,
-          "goodness": 0.5
+          "goodness": 1.0
         },
         {
           "feature": "trend_slope",
-          "value": 0.8053764634310447,
-          "goodness": 0.967
+          "value": 0.18795497964062632,
+          "goodness": 1.0
         },
         {
           "feature": "is_stationary",
@@ -479,78 +468,78 @@
         },
         {
           "feature": "upi_lite_txn_count",
-          "value": null,
-          "goodness": null
+          "value": 11.0,
+          "goodness": 1.0
         },
         {
           "feature": "upi_lite_average_ticket",
-          "value": null,
-          "goodness": null
+          "value": 98.93363636363637,
+          "goodness": 0.424
         },
         {
           "feature": "dbt_income_consistency",
-          "value": null,
-          "goodness": null
+          "value": 0.0,
+          "goodness": 0.0
         }
       ]
     },
     {
       "key": "psychometric_character",
-      "label": "Character & Money Mindset",
+      "label": "Psychometric Questionnaire",
       "source": "Behavioural assessment",
-      "score": 8.3,
+      "score": 1.2,
       "grade": "Poor",
       "has_data": true,
       "features": [
         {
           "feature": "conscientiousness",
-          "value": 0.217,
-          "goodness": 0.0
+          "value": 0.2913,
+          "goodness": 0.023
         },
         {
           "feature": "locus_of_control",
-          "value": 0.1813,
+          "value": 0.1819,
           "goodness": 0.0
         },
         {
           "feature": "financial_self_efficacy",
-          "value": 0.1351,
-          "goodness": 0.002
+          "value": 0.2312,
+          "goodness": 0.0
         },
         {
           "feature": "present_bias",
-          "value": 0.9118,
+          "value": 0.7393,
           "goodness": 0.0
         },
         {
           "feature": "debt_attitude",
-          "value": 0.0448,
+          "value": 0.2347,
           "goodness": 0.0
         },
         {
           "feature": "risk_tolerance",
-          "value": 0.6276,
-          "goodness": 0.33
+          "value": 0.837,
+          "goodness": 0.0
         },
         {
           "feature": "delayed_gratification",
-          "value": 0.225,
-          "goodness": 0.026
+          "value": 0.2408,
+          "goodness": 0.0
         },
         {
           "feature": "honesty",
-          "value": 0.0928,
+          "value": 0.0,
           "goodness": 0.0
         },
         {
           "feature": "cognitive_reflection",
-          "value": 0.2968,
-          "goodness": 0.18
+          "value": 0.1583,
+          "goodness": 0.0
         },
         {
           "feature": "resourcefulness",
-          "value": 0.3673,
-          "goodness": 0.289
+          "value": 0.3185,
+          "goodness": 0.093
         }
       ]
     },
@@ -558,19 +547,19 @@
       "key": "vendor_transaction_velocity",
       "label": "Vendor Transaction Velocity",
       "source": "Micro-enterprise UPI/payment volumes",
-      "score": 0.5,
+      "score": 10.1,
       "grade": "Poor",
       "has_data": true,
       "features": [
         {
           "feature": "daily_transaction_count",
-          "value": 12.4,
-          "goodness": 0.01
+          "value": 24.38,
+          "goodness": 0.178
         },
         {
           "feature": "average_ticket_size",
-          "value": 47.24,
-          "goodness": 0.0
+          "value": 81.1,
+          "goodness": 0.025
         }
       ]
     },
@@ -578,7 +567,7 @@
       "key": "business_credentials",
       "label": "Business Credentials",
       "source": "Borrower onboarding, business profile",
-      "score": 20.4,
+      "score": 0.0,
       "grade": "Poor",
       "has_data": true,
       "features": [
@@ -589,8 +578,8 @@
         },
         {
           "feature": "turnover_income_consistency",
-          "value": 0.6693,
-          "goodness": 0.358
+          "value": 0.4738,
+          "goodness": 0.0
         },
         {
           "feature": "has_udyam_registration",
@@ -612,7 +601,7 @@
   ],
   "confidence": {
     "confidence_pct": 100.0,
-    "features_with_data": 35,
+    "features_with_data": 34,
     "features_total": 19,
     "facets_with_data": 7,
     "facets_total": 7,
@@ -628,7 +617,7 @@
     "interest_rate_pct": null,
     "tenure_months": null,
     "monthly_emi": 0.0,
-    "borrower_type": "individual",
+    "borrower_type": "msme",
     "rationale": "Does not meet minimum risk/affordability criteria for an offer."
   },
   "requested_amount": 60000.0,
@@ -643,18 +632,18 @@
   "panel": {
     "champion": {
       "name": "ebm",
-      "pd": 0.2786,
+      "pd": 0.3832,
       "band": "REJECT"
     },
     "challengers": [
       {
         "name": "catboost",
-        "pd": 0.1641,
+        "pd": 0.4984,
         "band": "REJECT"
       },
       {
         "name": "logistic",
-        "pd": 0.9509,
+        "pd": 0.7222,
         "band": "REJECT"
       }
     ],
@@ -662,27 +651,28 @@
     "hard_conflict": false,
     "n_models": 3,
     "agreement_pct": 100.0,
-    "pd_dispersion": 0.347,
-    "pd_min": 0.1641,
-    "pd_max": 0.9509
+    "pd_dispersion": 0.1407,
+    "pd_min": 0.3832,
+    "pd_max": 0.7222
   },
   "conformal": {
     "prediction_set": [
-      "no_default"
+      "no_default",
+      "default"
     ],
-    "abstain": false,
+    "abstain": true,
     "alpha": 0.1,
     "coverage_target": 0.9,
     "threshold_q": 0.70945,
-    "nonconformity_default": 0.7214,
-    "nonconformity_no_default": 0.2786
+    "nonconformity_default": 0.6168,
+    "nonconformity_no_default": 0.3832
   },
   "ood": {
     "enabled": true,
-    "ood": true,
-    "distance_sq": 45.0933,
+    "ood": false,
+    "distance_sq": 7.5207,
     "threshold_dsq": 18.939,
-    "severity": 2.381,
+    "severity": 0.397,
     "quantile": 0.99
   },
   "explanation_method": "ebm-additive-terms",

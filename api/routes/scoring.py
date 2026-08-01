@@ -321,7 +321,7 @@ DEMO_INTAKE_PROFILES = {
 
 # Red-team overlay for the "gamed applicant" demo: each edit is individually flattering
 # (huge income, zero delays, zero volatility, textbook psychometrics) but the *joint*
-# profile never occurred in training — the exact signature the OOD anomaly gate catches.
+# profile never occurred in training - the exact signature the OOD anomaly gate catches.
 GAMED_FEATURE_OVERRIDES = {
     "monthly_income_mean": 500000.0,
     "avg_days_late": 0.0,
@@ -361,19 +361,43 @@ async def get_demo_audit_trail(
     }
     cohort_code_val = cohort_codes[cohort]
     
-    # 1. Find a seeded user of this cohort
+    # 1. Find a seeded user of this cohort. Prefer one whose shared vaults cover every
+    # data scope the cohort is actually scored on, so the audit trail shows a
+    # representative, fully-populated profile instead of one with silently-imputed
+    # (e.g. ₹0 income) features that have no matching raw vault in Step 2.
+    from convergence.score_engine import COHORT_EXPECTED_SCOPES
+
     stmt = select(MLFeature.user_id).where(
         MLFeature.feature_name == "cohort_code",
         MLFeature.feature_value == cohort_code_val
-    ).limit(1)
+    )
     result = await db.execute(stmt)
-    user_uuid = result.scalar_one_or_none()
-    
-    if not user_uuid:
+    candidate_ids = [row[0] for row in result.all()]
+
+    if not candidate_ids:
         raise HTTPException(
-            status_code=404, 
+            status_code=404,
             detail=f"No seeded users found for cohort '{cohort}'. Please seed the database first."
         )
+
+    primary_vault_scopes = {"telecom", "ecommerce", "geo", "cashflow"}
+    needed_scopes = set(COHORT_EXPECTED_SCOPES.get(cohort, [])) & primary_vault_scopes
+
+    coverage: dict = {}
+    if needed_scopes:
+        vt_result = await db.execute(
+            select(SecureVault.user_id, SecureVault.data_type).where(
+                SecureVault.user_id.in_(candidate_ids)
+            )
+        )
+        for uid, dtype in vt_result.all():
+            coverage.setdefault(uid, set()).add(dtype)
+
+    # Highest scope coverage wins; ties keep the deterministic seed order.
+    user_uuid = max(
+        candidate_ids,
+        key=lambda uid: len(needed_scopes & coverage.get(uid, set())),
+    )
         
     # 2. Check and insert mock ApplicationIntake if not exists
     mock_data = DEMO_INTAKE_PROFILES[cohort]
@@ -423,14 +447,62 @@ async def get_demo_audit_trail(
         db.add(vault_intake_row)
         await db.commit()
 
+    # 3b. Materialise the cohort's dedicated alternative-data source if missing.
+    # Student / Vendor / Farmer / Homemaker are each scored on a facet whose signals
+    # (campus UPI spend, QR settlements, mandi receipts, utility bills) don't live in
+    # the generic telecom/e-commerce/cash-flow streams -- in the seed they're folded
+    # into the survey blob. Reconstruct a transaction-level raw vault from the
+    # borrower's already-derived facet features so Step 2 shows that source explicitly
+    # and reconciles with the Step 3 feature table. Deterministic and idempotent.
+    from synthetic_data.generate_raw_mock import COHORT_RAW_SOURCE_BUILDERS
+
+    cohort_source = COHORT_RAW_SOURCE_BUILDERS.get(cohort)
+    if cohort_source:
+        source_type, builder, feature_defaults = cohort_source
+        existing_stmt = select(SecureVault).where(
+            SecureVault.user_id == user_uuid,
+            SecureVault.data_type == source_type,
+        )
+        existing_res = await db.execute(existing_stmt)
+        if existing_res.scalar_one_or_none() is None:
+            feat_stmt = select(MLFeature.feature_name, MLFeature.feature_value).where(
+                MLFeature.user_id == user_uuid,
+                MLFeature.feature_name.in_([name for name, _ in feature_defaults]),
+            )
+            feat_res = await db.execute(feat_stmt)
+            feature_values = {name: float(val) for name, val in feat_res.all()}
+            kwargs = {
+                name: feature_values.get(name, default) for name, default in feature_defaults
+            }
+            encryptor = get_encryptor()
+            db.add(
+                SecureVault(
+                    user_id=user_uuid,
+                    data_type=source_type,
+                    encrypted_payload=encryptor.encrypt(
+                        json.dumps(builder(str(user_uuid), **kwargs), default=str)
+                    ),
+                )
+            )
+            await db.commit()
+
     # 4. Fetch and decrypt all SecureVault records for this user
     encryptor = get_encryptor()
     vault_stmt = select(SecureVault).where(SecureVault.user_id == user_uuid)
     vault_result = await db.execute(vault_stmt)
     vault_records = vault_result.scalars().all()
     
+    # Only surface the raw vaults this cohort is actually scored on, so Step 2 never
+    # shows a data source (e.g. a student's telecom bill) that produces no feature in
+    # the downstream scorecard. Mirrors the exclusion applied in the scoring engine
+    # (COHORT_EXPECTED_SCOPES); the always-present "intake" statement is kept.
+    from convergence.score_engine import COHORT_EXPECTED_SCOPES
+    expected_scopes = set(COHORT_EXPECTED_SCOPES.get(cohort, [])) | {"intake"}
+
     raw_data = {}
     for record in vault_records:
+        if record.data_type not in expected_scopes:
+            continue
         try:
             decrypted = encryptor.decrypt(record.encrypted_payload)
             raw_data[record.data_type] = json.loads(decrypted)

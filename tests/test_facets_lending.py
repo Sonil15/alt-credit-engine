@@ -329,10 +329,10 @@ def test_msme_dynamic_capacity_multipliers():
 
     # Test recommendation logic incorporates this
     row_farmer = pd.Series({"monthly_income_mean": 20000.0, "borrower_type": 1.0})
-    terms_farmer = recommend_terms(0.1, 700, "APPROVE", row_farmer, cohort="Farmer")
+    terms_farmer = recommend_terms(0.1, 720, "APPROVE", row_farmer, cohort="Farmer")
     
     row_gig = pd.Series({"monthly_income_mean": 20000.0, "borrower_type": 1.0})
-    terms_gig = recommend_terms(0.1, 700, "APPROVE", row_gig, cohort="GigWorker")
+    terms_gig = recommend_terms(0.1, 720, "APPROVE", row_gig, cohort="GigWorker")
 
     # Farmer has higher capacity due to lower digital ratio (3x vs 1.25x), so higher max loan amount
     assert terms_farmer["max_loan_amount"] > terms_gig["max_loan_amount"]

@@ -6,7 +6,7 @@
   <title>Alt-Credit: Psychometric Assessment</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/assessment.css?v=1.0.0">
-  <script src="/static/translations.js?v=1.0.4"></script>
+  <script src="/static/translations.js?v=1.0.5"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
   <script>
     // Login is mandatory for the borrower flow. Redirect to sign-in before any
@@ -36,7 +36,7 @@
       <div class="progress" id="progress"></div>
       <div class="info-right">
         <button class="tts-toggle hidden" id="tts-toggle" type="button" aria-pressed="false">
-          <span class="tts-icon">🔊</span><span class="tts-label">AI voice</span>
+          <span class="tts-icon">🔊</span><span class="tts-label" data-i18n="assessment-tts-label">AI voice</span>
         </button>
         <div class="timer hidden" id="timer-display">
           ⏱️ <span id="timer-text">07:00</span>
@@ -48,12 +48,12 @@
       <div class="processing-spinner"></div>
       <div class="processing-title" id="processing-title">Analysing your responses…</div>
       <div class="processing-steps" id="processing-steps"></div>
-      <div class="processing-eta" id="processing-eta">This usually takes 10–20 seconds</div>
+      <div class="processing-eta" id="processing-eta" data-i18n="assessment-processing-eta">This usually takes 10–20 seconds</div>
     </div>
     <div id="result-panel" class="result-panel hidden">
       <p style="color:#94a3b8;font-size:14px;" data-i18n="assessment-result-score-label">Your Alternate Credit Score</p>
-      <div class="score" id="score-display">—</div>
-      <div class="badge badge-REVIEW" id="decision-badge">—</div>
+      <div class="score" id="score-display">-</div>
+      <div class="badge badge-REVIEW" id="decision-badge">-</div>
       <p style="color:#94a3b8;font-size:13px;margin-top:12px;" id="pd-display"></p>
       <button class="icon-btn primary" style="width:100%;border-radius:12px;margin-top:16px;height:48px;"
         onclick="window.location='/dashboard?user_id=' + userId" data-i18n="assessment-btn-dashboard">View Bank Dashboard</button>
@@ -96,21 +96,21 @@
     <!-- Extension confirmation overlay -->
     <div id="extension-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:101;justify-content:center;align-items:center;">
       <div style="background:#1e293b;border:1px solid #334155;border-radius:20px;padding:28px;max-width:340px;width:90%;text-align:center;">
-        <p style="font-size:18px;font-weight:700;margin-bottom:12px;" id="ext-title">Time is up!</p>
-        <p style="font-size:14px;color:#94a3b8;line-height:1.6;margin-bottom:24px;" id="ext-body">
+        <p style="font-size:18px;font-weight:700;margin-bottom:12px;" id="ext-title" data-i18n="assessment-timeout-title">Time is up!</p>
+        <p style="font-size:14px;color:#94a3b8;line-height:1.6;margin-bottom:24px;" id="ext-body" data-i18n="assessment-timeout-body">
           Do you need a little more time to finish the assessment? We can give you an extra 2 minutes.
         </p>
         <div style="display:flex;gap:12px;">
-          <button onclick="submitTimeout()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#334155;color:#e2e8f0;font-size:14px;font-weight:600;cursor:pointer;">Submit Now</button>
-          <button onclick="acceptExtension()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#2563eb;color:white;font-size:14px;font-weight:600;cursor:pointer;">Get 2 Mins</button>
+          <button onclick="submitTimeout()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#334155;color:#e2e8f0;font-size:14px;font-weight:600;cursor:pointer;" data-i18n="assessment-timeout-submit">Submit Now</button>
+          <button onclick="acceptExtension()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#2563eb;color:white;font-size:14px;font-weight:600;cursor:pointer;" data-i18n="assessment-timeout-extend">Get 2 Mins</button>
         </div>
       </div>
     </div>
     <div class="start-bar" id="start-bar">
-      <button class="start-btn" id="start-btn">Start Assessment</button>
+      <button class="start-btn" id="start-btn" data-i18n="assessment-start-btn">Start Assessment</button>
     </div>
     <div class="start-bar hidden" id="begin-bar">
-      <button class="start-btn" id="begin-btn">Start Timer</button>
+      <button class="start-btn" id="begin-btn" data-i18n="assessment-begin-timer-btn">Start Timer</button>
     </div>
     <div class="input-bar hidden" id="input-bar">
       <button class="keyboard-btn" id="keyboard-btn" type="button" title="Toggle on-screen keyboard">⌨️</button>
@@ -276,13 +276,14 @@
       document.getElementById('start-btn').textContent = START_LABEL[language] || START_LABEL.en;
       const intro = document.getElementById('intro-bubble');
       if (intro) intro.textContent = INTRO[language] || INTRO.en;
+      translatePage(language);
     }
 
     document.querySelectorAll('.lang-btn').forEach(btn => {
       btn.onclick = () => {
         if (started) return;
         language = btn.dataset.lang;
-        localStorage.setItem('altcredit_lang', language);
+        setCurrentLanguage(language);
         refreshLangUI();
         // Hide all other language buttons once a choice is made
         document.querySelectorAll('.lang-btn').forEach(b => {

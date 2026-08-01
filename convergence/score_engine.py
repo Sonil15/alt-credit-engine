@@ -58,15 +58,14 @@ MISSED_PAYMENTS_THRESHOLD = 5
 LOW_CONFIDENCE_PCT = 60.0
 
 SCOPE_TO_FEATURES = {
-    "telecom": ["avg_days_late", "missed_payments_count"],
-    "ecommerce": ["necessity_ratio", "avg_merchant_rating", "monthly_spend_volatility"],
-    "geo": ["spatial_variance_score", "anchor_count"],
+    "telecom": ["missed_payments_count"],
+    "ecommerce": ["monthly_spend_volatility"],
+    "geo": ["anchor_count"],
     # Bank cash-flow, plus every econometric feature derived from the cash-flow series
     # (ECM + ADF). Revoking cash-flow must gate all of them or expense/stationarity
     # signals leak back into the model input and the driver explanation.
     "cashflow": [
-        "monthly_income_mean", "monthly_expense_mean", "cashflow_volatility",
-        "cash_burn_rate",
+        "cashflow_volatility", "cash_burn_rate",
         "resilience_coefficient", "trend_slope", "is_stationary",
         "adf_statistic", "adf_pvalue",
     ],
@@ -76,15 +75,51 @@ SCOPE_TO_FEATURES = {
         "delayed_gratification", "honesty", "cognitive_reflection", "resourcefulness",
         "response_validity"
     ],
-    "campus": ["upi_spend_consistency", "small_dues_payment_promptness", "e_wallet_topup_frequency"],
-    "vendor": ["daily_transaction_count", "average_ticket_size"],
-    "farmer": ["harvest_income_spike", "input_purchase_consistency"],
-    "household": ["utility_payment_consistency", "grocery_spend_stability"],
+    "campus": ["upi_spend_consistency"],
+    "vendor": [],
+    "farmer": ["harvest_income_spike"],
+    "household": [],
     # Granular sub-scopes (2026-07)
     "upi_lite": ["upi_lite_txn_count", "upi_lite_average_ticket"],
     "dbt_logs": ["dbt_income_consistency"],
     "sms_parsing": ["sms_spend_total", "sms_bill_delay"],
     "enam_receipts": ["enam_receipt_volume"],
+    "telco_postpaid_apis": ["avg_days_late"],
+    "ondc_retail": ["avg_merchant_rating"],
+    "amazon_flipkart_scraping": ["necessity_ratio"],
+    "shipping_pin_codes": ["spatial_variance_score"],
+    "aa_bank_statements": ["monthly_income_mean", "monthly_expense_mean"],
+    "student_wallet_topups": ["e_wallet_topup_frequency"],
+    "split_bill_history": ["small_dues_payment_promptness"],
+    "ondc_merchant": ["average_ticket_size"],
+    "upi_qr_dashboards": ["daily_transaction_count"],
+    "kisan_credit_card": ["input_purchase_consistency"],
+    "bbps_utility": ["utility_payment_consistency"],
+    "grocery_pos": ["grocery_spend_stability"],
+}
+
+
+# The data scopes each cohort is actually scored on. ``geo`` and ``survey`` are
+# universal; the remaining primary vault scopes (telecom / e-commerce / cash-flow)
+# only apply where a cohort realistically has that footprint. Features from a scope a
+# cohort does NOT use are dropped from the driver lists and the lineage trace (and
+# their residual, near-zero contribution is folded into the baseline) so the audit
+# trail never explains a student's score with a telecom bill the scorecard ignores.
+# Each thin-file cohort's dedicated facet draws on more than the coarse scope name:
+# its signals are spread across granular sub-scopes in ``SCOPE_TO_FEATURES`` (e.g. a
+# vendor's ``daily_transaction_count`` lives under ``upi_qr_dashboards`` and
+# ``average_ticket_size`` under ``ondc_merchant``). Every sub-scope a cohort's facet
+# uses must be listed here, or the exclusion loop below folds those features into the
+# baseline and the audit trail shows a Step 2 data source with no matching Step 3
+# driver -- a student's split-bill or a vendor's QR settlements would vanish from the
+# scorecard even though the facet scored them.
+COHORT_EXPECTED_SCOPES = {
+    "Salaried": ["telecom", "ecommerce", "geo", "cashflow", "survey"],
+    "GigWorker": ["telecom", "ecommerce", "geo", "cashflow", "survey"],
+    "Student": ["geo", "survey", "campus", "split_bill_history", "student_wallet_topups"],
+    "Vendor": ["geo", "survey", "vendor", "upi_qr_dashboards", "ondc_merchant"],
+    "Farmer": ["geo", "survey", "farmer", "kisan_credit_card", "enam_receipts"],
+    "Homemaker": ["telecom", "geo", "survey", "household", "bbps_utility", "grocery_pos"],
 }
 
 
@@ -381,7 +416,7 @@ def _build_payload(
 
     # OOD integrity gate: an anomalous *joint* feature vector (each coordinate plausible,
     # the combination absent from training) is where an additive model extrapolates
-    # blindly — the signature of a gamed profile. Abstain to REVIEW, never reject.
+    # blindly - the signature of a gamed profile. Abstain to REVIEW, never reject.
     ood = ood_report(feature_row, get_cached_ood_calibration())
     pre_ood_decision = decision
     decision = apply_ood_gate(decision, auto_reject, ood)
@@ -408,14 +443,6 @@ def _build_payload(
         excluded_features.update(BUSINESS_MODEL_FEATURES)
 
     # Exclude features that belong to scopes not applicable to this cohort
-    COHORT_EXPECTED_SCOPES = {
-        "Salaried": ["telecom", "ecommerce", "geo", "cashflow", "survey"],
-        "GigWorker": ["telecom", "ecommerce", "geo", "cashflow", "survey"],
-        "Student": ["geo", "survey", "campus"],
-        "Vendor": ["geo", "survey", "vendor"],
-        "Farmer": ["geo", "survey", "farmer"],
-        "Homemaker": ["telecom", "geo", "survey", "household"],
-    }
     expected_scopes = COHORT_EXPECTED_SCOPES.get(str(cohort), [])
     for scope_name, scope_features in SCOPE_TO_FEATURES.items():
         if scope_name not in expected_scopes:
@@ -426,6 +453,12 @@ def _build_payload(
     feature_drivers = _top_drivers(visible_contributions)
     negative_drivers = _top_negative_drivers(visible_contributions)
     feature_trace = build_feature_trace(user_row, factor_points, exclude_features=excluded_features)
+
+    # Retain all feature contributions in factor_points to reflect total EBM model
+    # arithmetic in the scorecard. Individual feature traces filter unshared features.
+    base_points = safe_round(
+        credit_score - sum(safe_float(v) for v in factor_points.values()), 1
+    )
     reason_codes = drivers_to_reason_codes(negative_drivers)
     gated_to_review = decision == "REVIEW" and champion_decision != "REVIEW" and not auto_reject
     conformal_gated = decision == "REVIEW" and pre_conformal_decision == "APPROVE" and conformal.get("abstain")
@@ -539,7 +572,7 @@ async def score_user(
 
     ``feature_overrides`` (demo/red-team only): overwrite specific feature columns on the
     real feature vector *before* PD prediction, so a tampered profile is scored by the
-    genuine engine — champion, panel, conformal, and the OOD gate all run for real. Never
+    genuine engine - champion, panel, conformal, and the OOD gate all run for real. Never
     used on the persisted scoring path.
     """
     # First check the user's CIBIL score in BorrowerAccount

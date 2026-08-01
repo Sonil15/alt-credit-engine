@@ -41,10 +41,10 @@
   <div class="container">
     <h2 class="section-title">Portfolio Overview</h2>
     <div class="grid">
-      <div class="card"><div class="card-label">Total Borrowers</div><div class="card-value" id="pf-total">—</div></div>
-      <div class="card"><div class="card-label">Approval Rate</div><div class="card-value score" id="pf-approve">—</div></div>
-      <div class="card"><div class="card-label">Expected Default Rate</div><div class="card-value pd" id="pf-edr">—</div></div>
-      <div class="card"><div class="card-label">Avg Score</div><div class="card-value" id="pf-avg">—</div></div>
+      <div class="card"><div class="card-label">Total Borrowers</div><div class="card-value" id="pf-total">-</div></div>
+      <div class="card"><div class="card-label">Approval Rate</div><div class="card-value score" id="pf-approve">-</div></div>
+      <div class="card"><div class="card-label">Expected Default Rate</div><div class="card-value pd" id="pf-edr">-</div></div>
+      <div class="card"><div class="card-label">Avg Score</div><div class="card-value" id="pf-avg">-</div></div>
     </div>
     <div class="two-col">
       <div class="chart-card">
@@ -95,23 +95,23 @@
           <div class="score-hero">
             <div class="gauge-wrap">
               <canvas id="score-gauge" height="150"></canvas>
-              <div class="gauge-score" id="credit-score">—</div>
+              <div class="gauge-score" id="credit-score">-</div>
               <div class="gauge-grade" id="score-grade"></div>
               <div class="gauge-range">Alternate Credit Score · 300–900</div>
             </div>
             <div>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
-                <span class="badge" id="decision-badge">—</span>
-                <span class="badge" id="bureau-routing-badge" style="display:none; padding:7px 16px; border-radius:24px; font-size:13px; font-weight:700;">—</span>
+                <span class="badge" id="decision-badge">-</span>
+                <span class="badge" id="bureau-routing-badge" style="display:none; padding:7px 16px; border-radius:24px; font-size:13px; font-weight:700;">-</span>
                 <span class="badge" id="gate-flag" style="display:none; background:#fef3c7; color:#92400e; border:1px solid #fcd34d; padding:7px 16px; border-radius:24px; font-size:13px; font-weight:700;" title="Model approved, but the requested amount exceeds the serviceable maximum, outcome is REVIEW for a counter-offer.">⚖ AFFORDABILITY GATE → REVIEW</span>
-                <span class="badge" id="cohort-badge" style="display:none; background:#334155; color:#cbd5e1; padding: 7px 16px; border-radius: 24px; font-size: 14px; font-weight: 700;">—</span>
+                <span class="badge" id="cohort-badge" style="display:none; background:#334155; color:#cbd5e1; padding: 7px 16px; border-radius: 24px; font-size: 14px; font-weight: 700;">-</span>
                 <button onclick="openOverrideModal()" title="View AI Reasoning (glass-box) below to justify override" style="margin-left: 16px; padding: 6px 12px; background: #fef08a; border: 1px solid #ca8a04; color: #a16207; font-weight: bold; border-radius: 6px; cursor: pointer;">Change Decision</button>
               </div>
               <span class="thin-flag" id="thin-flag" style="display:none;">THIN FILE</span>
               <span class="thin-flag" id="simulated-badge" style="display:none; background:#fee2e2; color:#991b1b; border: 1px solid #fca5a5; text-transform: uppercase;">SIMULATED</span>
               <div class="meta-row" style="margin-top:16px;">
-                <div class="meta-item"><div class="k">Prob. of Default</div><div class="v pd" id="pd-value" style="color:#dc2626;">—</div></div>
-                <div class="meta-item"><div class="k">Data Confidence</div><div class="v" id="conf-value">—</div>
+                <div class="meta-item"><div class="k">Prob. of Default</div><div class="v pd" id="pd-value" style="color:#dc2626;">-</div></div>
+                <div class="meta-item"><div class="k">Data Confidence</div><div class="v" id="conf-value">-</div>
                   <div class="conf-bar"><div class="conf-fill" id="conf-fill" style="width:0%"></div></div>
                 </div>
               </div>
@@ -193,7 +193,7 @@
             <div class="pl-box pl-data">
               <div class="pl-t">Alternative Data</div>
               <div class="pl-d" id="pl-sources-desc">Consented sources</div>
-              <div class="pl-v" id="pl-sources" style="color:#0f172a;">—</div>
+              <div class="pl-v" id="pl-sources" style="color:#0f172a;">-</div>
             </div>
           </div>
           <div class="pl-arrow">→</div>
@@ -212,7 +212,7 @@
             <div class="pl-box pl-ml">
               <div class="pl-t">Glass-box Champion · EBM</div>
               <div class="pl-d">Additive model → probability of default (CatBoost + Logistic audit it)</div>
-              <div class="pl-v pd" id="pl-pd" style="color:#dc2626;">—</div>
+              <div class="pl-v pd" id="pl-pd" style="color:#dc2626;">-</div>
             </div>
           </div>
           <div class="pl-arrow">→</div>
@@ -220,7 +220,7 @@
             <div class="pl-box pl-score">
               <div class="pl-t">Scorecard · PDO</div>
               <div class="pl-d">log-odds → 300–900 band + additive points</div>
-              <div class="pl-v" id="pl-score" style="color:#2563eb;">—</div>
+              <div class="pl-v" id="pl-score" style="color:#2563eb;">-</div>
             </div>
           </div>
           <div class="pl-arrow">→</div>
@@ -228,7 +228,7 @@
             <div class="pl-box pl-decision">
               <div class="pl-t">Decision</div>
               <div class="pl-d">Approve / Review / Reject + loan terms</div>
-              <div class="pl-v" id="pl-decision">—</div>
+              <div class="pl-v" id="pl-decision">-</div>
             </div>
           </div>
         </div>
@@ -238,12 +238,10 @@
       <!-- Input data -> score linkage -->
       <div class="chart-card" id="trace-card" style="display:none;">
         <h2>Input data → score linkage (Signal Trace)</h2>
-        <p class="trace-sub">Every row is a real value drawn from this borrower's alternative data, tagged with the engine that derived it (<span class="eng eng-ecm">ECM</span> econometric or <span class="eng eng-stat">STAT</span> statistical) and the exact points the ML model gave it. This is the audit trail from raw input to decision.</p>
+        <p class="trace-sub">All signals derived from this borrower's alternative data, listed by data source with the borrower's extracted value, engine type (<span class="eng eng-ecm">ECM</span> econometric or <span class="eng eng-stat">STAT</span> statistical), and exact score impact (additive points).</p>
         <div class="trace-table-container">
-          <table class="trace-table" id="trace-top"></table>
+          <table class="trace-table" id="trace-main"></table>
         </div>
-        <button class="trace-toggle" id="trace-toggle" onclick="toggleAllSignals()">▸ Show all signals by data source</button>
-        <div id="trace-all" style="display:none;"></div>
       </div>
     </div>
 
@@ -337,7 +335,7 @@
       if (fairnessChart) fairnessChart.destroy();
       fairnessChart = new Chart(document.getElementById('fairness-chart'), {
         type:'bar',
-        data:{ labels: labels.length?labels:['—'],
+        data:{ labels: labels.length?labels:['-'],
           datasets:[{ label:'Approval %', data: vals.length?vals:[0], backgroundColor:'#3b82f6', borderRadius:6 }] },
         options:{ plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y.toFixed(1)+'% approved'}}}, scales:{y:{suggestedMax:100, title:{display:true,text:'Approval %'}}} }
       });
@@ -555,17 +553,17 @@
       // Borrower intent captured at onboarding (purpose + requested amount).
       let intentHtml = '';
       if (d.loan_purpose || d.requested_amount) {
-        let purposeLabel = d.loan_purpose ? d.loan_purpose.replace(/_/g, ' ') : '—';
+        let purposeLabel = d.loan_purpose ? d.loan_purpose.replace(/_/g, ' ') : '-';
         if (d.loan_purpose === 'other' && d.loan_purpose_other_text) {
           purposeLabel = 'Other: ' + d.loan_purpose_other_text;
         }
         const consistChip = d.purpose_consistent === null || d.purpose_consistent === undefined ? '' :
           d.purpose_consistent
             ? ' <span style="color:#16a34a; font-weight:700;" title="Purpose is consistent with this borrower category">✓</span>'
-            : ' <span style="color:#dc2626; font-weight:700;" title="Purpose does not match the categories typically declared for this borrower type — not a rejection, flagged for review">✗</span>';
+            : ' <span style="color:#dc2626; font-weight:700;" title="Purpose does not match the categories typically declared for this borrower type - not a rejection, flagged for review">✗</span>';
         const gated = d.funding_gap && d.funding_gap.gated;
         intentHtml = `<div class="offer" style="margin-bottom:10px;">
-          <div class="o"><div class="k">Requested</div><div class="v" ${gated ? 'style="color:#dc2626;"' : ''}>${d.requested_amount ? fmtINR(d.requested_amount) : '—'}</div></div>
+          <div class="o"><div class="k">Requested</div><div class="v" ${gated ? 'style="color:#dc2626;"' : ''}>${d.requested_amount ? fmtINR(d.requested_amount) : '-'}</div></div>
           <div class="o"><div class="k">Purpose</div><div class="v" style="text-transform:capitalize; font-size:15px;">${purposeLabel}${consistChip}</div></div>
         </div>`;
       }
@@ -648,8 +646,8 @@
         default: return v.toFixed(2);
       }
     };
-    const ptsClass = p => p>=0 ? 'up' : 'down';
-    const ptsText = p => (p>=0?'+':'') + p.toFixed(1) + ' pts';
+    const ptsClass = p => Math.abs(p) < 0.05 ? 'neutral' : (p > 0 ? 'up' : 'down');
+    const ptsText = p => Math.abs(p) < 0.05 ? '0.0 pts' : ((p > 0 ? '+' : '') + p.toFixed(1) + ' pts');
     const engineBadge = e => e==='econometric'
       ? '<span class="eng eng-ecm">ECM</span>'
       : '<span class="eng eng-stat">STAT</span>';
@@ -658,7 +656,7 @@
     function renderPipeline(d) {
       document.getElementById('pipeline-card').style.display = 'block';
       const conf = d.confidence || {};
-      const withData = conf.facets_with_data ?? '—';
+      const withData = conf.facets_with_data ?? '-';
       const total = conf.facets_total ?? 5;
       document.getElementById('pl-sources').textContent = `${withData}/${total} active`;
 
@@ -680,46 +678,35 @@
     }
 
     function renderTrace(trace) {
-      const top = trace.top_drivers || [];
       const bySource = trace.by_source || [];
       const card = document.getElementById('trace-card');
-      if (!top.length) { card.style.display='none'; return; }
+      if (!bySource.length) { card.style.display='none'; return; }
       card.style.display='block';
 
-      document.getElementById('trace-top').innerHTML =
-        `<tr><th>Data source</th><th>Signal</th><th>Borrower's value</th><th style="text-align:right">Impact</th></tr>` +
-        top.map(s => `<tr>
-          <td class="trace-src">${s.source}</td>
-          <td>${s.label} ${engineBadge(s.engine)}</td>
-          <td class="trace-val">${fmtSignalValue(s)}</td>
-          <td class="trace-pts ${ptsClass(s.points)}">${ptsText(s.points)}</td>
-        </tr>`).join('');
+      let rowsHtml = '';
+      bySource.forEach(g => {
+        (g.signals || []).forEach(s => {
+          rowsHtml += `<tr>
+            <td class="trace-src">${g.source}</td>
+            <td>${s.label} ${engineBadge(s.engine)}</td>
+            <td class="trace-val">${fmtSignalValue(s)}</td>
+            <td class="trace-pts ${ptsClass(s.points)}">${ptsText(s.points)}</td>
+          </tr>`;
+        });
+      });
 
-      document.getElementById('trace-all').innerHTML = bySource.map(g => `
-        <div class="src-group">
-          <h3><span class="src-dot ${g.engine==='econometric'?'ecm':''}"></span>${g.source} ${engineBadge(g.engine)}</h3>
-          <div class="trace-table-container">
-            <table class="trace-table">
-              ${g.signals.map(s => `<tr>
-                <td>${s.label}</td>
-                <td class="trace-val">${fmtSignalValue(s)}</td>
-                <td class="trace-pts ${ptsClass(s.points)}">${ptsText(s.points)}</td>
-              </tr>`).join('')}
-            </table>
-          </div>
-        </div>`).join('');
-
-      // Collapse the full lineage each time a new borrower is rendered.
-      signalsExpanded = false;
-      document.getElementById('trace-all').style.display = 'none';
-      document.getElementById('trace-toggle').textContent = '▸ Show all signals by data source';
-    }
-
-    function toggleAllSignals() {
-      signalsExpanded = !signalsExpanded;
-      document.getElementById('trace-all').style.display = signalsExpanded ? 'block' : 'none';
-      document.getElementById('trace-toggle').textContent =
-        (signalsExpanded ? '▾ Hide' : '▸ Show all') + ' signals by data source';
+      document.getElementById('trace-main').innerHTML =
+        `<thead>
+          <tr>
+            <th>Data source</th>
+            <th>Signal</th>
+            <th>Borrower's value</th>
+            <th style="text-align:right">Impact</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>`;
     }
 
     function showError(msg){ const e=document.getElementById('error-box'); e.textContent=msg; e.style.display='block'; document.getElementById('score-panel').style.display='none'; }

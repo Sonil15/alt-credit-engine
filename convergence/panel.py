@@ -30,7 +30,7 @@ from convergence.scorecard import pd_to_credit_score
 # band. The agreement gate demotes an approval to
 # review only on a hard APPROVE-vs-REJECT conflict, not on adjacent-band scatter,
 # so a champion approval survives a merely-more-conservative challenger.
-APPROVE_SCORE = 700
+APPROVE_SCORE = 720
 REVIEW_SCORE = 560
 
 

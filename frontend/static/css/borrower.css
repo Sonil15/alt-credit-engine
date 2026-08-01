@@ -242,6 +242,6 @@ body {
 }
 
 /* The borrower report lives inside a fixed ~420px "phone" shell, so it always
- * renders in the mobile layout — viewport-width media queries (which fire on the
+ * renders in the mobile layout - viewport-width media queries (which fire on the
  * desktop window even though the frame stays narrow) would otherwise cram the
  * meta-grid into two columns and wrap the labels. Keep it single-column. */

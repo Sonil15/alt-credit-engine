@@ -445,7 +445,7 @@ class AuthCredentials(BaseModel):
     cibil_score: int | None = Field(default=None)
     captcha_answer: str | None = Field(default=None)
     captcha_token: str | None = Field(default=None)
-    # Self-declared, optional, used only for fairness-monitor group parity — never
+    # Self-declared, optional, used only for fairness-monitor group parity - never
     # a model input (see convergence/fairness.py). Left unset if the borrower
     # prefers not to say; that borrower is then excluded from parity groups
     # rather than assigned a guessed value.

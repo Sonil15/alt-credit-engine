@@ -39,7 +39,14 @@ _revoked_users: set[str] = set()              # user_id (for user-id-based revok
 _user_consent_map: dict[str, str] = {}        # user_id -> consent_id
 _erasure_requests: dict[str, dict] = {}       # user_id -> erasure record
 
-CONSENT_SCOPES = ["telecom", "ecommerce", "geo", "cashflow", "survey", "upi_lite", "dbt_logs", "sms_parsing", "enam_receipts"]
+CONSENT_SCOPES = [
+    "telecom", "ecommerce", "geo", "cashflow", "survey", "campus", "vendor", "farmer", "household",
+    "upi_lite", "dbt_logs", "sms_parsing", "telco_postpaid_apis",
+    "ondc_retail", "amazon_flipkart_scraping", "shipping_pin_codes", 
+    "aa_bank_statements", "student_wallet_topups", "split_bill_history",
+    "ondc_merchant", "upi_qr_dashboards", "enam_receipts", "kisan_credit_card",
+    "bbps_utility", "grocery_pos"
+]
 DATA_FIDUCIARY = "Alt-Credit Engine (Demo AA)"
 CONSENT_PURPOSE = "Alternate creditworthiness assessment for thin-file loan origination"
 CONSENT_TTL_HOURS = 24
@@ -256,16 +263,29 @@ def get_revoked_scopes(user_id: str) -> list[str]:
             revoked = list(record.get("revoked_scopes", []))
             # Cascade parent scope revocations to sub-scopes
             if "cashflow" in revoked:
-                if "upi_lite" not in revoked:
-                    revoked.append("upi_lite")
-                if "dbt_logs" not in revoked:
-                    revoked.append("dbt_logs")
+                for sub in ["upi_lite", "dbt_logs", "aa_bank_statements"]:
+                    if sub not in revoked: revoked.append(sub)
             if "telecom" in revoked:
-                if "sms_parsing" not in revoked:
-                    revoked.append("sms_parsing")
+                for sub in ["sms_parsing", "telco_postpaid_apis"]:
+                    if sub not in revoked: revoked.append(sub)
             if "farmer" in revoked:
-                if "enam_receipts" not in revoked:
-                    revoked.append("enam_receipts")
+                for sub in ["enam_receipts", "kisan_credit_card"]:
+                    if sub not in revoked: revoked.append(sub)
+            if "ecommerce" in revoked:
+                for sub in ["ondc_retail", "amazon_flipkart_scraping"]:
+                    if sub not in revoked: revoked.append(sub)
+            if "geo" in revoked:
+                for sub in ["shipping_pin_codes"]:
+                    if sub not in revoked: revoked.append(sub)
+            if "campus" in revoked:
+                for sub in ["student_wallet_topups", "split_bill_history"]:
+                    if sub not in revoked: revoked.append(sub)
+            if "vendor" in revoked:
+                for sub in ["ondc_merchant", "upi_qr_dashboards"]:
+                    if sub not in revoked: revoked.append(sub)
+            if "household" in revoked:
+                for sub in ["bbps_utility", "grocery_pos"]:
+                    if sub not in revoked: revoked.append(sub)
             return revoked
     return []
 

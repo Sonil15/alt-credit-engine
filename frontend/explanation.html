@@ -249,7 +249,7 @@
         <select id="cohort-select" class="cohort-select" onchange="loadDemoCohort(this.value)">
           <option value="Salaried">Salaried</option>
           <option value="GigWorker">Gig Worker</option>
-          <option value="Student">Student</option>
+          <option value="Student" selected>Student</option>
           <option value="Vendor">Vendor</option>
           <option value="Farmer">Farmer</option>
           <option value="Homemaker">Homemaker</option>
@@ -259,14 +259,14 @@
       <div class="selector-group" style="margin-left: auto;">
         <button id="gamed-toggle" type="button" onclick="toggleGamed()"
           style="padding: 9px 16px; border-radius: 8px; border: 1.5px solid #c0392b; background: #fff; color: #c0392b; font-weight: 700; font-size: 14px; cursor: pointer;">
-          🎭 Simulate gamed applicant
+          Simulate gamed applicant
         </button>
       </div>
 
     </div>
 
     <div id="gamed-banner" style="display:none; margin: 0 0 18px; padding: 12px 16px; border-radius: 10px; background: #fbeaea; border: 1px solid #e6b0aa; color: #922b21; font-size: 14px;">
-      <strong>Red-team mode:</strong> this applicant's features were tampered — income pushed to ₹5,00,000/mo, payment delays, volatility and missed payments zeroed, psychometrics maxed. Each edit is individually flattering; watch the anomaly gate (Step&nbsp;6) catch the impossible <em>combination</em> and flip the decision to REVIEW.
+      <strong>Red-team mode:</strong> this applicant's features were tampered - income pushed to ₹5,00,000/mo, payment delays, volatility and missed payments zeroed, psychometrics maxed. Each edit is individually flattering; watch the anomaly gate (Step&nbsp;6) catch the impossible <em>combination</em> and flip the decision to REVIEW.
     </div>
 
     <div id="loading-spinner" style="display:none; text-align:center; padding: 48px;">
@@ -285,21 +285,21 @@
         <div class="comparison-grid">
           <div class="comp-card" style="grid-column: span 2;">
             <div class="comp-title">Raw Intake Text (Borrower Statement)</div>
-            <div id="step1-raw-text" style="font-style: italic; color: var(--text-slate); margin-top: 6px;">—</div>
+            <div id="step1-raw-text" style="font-style: italic; color: var(--text-slate); margin-top: 6px;">-</div>
           </div>
           <div class="comp-card">
             <div class="comp-title">Intake Metadata</div>
             <div style="margin-top: 6px; font-size: 13px;">
-              <div><strong>Cohort:</strong> <span id="step1-cohort">—</span></div>
-              <div><strong>Requested Amount:</strong> <span id="step1-amount">—</span></div>
-              <div><strong>Purpose:</strong> <span id="step1-purpose">—</span></div>
+              <div><strong>Cohort:</strong> <span id="step1-cohort">-</span></div>
+              <div><strong>Requested Amount:</strong> <span id="step1-amount">-</span></div>
+              <div><strong>Purpose:</strong> <span id="step1-purpose">-</span></div>
             </div>
           </div>
         </div>
 
         <div>
           <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Extracted Structured Business Profile (JSON)</div>
-          <pre id="step1-extracted-json" class="code-viewer">—</pre>
+          <pre id="step1-extracted-json" class="code-viewer">-</pre>
         </div>
       </div>
 
@@ -312,7 +312,7 @@
         <div class="vault-tabs" id="vault-tabs">
           <!-- Populated dynamically -->
         </div>
-        <pre id="step2-vault-json" class="code-viewer">—</pre>
+        <pre id="step2-vault-json" class="code-viewer">-</pre>
       </div>
 
       <!-- STEP 3: Feature Engineering -->
@@ -349,20 +349,20 @@
           <div class="comp-card">
             <div class="comp-title">Transience-without-Income Check</div>
             <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between;">
-              <span id="step4-check-geo-detail" style="font-size: 13px;">—</span>
-              <span id="step4-check-geo-status" class="rule-pill">—</span>
+              <span id="step4-check-geo-detail" style="font-size: 13px;">-</span>
+              <span id="step4-check-geo-status" class="rule-pill">-</span>
             </div>
           </div>
           <div class="comp-card">
             <div class="comp-title">Telecom Repayment Check</div>
             <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between;">
-              <span id="step4-check-telecom-detail" style="font-size: 13px;">—</span>
-              <span id="step4-check-telecom-status" class="rule-pill">—</span>
+              <span id="step4-check-telecom-detail" style="font-size: 13px;">-</span>
+              <span id="step4-check-telecom-status" class="rule-pill">-</span>
             </div>
           </div>
           <div class="comp-card">
             <div class="comp-title">Validation Outcome</div>
-            <div id="step4-overall-status" style="font-size: 18px; font-weight: 800; margin-top: 4px;">—</div>
+            <div id="step4-overall-status" style="font-size: 18px; font-weight: 800; margin-top: 4px;">-</div>
           </div>
         </div>
       </div>
@@ -391,7 +391,7 @@
         </div>
 
         <div class="formula-box" id="step5-formula">
-          Base Points (—) + Sum of Feature Points (—) = Alternate Credit Score: —
+          Base Points (-) + Sum of Feature Points (-) = Alternate Credit Score: -
         </div>
       </div>
 
@@ -404,15 +404,15 @@
         <div class="comparison-grid">
           <div class="comp-card">
             <div class="comp-title">EBM Champion PD</div>
-            <div class="comp-value" id="step6-champion-pd">—</div>
+            <div class="comp-value" id="step6-champion-pd">-</div>
           </div>
           <div class="comp-card">
             <div class="comp-title">CatBoost Challenger PD</div>
-            <div class="comp-value" id="step6-catboost-pd">—</div>
+            <div class="comp-value" id="step6-catboost-pd">-</div>
           </div>
           <div class="comp-card">
             <div class="comp-title">LogReg Challenger PD</div>
-            <div class="comp-value" id="step6-logreg-pd">—</div>
+            <div class="comp-value" id="step6-logreg-pd">-</div>
           </div>
         </div>
 
@@ -420,21 +420,21 @@
           <div class="comp-card">
             <div class="comp-title">Conformal Uncertainty Gate</div>
             <div style="margin-top: 6px; font-size: 13px;">
-              <div><strong>Conformal Prediction Set:</strong> <span id="step6-conformal-set">—</span></div>
-              <div><strong>Abstain Triggered:</strong> <span id="step6-conformal-abstain">—</span></div>
+              <div><strong>Conformal Prediction Set:</strong> <span id="step6-conformal-set">-</span></div>
+              <div><strong>Abstain Triggered:</strong> <span id="step6-conformal-abstain">-</span></div>
             </div>
           </div>
           <div class="comp-card">
             <div class="comp-title">Anomaly / Out-of-Distribution Gate</div>
             <div style="margin-top: 6px; font-size: 13px;">
-              <div><strong>Distance from training profile:</strong> <span id="step6-ood-distance">—</span></div>
-              <div><strong>Review threshold:</strong> <span id="step6-ood-threshold">—</span></div>
-              <div><strong>Out-of-distribution:</strong> <span id="step6-ood-flag">—</span></div>
+              <div><strong>Distance from training profile:</strong> <span id="step6-ood-distance">-</span></div>
+              <div><strong>Review threshold:</strong> <span id="step6-ood-threshold">-</span></div>
+              <div><strong>Out-of-distribution:</strong> <span id="step6-ood-flag">-</span></div>
             </div>
           </div>
           <div class="comp-card">
             <div class="comp-title">Panel Consensus Verdict</div>
-            <div id="step6-consensus-verdict" style="font-size: 15px; font-weight: 700; margin-top: 6px; color: var(--text-dark);">—</div>
+            <div id="step6-consensus-verdict" style="font-size: 15px; font-weight: 700; margin-top: 6px; color: var(--text-dark);">-</div>
           </div>
         </div>
       </div>
@@ -448,21 +448,21 @@
         <div class="comparison-grid">
           <div class="comp-card">
             <div class="comp-title">Requested Loan Amount</div>
-            <div class="comp-value" id="step7-requested-amt">—</div>
+            <div class="comp-value" id="step7-requested-amt">-</div>
           </div>
           <div class="comp-card">
             <div class="comp-title">Max Allowed capacity</div>
-            <div class="comp-value" id="step7-max-allowed">—</div>
+            <div class="comp-value" id="step7-max-allowed">-</div>
           </div>
           <div class="comp-card">
             <div class="comp-title">Affordability Gate Status</div>
-            <div class="comp-value" id="step7-gate-status">—</div>
+            <div class="comp-value" id="step7-gate-status">-</div>
           </div>
         </div>
         
         <div class="comp-card" style="background: #f8fafc; border: 1px solid #e2e8f0; margin-top: 12px; border-radius: var(--border-radius-md);">
           <div class="comp-title">Affordability Rationale</div>
-          <div id="step7-lending-rationale" style="font-size: 14px; margin-top: 6px;">—</div>
+          <div id="step7-lending-rationale" style="font-size: 14px; margin-top: 6px;">-</div>
         </div>
       </div>
 
@@ -501,9 +501,9 @@
     let currentRawData = {};
 
     window.onload = function() {
-      // Get cohort from URL if present, otherwise default to Salaried
+      // Get cohort from URL if present, otherwise default to Student
       const urlParams = new URLSearchParams(window.location.search);
-      const cohortParam = urlParams.get('cohort') || 'Salaried';
+      const cohortParam = urlParams.get('cohort') || 'Student';
       
       // Select appropriate value in dropdown
       const select = document.getElementById('cohort-select');
@@ -525,7 +525,7 @@
         btn.style.background = '#c0392b';
         btn.style.color = '#fff';
       } else {
-        btn.textContent = '🎭 Simulate gamed applicant';
+        btn.textContent = 'Simulate gamed applicant';
         btn.style.background = '#fff';
         btn.style.color = '#c0392b';
       }
@@ -560,7 +560,7 @@
 
       // --- STEP 1 ---
       // Get the plain text description from SecureVault intake if exists
-      const intakeDesc = rawData.intake ? rawData.intake.business_description : '—';
+      const intakeDesc = rawData.intake ? rawData.intake.business_description : '-';
       document.getElementById('step1-raw-text').textContent = `"${intakeDesc}"`;
       document.getElementById('step1-cohort').textContent = scoreResult.confidence.cohort || data.cohort;
       document.getElementById('step1-amount').textContent = scoreResult.requested_amount ? `₹${scoreResult.requested_amount.toLocaleString('en-IN')}` : '₹0';
@@ -658,29 +658,23 @@
       });
 
       // --- STEP 4 ---
-      // Red flags auto rejects
-      // Retrieve some feature values to show details
-      let missedCount = 0;
-      let spatialScore = 0;
-      let incomeMean = 0;
+      // Auto-reject guardrails. Drive the outcome off the authoritative reject reason
+      // from the scoring engine (the raw check inputs are not surfaced as trace signals),
+      // and phrase the detail qualitatively so no misleading raw values are shown.
+      const rejReason = (scoreResult.reject_reason || '').toLowerCase();
+      const isGeoInstability = scoreResult.auto_reject && rejReason.includes('instability');
+      const isTelecomDefault = scoreResult.auto_reject && rejReason.includes('telecom');
 
-      traceSources.forEach(src => {
-        src.signals.forEach(sig => {
-          if (sig.feature === 'missed_payments_count') missedCount = sig.value;
-          if (sig.feature === 'spatial_variance_score') spatialScore = sig.value;
-          if (sig.feature === 'monthly_income_mean') incomeMean = sig.value;
-        });
-      });
-
-      const isGeoInstability = (spatialScore > 50.0 && incomeMean <= 0);
-      const isTelecomDefault = (data.cohort === 'Salaried' && missedCount >= 5);
-
-      document.getElementById('step4-check-geo-detail').textContent = `High mobility (Spatial Variance ${spatialScore}) AND no income anchor (₹${incomeMean})`;
+      document.getElementById('step4-check-geo-detail').textContent = isGeoInstability
+        ? 'High geographic instability with no verified income anchor'
+        : 'Location stability & income anchor within policy thresholds';
       const geoPill = document.getElementById('step4-check-geo-status');
       geoPill.textContent = isGeoInstability ? 'REJECT' : 'PASS';
       geoPill.className = `rule-pill ${isGeoInstability ? 'rule-fail' : 'rule-pass'}`;
 
-      document.getElementById('step4-check-telecom-detail').textContent = `Missed Payments: ${missedCount}`;
+      document.getElementById('step4-check-telecom-detail').textContent = isTelecomDefault
+        ? 'Excessive missed telecom payments'
+        : 'Telecom repayment history within policy threshold';
       const telecomPill = document.getElementById('step4-check-telecom-status');
       telecomPill.textContent = isTelecomDefault ? 'REJECT' : 'PASS';
       telecomPill.className = `rule-pill ${isTelecomDefault ? 'rule-fail' : 'rule-pass'}`;
@@ -725,53 +719,23 @@
           tdLogOdds.textContent = sig.logodds !== undefined ? sig.logodds.toFixed(4) : (points / 50).toFixed(4);
           tr.appendChild(tdLogOdds);
 
+          const isNeutral = Math.abs(points) < 0.05;
           const tdPoints = document.createElement('td');
-          tdPoints.textContent = points >= 0 ? `+${points.toFixed(1)}` : points.toFixed(1);
+          tdPoints.textContent = isNeutral ? '0.0' : (points > 0 ? `+${points.toFixed(1)}` : points.toFixed(1));
           tdPoints.style.fontWeight = 'bold';
-          tdPoints.style.color = points >= 0 ? '#16a34a' : '#dc2626';
+          tdPoints.style.color = isNeutral ? '#64748b' : (points > 0 ? '#16a34a' : '#dc2626');
           tr.appendChild(tdPoints);
 
           const tdImpact = document.createElement('td');
-          tdImpact.textContent = points >= 0 ? 'Raises Score' : 'Lowers Score';
-          tdImpact.style.color = points >= 0 ? '#16a34a' : '#dc2626';
+          tdImpact.textContent = isNeutral ? 'No Impact' : (points > 0 ? 'Raises Score' : 'Lowers Score');
+          tdImpact.style.color = isNeutral ? '#64748b' : (points > 0 ? '#16a34a' : '#dc2626');
           tr.appendChild(tdImpact);
 
           ebmTable.appendChild(tr);
         });
       });
 
-      const hiddenPoints = totalFeaturePoints - sumOfPoints;
-      if (Math.abs(hiddenPoints) >= 0.05) {
-        const tr = document.createElement('tr');
-        tr.style.backgroundColor = '#f8fafc';
-        tr.style.fontStyle = 'italic';
 
-        const tdLabel = document.createElement('td');
-        tdLabel.innerHTML = '<b>Cohort Baseline Adjustments</b> <small style="color:var(--text-muted);">(hidden non-applicable features)</small>';
-        tr.appendChild(tdLabel);
-
-        const tdVal = document.createElement('td');
-        tdVal.textContent = 'N/A';
-        tr.appendChild(tdVal);
-
-        const tdLogOdds = document.createElement('td');
-        const hiddenLogOdds = -hiddenPoints / (50 / Math.log(2));
-        tdLogOdds.textContent = hiddenLogOdds.toFixed(4);
-        tr.appendChild(tdLogOdds);
-
-        const tdPoints = document.createElement('td');
-        tdPoints.textContent = hiddenPoints >= 0 ? `+${hiddenPoints.toFixed(1)}` : hiddenPoints.toFixed(1);
-        tdPoints.style.fontWeight = 'bold';
-        tdPoints.style.color = hiddenPoints >= 0 ? '#16a34a' : '#dc2626';
-        tr.appendChild(tdPoints);
-
-        const tdImpact = document.createElement('td');
-        tdImpact.textContent = hiddenPoints >= 0 ? 'Raises Score' : 'Lowers Score';
-        tdImpact.style.color = hiddenPoints >= 0 ? '#16a34a' : '#dc2626';
-        tr.appendChild(tdImpact);
-
-        ebmTable.appendChild(tr);
-      }
 
       const roundedScore = Math.round(scoreResult.credit_score);
       const roundedBase = Math.round(scoreResult.base_points);
@@ -786,8 +750,10 @@
       
       // Challengers
       const panel = scoreResult.panel || {};
-      const cbPdVal = panel.challenger_pds && panel.challenger_pds.catboost ? (panel.challenger_pds.catboost * 100).toFixed(2) + '%' : roundedChampPd;
-      const lrPdVal = panel.challenger_pds && panel.challenger_pds.logistic ? (panel.challenger_pds.logistic * 100).toFixed(2) + '%' : roundedChampPd;
+      const cbObj = (panel.challengers || []).find(c => c.name === 'catboost');
+      const lrObj = (panel.challengers || []).find(c => c.name === 'logistic');
+      const cbPdVal = cbObj && cbObj.pd !== undefined ? (cbObj.pd * 100).toFixed(2) + '%' : (panel.challenger_pds && panel.challenger_pds.catboost ? (panel.challenger_pds.catboost * 100).toFixed(2) + '%' : roundedChampPd);
+      const lrPdVal = lrObj && lrObj.pd !== undefined ? (lrObj.pd * 100).toFixed(2) + '%' : (panel.challenger_pds && panel.challenger_pds.logistic ? (panel.challenger_pds.logistic * 100).toFixed(2) + '%' : roundedChampPd);
 
       document.getElementById('step6-catboost-pd').textContent = cbPdVal;
       document.getElementById('step6-logreg-pd').textContent = lrPdVal;

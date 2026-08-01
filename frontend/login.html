@@ -6,7 +6,7 @@
   <title>Alt-Credit: Sign In</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/login.css?v=1.0.1">
-  <script src="/static/translations.js?v=1.0.4"></script>
+  <script src="/static/translations.js?v=1.0.5"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
 </head>
 <body>
@@ -44,7 +44,7 @@
 
           <div class="form-group">
             <label class="form-label" for="login-id" data-i18n="login-field-loginid">Login ID</label>
-            <input id="login-id" class="form-control" type="text" autocomplete="username" placeholder="e.g. ravi_kumar">
+            <input id="login-id" class="form-control" type="text" autocomplete="username" placeholder="e.g. ravi_kumar" data-i18n="login-loginid-placeholder">
           </div>
 
           <div class="form-group">
@@ -125,6 +125,8 @@
         window.location.replace('/register' + window.location.search);
       }
     });
+
+    window.addEventListener('altcreditLanguageChanged', () => translatePage());
   </script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 
 The visual CAPTCHAs are pre-rendered to base64 and stored in the DB, which now
 lives on a persistent volume. After changing the CAPTCHA font, the old images
-are still cached there — run this once on the server to clear and re-render them:
+are still cached there - run this once on the server to clear and re-render them:
 
     fly ssh console -a alt-credit-demo -C "python -m scripts.reseed_captchas"
 """

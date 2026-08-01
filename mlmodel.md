@@ -206,15 +206,15 @@ a calibration issue: CatBoost was *over-confident* (median PD ≈ 0.5%), so the 
 scorecard's APPROVE bar (PD ≤ 0.25%) was only clearable by an over-confident model.
 The honestly-calibrated EBM (median PD ≈ base rate) produced **0% approvals** under
 the old anchor. Fix, in two parts: (1) the synthetic applicant pool is drawn as an
-*inclusive lender's* pool — latent creditworthiness skewed toward repayment
+*inclusive lender's* pool - latent creditworthiness skewed toward repayment
 (Beta(2.4, 1.9)) with the base default rate re-anchored to ~12% so the portfolio
 matches the scorecard's 10:1-at-600 assumption instead of sitting ~25% and dragging
 every score onto the REVIEW floor; (2) the score thresholds in `convergence/panel.py`
-are `APPROVE_SCORE = 700` and `REVIEW_SCORE = 560` — auto-approval reserved for the
+are `APPROVE_SCORE = 700` and `REVIEW_SCORE = 560` - auto-approval reserved for the
 clearly-safe (PD ~2.5%), the borderline-good routed to human review. The agreement
 gate was also made consistent: it demotes an approval only on a hard APPROVE-vs-
 REJECT conflict, not on adjacent-band scatter (a challenger one band lower is noise,
-not a veto — the old unanimity rule collapsed the approve rate). Result on the
+not a veto - the old unanimity rule collapsed the approve rate). Result on the
 current 100-user portfolio (2026-07 dataset):
 
 | Decision | Share |

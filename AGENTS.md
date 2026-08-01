@@ -34,7 +34,7 @@ cashflow facets in the first place, so a revoked scope has something to actually
 Running `pytest`, a one-off script, or `pip install` against base Python will either
 fail on missing imports or silently install packages into the wrong environment.
 Activate it (`source .venv/bin/activate`) or call the binaries directly
-(`.venv/bin/python`, `.venv/bin/pytest`, `.venv/bin/pip`) — don't reach for bare
+(`.venv/bin/python`, `.venv/bin/pytest`, `.venv/bin/pip`) - don't reach for bare
 `python`/`python3`/`pytest`/`pip`.
 
 If you write a one-off script to exercise the score engine directly (instead of hitting

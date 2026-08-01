@@ -13,15 +13,15 @@ __pycache__
 .mypy_cache
 .DS_Store
 
-# Local SQLite DBs — the server creates its own on the mounted volume.
+# Local SQLite DBs - the server creates its own on the mounted volume.
 *.db
 *.db.bak
 
 # Training scratch + local artifacts not needed to serve.
 catboost_info
 
-# Demo/pitch collateral, tests, and misc — not served by the app.
-# NOTE: do NOT add `speech` here — speech/ is an imported Python package, not audio collateral.
+# Demo/pitch collateral, tests, and misc - not served by the app.
+# NOTE: do NOT add `speech` here - speech/ is an imported Python package, not audio collateral.
 slide_images
 docs
 tests

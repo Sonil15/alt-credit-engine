@@ -49,7 +49,7 @@ def _champion_cv_diagnostics(
 
     Also returns the out-of-fold margins (fold-model logit minus that fold's
     intercept) and labels: the honest inputs for temperature scaling. The held-out
-    calibration slice can't play that role here — at n≈20 the champion usually
+    calibration slice can't play that role here - at n≈20 the champion usually
     separates it perfectly, and log-loss then says "don't damp anything" (T=1)
     even when cross-validation shows the confidence is not real.
     """
@@ -98,7 +98,7 @@ async def train_all_from_db(session: AsyncSession) -> dict[str, Any]:
 
     # Hold out a calibration slice from train for split conformal (not used in fitting).
     # 25% (not 20%): at alpha=0.1 the conformal quantile needs n_cal >= 20 before
-    # ceil((n+1)(1-alpha))/n drops below the maximum — with a smaller slice a single
+    # ceil((n+1)(1-alpha))/n drops below the maximum - with a smaller slice a single
     # noisy calibration point (a lucky defaulter scored as safe) forces the threshold
     # to ~1.0 and the gate abstains on the whole portfolio.
     stratify = y_train if y_train.nunique() > 1 else None
@@ -131,7 +131,7 @@ async def train_all_from_db(session: AsyncSession) -> dict[str, Any]:
     save_calibration(conformal_calibration)
     # OOD integrity gate: learn the joint training manifold the champion actually saw
     # (X_train), so anomalous feature *combinations* at serve time abstain to REVIEW.
-    # It never touches PD — purely an eligibility filter sitting outside the glass box.
+    # It never touches PD - purely an eligibility filter sitting outside the glass box.
     ood_calibration = fit_ood(X_train)
     save_ood_calibration(ood_calibration)
     champion_metrics = evaluate_model(ebm, X_test, y_test)  # only uses predict_proba

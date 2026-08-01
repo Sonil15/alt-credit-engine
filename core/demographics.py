@@ -1,5 +1,5 @@
 """Shared code maps for the self-declared demographic attributes used only by the
-fairness monitor (never as model inputs — see convergence/fairness.py).
+fairness monitor (never as model inputs - see convergence/fairness.py).
 
 Single source of truth for both the synthetic-seed bootstrap and the live
 registration flow, so the two never drift apart.

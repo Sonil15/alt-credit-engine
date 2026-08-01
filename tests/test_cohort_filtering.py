@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from core.bootstrap import MOCK_DATA_PATH, _ingest_profile, _store_ground_truth
 from core.database import AsyncSessionLocal
-from convergence.score_engine import SCOPE_TO_FEATURES, score_user
+from convergence.score_engine import COHORT_EXPECTED_SCOPES, SCOPE_TO_FEATURES, score_user
 from core.model_cache import init_model_cache
 from models.db_models import MLFeature
 
@@ -67,12 +67,13 @@ async def test_student_cohort_filtering():
         # Get score payload
         payload = await score_user(session, str(user_uuid), persist=False)
         
-        # Allowed scopes for Student: geo, survey, campus
-        allowed_scopes = {"geo", "survey", "campus"}
+        # Allowed features are exactly those from the cohort's expected scopes
+        # (the campus facet spans campus + split_bill_history + student_wallet_topups).
+        allowed_scopes = set(COHORT_EXPECTED_SCOPES["Student"])
         allowed_features = set()
         for scope in allowed_scopes:
             allowed_features.update(SCOPE_TO_FEATURES[scope])
-            
+
         # Get all features in the trace
         by_source = payload["feature_trace"].get("by_source", [])
         for src_group in by_source:
@@ -103,10 +104,11 @@ async def test_farmer_cohort_filtering():
         # Get score payload
         payload = await score_user(session, str(user_uuid), persist=False)
         
-        # Allowed scopes for Farmer: geo, survey, farmer
+        # Allowed features are exactly those from the cohort's expected scopes
+        # (the agricultural facet spans farmer + kisan_credit_card + enam_receipts).
         # Note: Business credentials features (vintage, udyam, etc.) are handled separately,
         # but farmer features must be present while student/telecom/ecommerce/household are hidden.
-        allowed_scopes = {"geo", "survey", "farmer"}
+        allowed_scopes = set(COHORT_EXPECTED_SCOPES["Farmer"])
         allowed_features = set()
         for scope in allowed_scopes:
             allowed_features.update(SCOPE_TO_FEATURES[scope])

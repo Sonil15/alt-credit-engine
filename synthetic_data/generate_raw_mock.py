@@ -419,6 +419,271 @@ def generate_cashflow_transactions(user_id: str, theta: float, count: int = 40) 
     return transactions
 
 
+# ---------------------------------------------------------------------------
+# Cohort-specific alternative data sources (Campus / Vendor / Farmer / Household)
+# ---------------------------------------------------------------------------
+# These cohorts are scored on a dedicated facet whose signals live in a source the
+# generic streams (telecom / e-commerce / cash-flow) don't carry -- a student's UPI
+# canteen spend, a vendor's QR settlements, a farmer's mandi receipts, a homemaker's
+# utility bills. The builders below reconstruct a transaction-level raw payload from
+# the borrower's already-derived facet feature values, so the Score Explainer's Step
+# 2 (raw vault) reconciles exactly with the Step 3 features and the scorecard. They
+# are deterministic per user id, so the same borrower always shows the same records.
+
+
+def build_campus_raw_payload(
+    user_id: str,
+    *,
+    upi_spend_consistency: float,
+    small_dues_payment_promptness: float,
+    e_wallet_topup_frequency: float,
+) -> dict:
+    """Student campus & UPI footprint: canteen/stationery spend, mess dues, wallet top-ups."""
+    rng = _user_rng(f"{user_id}:campus_display")
+    start = datetime.now() - timedelta(days=45)
+
+    # Consistent spenders show a tight amount distribution (low coefficient of variation).
+    cv = max(0.03, 0.5 * (1.0 - upi_spend_consistency))
+    base_amount = rng.uniform(60, 180)
+    merchants = ["Campus Canteen", "Stationery Store", "Xerox Point", "Book Depot", "Chai Tapri", "Metro Card"]
+    upi_transactions = [
+        {
+            "timestamp": (start + timedelta(days=i * 3, hours=rng.randint(8, 21))).isoformat(),
+            "merchant": rng.choice(merchants),
+            "amount": round(max(15.0, base_amount * (1 + rng.gauss(0, cv))), 2),
+            "channel": "UPI",
+        }
+        for i in range(14)
+    ]
+
+    # Promptness is the share of small dues settled on or before the due date.
+    small_dues_ledger = []
+    for i in range(6):
+        due = start + timedelta(days=i * 7)
+        on_time = rng.random() < small_dues_payment_promptness
+        settled = due + timedelta(days=(rng.randint(-1, 1) if on_time else rng.randint(4, 15)))
+        small_dues_ledger.append(
+            {
+                "description": rng.choice(["Hostel mess share", "Group project print", "Trip split", "Notes subscription"]),
+                "amount": round(rng.uniform(150, 900), 2),
+                "due_date": due.date().isoformat(),
+                "settled_date": settled.date().isoformat(),
+                "on_time": on_time,
+            }
+        )
+
+    # Top-up frequency (0..1) maps to a monthly count of e-wallet reloads.
+    topup_count = int(round(2 + e_wallet_topup_frequency * 10))
+    wallet_topups = [
+        {
+            "timestamp": (start + timedelta(days=rng.randint(0, 44))).isoformat(),
+            "wallet": rng.choice(["Paytm", "PhonePe", "Amazon Pay"]),
+            "amount": round(rng.choice([100, 200, 500]) + rng.uniform(0, 50), 2),
+        }
+        for _ in range(topup_count)
+    ]
+
+    return {
+        "user_id": user_id,
+        "source": "Campus & UPI transaction behaviour",
+        "upi_transactions": upi_transactions,
+        "small_dues_ledger": small_dues_ledger,
+        "wallet_topups": wallet_topups,
+        "derived_metrics": {
+            "upi_spend_consistency": round(upi_spend_consistency, 2),
+            "small_dues_payment_promptness": round(small_dues_payment_promptness, 2),
+            "e_wallet_topup_frequency": round(e_wallet_topup_frequency, 2),
+        },
+    }
+
+
+def build_vendor_raw_payload(
+    user_id: str,
+    *,
+    daily_transaction_count: float,
+    average_ticket_size: float,
+) -> dict:
+    """Micro-enterprise UPI/QR settlements: daily volume and average ticket size."""
+    rng = _user_rng(f"{user_id}:vendor_display")
+    start = datetime.now() - timedelta(days=14)
+
+    daily_settlements = []
+    for d in range(14):
+        day = start + timedelta(days=d)
+        count = max(1, int(round(daily_transaction_count * (1 + rng.gauss(0, 0.18)))))
+        avg = max(20.0, average_ticket_size * (1 + rng.gauss(0, 0.12)))
+        daily_settlements.append(
+            {
+                "date": day.date().isoformat(),
+                "txn_count": count,
+                "gross_volume": round(count * avg, 2),
+                "avg_ticket": round(avg, 2),
+                "provider": rng.choice(["BharatPe QR", "Paytm Soundbox", "PhonePe Merchant"]),
+            }
+        )
+
+    return {
+        "user_id": user_id,
+        "source": "Micro-enterprise UPI/payment volumes",
+        "daily_settlements": daily_settlements,
+        "derived_metrics": {
+            "daily_transaction_count": round(daily_transaction_count, 2),
+            "average_ticket_size": round(average_ticket_size, 2),
+        },
+    }
+
+
+def build_farmer_raw_payload(
+    user_id: str,
+    *,
+    harvest_income_spike: float,
+    input_purchase_consistency: float,
+    enam_receipt_volume: float,
+) -> dict:
+    """Farming cycle footprint: e-NAM mandi receipts and seasonal input purchases."""
+    rng = _user_rng(f"{user_id}:farmer_display")
+    start = datetime.now() - timedelta(days=300)
+
+    # Distribute the annual e-NAM verified volume across a handful of mandi sales,
+    # concentrating it into a harvest-season spike proportional to the income multiple.
+    n_receipts = 5
+    weights = [rng.uniform(0.5, 1.0) for _ in range(n_receipts)]
+    peak = max(1.0, harvest_income_spike)
+    weights[rng.randrange(n_receipts)] *= peak  # the harvest-season spike
+    wsum = sum(weights) or 1.0
+    enam_receipts = []
+    for i, w in enumerate(weights):
+        enam_receipts.append(
+            {
+                "receipt_date": (start + timedelta(days=i * 55 + rng.randint(0, 20))).date().isoformat(),
+                "mandi": rng.choice(["Azadpur APMC", "Unjha Mandi", "Nashik APMC", "Guntur Yard"]),
+                "commodity": rng.choice(["Paddy", "Wheat", "Cotton", "Turmeric"]),
+                "amount": round(enam_receipt_volume * w / wsum, 2),
+                "verified": True,
+            }
+        )
+
+    # Consistency is the share of input-purchase cycles the farmer actually stocked.
+    input_purchases = []
+    for i in range(4):
+        cycle = start + timedelta(days=i * 75)
+        stocked = rng.random() < input_purchase_consistency
+        if stocked:
+            input_purchases.append(
+                {
+                    "purchase_date": (cycle + timedelta(days=rng.randint(0, 10))).date().isoformat(),
+                    "item": rng.choice(["Certified seeds", "Urea/DAP fertiliser", "Pesticide", "Diesel"]),
+                    "amount": round(rng.uniform(3000, 12000), 2),
+                    "channel": rng.choice(["Kisan Credit Card", "Co-op society", "Agri-input dealer"]),
+                }
+            )
+
+    return {
+        "user_id": user_id,
+        "source": "Farming cycles & input purchases",
+        "enam_receipts": enam_receipts,
+        "input_purchases": input_purchases,
+        "derived_metrics": {
+            "harvest_income_spike": round(harvest_income_spike, 2),
+            "input_purchase_consistency": round(input_purchase_consistency, 2),
+            "enam_receipt_volume": round(enam_receipt_volume, 2),
+        },
+    }
+
+
+def build_household_raw_payload(
+    user_id: str,
+    *,
+    utility_payment_consistency: float,
+    grocery_spend_stability: float,
+) -> dict:
+    """Homemaker footprint: BBPS utility bills and recurring grocery spend."""
+    rng = _user_rng(f"{user_id}:household_display")
+    start = datetime.now() - timedelta(days=180)
+
+    # Consistency is the share of utility bills paid on or before the due date.
+    utility_bills = []
+    for i in range(6):
+        biller = ["Electricity", "Water", "Piped Gas"][i % 3]
+        due = start + timedelta(days=i * 30)
+        on_time = rng.random() < utility_payment_consistency
+        paid = due + timedelta(days=(rng.randint(-2, 0) if on_time else rng.randint(3, 12)))
+        utility_bills.append(
+            {
+                "biller": biller,
+                "channel": "BBPS",
+                "amount": round(rng.uniform(300, 1600), 2),
+                "due_date": due.date().isoformat(),
+                "paid_date": paid.date().isoformat(),
+                "on_time": on_time,
+            }
+        )
+
+    # Stability shows up as low month-to-month variance in grocery spend.
+    cv = max(0.02, 0.4 * (1.0 - grocery_spend_stability))
+    base_spend = rng.uniform(4000, 9000)
+    grocery_spend = [
+        {
+            "month": (start + timedelta(days=i * 30)).strftime("%Y-%m"),
+            "amount": round(max(500.0, base_spend * (1 + rng.gauss(0, cv))), 2),
+            "outlet": rng.choice(["Local Kirana", "D-Mart", "Reliance Fresh", "Grocery POS"]),
+        }
+        for i in range(6)
+    ]
+
+    return {
+        "user_id": user_id,
+        "source": "Electricity/Water/Gas & Groceries",
+        "utility_bills": utility_bills,
+        "grocery_spend": grocery_spend,
+        "derived_metrics": {
+            "utility_payment_consistency": round(utility_payment_consistency, 2),
+            "grocery_spend_stability": round(grocery_spend_stability, 2),
+        },
+    }
+
+
+# Maps each cohort to its dedicated data source: (vault data_type, builder, feature
+# names in the builder's kwarg order, per-feature fallback when the borrower has no
+# stored value). Used by the Score Explainer to materialise the raw vault on demand.
+COHORT_RAW_SOURCE_BUILDERS = {
+    "Student": (
+        "campus",
+        build_campus_raw_payload,
+        (
+            ("upi_spend_consistency", 0.65),
+            ("small_dues_payment_promptness", 0.74),
+            ("e_wallet_topup_frequency", 0.59),
+        ),
+    ),
+    "Vendor": (
+        "vendor",
+        build_vendor_raw_payload,
+        (
+            ("daily_transaction_count", 31.0),
+            ("average_ticket_size", 176.0),
+        ),
+    ),
+    "Farmer": (
+        "farmer",
+        build_farmer_raw_payload,
+        (
+            ("harvest_income_spike", 5.3),
+            ("input_purchase_consistency", 0.85),
+            ("enam_receipt_volume", 120000.0),
+        ),
+    ),
+    "Homemaker": (
+        "household",
+        build_household_raw_payload,
+        (
+            ("utility_payment_consistency", 0.9),
+            ("grocery_spend_stability", 0.8),
+        ),
+    ),
+}
+
+
 def _noisy_trait(theta: float, rng: random.Random, noise: float = 0.12) -> float:
     value = theta + rng.gauss(0.0, noise)
     return round(max(0.0, min(1.0, value)), 4)

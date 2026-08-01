@@ -5,7 +5,7 @@ good borrowers get PD ≈ 0, bad ones PD ≈ 1, and the PDO scorecard clamps mos
 the portfolio to the 900 ceiling. Temperature scaling divides each model's
 feature-driven margin (its logit minus the prior-corrected intercept) by a single
 T ≥ 1 fitted on the held-out calibration slice by log-loss. Ranking (AUC) is
-unchanged — only confidence is damped — and because the transform is a uniform
+unchanged - only confidence is damped - and because the transform is a uniform
 scale on the additive terms, the champion's per-feature contributions still
 reconcile exactly to the score.
 

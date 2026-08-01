@@ -6,7 +6,7 @@
   <title>Alt-Credit Consent Gateway</title>
   <link rel="stylesheet" href="/static/css/global.css?v=1.0.0">
   <link rel="stylesheet" href="/static/css/consent.css?v=1.0.0">
-  <script src="/static/translations.js?v=1.0.4"></script>
+  <script src="/static/translations.js?v=1.0.5"></script>
   <script src="/static/auth.js?v=1.0.0"></script>
   <script>
     // Login is mandatory for the borrower flow. Redirect to sign-in before any
@@ -61,12 +61,32 @@
               <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
                 <input type="checkbox" id="scope-sms_parsing" checked> <span data-i18n="scope-sms_parsing">Transactional SMS alert logs</span>
               </label>
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-telco_postpaid_apis" checked> <span data-i18n="scope-telco_postpaid_apis">Direct Telco Billing APIs</span>
+              </label>
             </div>
           </li>
-          <li id="li-ecommerce"><input type="checkbox" id="scope-ecommerce"> <span data-i18n="scope-ecommerce">E-commerce history</span> <span id="opt-ecommerce" style="color:#64748b; font-size:12px; display:none;">(Optional)</span></li>
+          <li id="li-ecommerce" style="display:flex; flex-direction:column; align-items:flex-start;">
+            <div>
+              <input type="checkbox" id="scope-ecommerce" onchange="toggleSubScopes('ecommerce')"> <span data-i18n="scope-ecommerce">E-commerce history</span> <span id="opt-ecommerce" style="color:#64748b; font-size:12px; display:none;">(Optional)</span>
+            </div>
+            <div id="sub-ecommerce" style="margin-left: 28px; margin-top: 6px; display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-ondc_retail" checked> <span data-i18n="scope-ondc_retail">ONDC Open Network Orders</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-amazon_flipkart_scraping" checked> <span data-i18n="scope-amazon_flipkart_scraping">E-commerce Order History</span>
+              </label>
+            </div>
+          </li>
           <li id="li-geo" style="display:flex; flex-direction:column; align-items:flex-start;">
             <div>
-              <input type="checkbox" id="scope-geo"> <span data-i18n="scope-geo">Location stability</span> <span id="opt-geo" style="color:#64748b; font-size:12px; display:none;">(Optional)</span>
+              <input type="checkbox" id="scope-geo" onchange="toggleSubScopes('geo')"> <span data-i18n="scope-geo">Location stability</span> <span id="opt-geo" style="color:#64748b; font-size:12px; display:none;">(Optional)</span>
+            </div>
+            <div id="sub-geo" style="margin-left: 28px; margin-top: 6px; display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-shipping_pin_codes" checked> <span data-i18n="scope-shipping_pin_codes">E-commerce Delivery PIN Codes</span>
+              </label>
             </div>
             <div style="font-size:11px; color:#64748b; margin-left:28px; margin-top:4px;" data-i18n="scope-geo-desc">
               Note: Uses e-commerce shipping logs to calculate stability, ensuring zero real-time daily GPS tracking.
@@ -83,16 +103,37 @@
               <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
                 <input type="checkbox" id="scope-dbt_logs" checked> <span data-i18n="scope-dbt_logs">Direct Benefit Transfer (DBT) logs</span>
               </label>
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-aa_bank_statements" checked> <span data-i18n="scope-aa_bank_statements">Account Aggregator Bank Statements</span>
+              </label>
             </div>
           </li>
           
           <li id="li-campus" style="display:none; flex-direction:column; align-items:flex-start;">
-            <div><input type="checkbox" id="scope-campus"> <span data-i18n="scope-campus">Campus & UPI transactions</span> <span id="opt-campus" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-campus" style="color:#10b981; font-size:12px; display:none;">(Necessary for Score)</span></div>
+            <div><input type="checkbox" id="scope-campus" onchange="toggleSubScopes('campus')"> <span data-i18n="scope-campus">Campus & UPI transactions</span> <span id="opt-campus" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-campus" style="color:#10b981; font-size:12px; display:none;">(Necessary for Score)</span></div>
+            <div id="sub-campus" style="margin-left: 28px; margin-top: 6px; display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-student_wallet_topups" checked> <span data-i18n="scope-student_wallet_topups">Campus Wallet Top-ups</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-split_bill_history" checked> <span data-i18n="scope-split_bill_history">Split-bill Payment History</span>
+              </label>
+            </div>
             <div style="font-size:11px; color:#64748b; margin-left:24px; margin-top:4px;" data-i18n="scope-campus-desc">
               Includes: UPI expenses, Small dues history, and E-wallet usage. Providing at least 1 of these 3 will count as data provided for confidence scoring.
             </div>
           </li>
-          <li id="li-vendor" style="display:none;"><input type="checkbox" id="scope-vendor"> <span data-i18n="scope-vendor">Micro-enterprise UPI volumes</span> <span id="opt-vendor" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-vendor" style="color:#10b981; font-size:12px; display:none;">(Necessary for Score)</span></li>
+          <li id="li-vendor" style="display:none; flex-direction:column; align-items:flex-start;">
+            <div><input type="checkbox" id="scope-vendor" onchange="toggleSubScopes('vendor')"> <span data-i18n="scope-vendor">Micro-enterprise UPI volumes</span> <span id="opt-vendor" style="color:#64748b; font-size:12px; display:none;">(Optional)</span> <span id="nec-vendor" style="color:#10b981; font-size:12px; display:none;">(Necessary for Score)</span></div>
+            <div id="sub-vendor" style="margin-left: 28px; margin-top: 6px; display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-ondc_merchant" checked> <span data-i18n="scope-ondc_merchant">ONDC Merchant Ratings & Volumes</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-upi_qr_dashboards" checked> <span data-i18n="scope-upi_qr_dashboards">BharatPe/PhonePe Merchant Dashboards</span>
+              </label>
+            </div>
+          </li>
           <li id="li-farmer" style="display:none; flex-direction:column; align-items:flex-start;">
             <div>
               <input type="checkbox" id="scope-farmer" onchange="toggleSubScopes('farmer')"> <span data-i18n="scope-farmer">Farming cycles & purchases</span>
@@ -101,11 +142,26 @@
               <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
                 <input type="checkbox" id="scope-enam_receipts" checked> <span data-i18n="scope-enam_receipts">e-NAM verified Mandi receipts</span>
               </label>
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-kisan_credit_card" checked> <span data-i18n="scope-kisan_credit_card">Kisan Credit Card usage</span>
+              </label>
             </div>
           </li>
-          <li id="li-household" style="display:none;"><input type="checkbox" id="scope-household"> <span data-i18n="scope-household">Household utility payments</span></li>
+          <li id="li-household" style="display:none; flex-direction:column; align-items:flex-start;">
+            <div><input type="checkbox" id="scope-household" onchange="toggleSubScopes('household')"> <span data-i18n="scope-household">Household utility payments</span></div>
+            <div id="sub-household" style="margin-left: 28px; margin-top: 6px; display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-bbps_utility" checked> <span data-i18n="scope-bbps_utility">BBPS Utility Bill Payments</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:normal; cursor:pointer;">
+                <input type="checkbox" id="scope-grocery_pos" checked> <span data-i18n="scope-grocery_pos">Grocery POS Retail Receipts</span>
+              </label>
+            </div>
+          </li>
           
-          <li id="li-survey"><input type="checkbox" id="scope-survey" checked disabled> <span data-i18n="scope-survey">Psychometric survey</span></li>
+          <li id="li-survey">
+            <input type="checkbox" id="scope-survey" checked disabled> <span data-i18n="scope-survey">Psychometric survey</span>
+          </li>
         </ul>
 
         <div class="disclosure">
@@ -149,7 +205,7 @@
         </div>
 
         <div class="status-card" id="scopes-card" style="display:none;">
-          <div class="label">Consent Scopes</div>
+          <div class="label" data-i18n="consent-scopes-title">Consent Scopes</div>
           <div id="scopes-list-container" style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
             <!-- Rendered dynamically -->
           </div>
@@ -161,8 +217,8 @@
           <div id="data-pill"></div>
         </div>
 
-        <div style="font-size:13px; color:#94a3b8; line-height:1.5; margin: 14px 0; padding: 12px; background: #0f172a; border-radius: 12px; border-left: 3px solid #3b82f6;">
-          Revoking a data source stops <strong>future</strong> collection. To delete your <strong>past</strong> application data, use the Request Data Deletion button.
+        <div style="font-size:13px; color:#94a3b8; line-height:1.5; margin: 14px 0; padding: 12px; background: #0f172a; border-radius: 12px; border-left: 3px solid #3b82f6;" data-i18n="consent-note-future-past">
+          Revoking a data source stops future collection. To delete your past application data, use the Request Data Deletion button.
         </div>
 
         <div class="action-row">
@@ -223,9 +279,14 @@
       const parent = document.getElementById('scope-' + scope);
       if (!parent) return;
       const subMapping = {
-        'telecom': ['sms_parsing'],
-        'cashflow': ['upi_lite', 'dbt_logs'],
-        'farmer': ['enam_receipts']
+        'telecom': ['sms_parsing', 'telco_postpaid_apis'],
+        'ecommerce': ['ondc_retail', 'amazon_flipkart_scraping'],
+        'geo': ['shipping_pin_codes'],
+        'cashflow': ['upi_lite', 'dbt_logs', 'aa_bank_statements'],
+        'campus': ['student_wallet_topups', 'split_bill_history'],
+        'vendor': ['ondc_merchant', 'upi_qr_dashboards'],
+        'farmer': ['enam_receipts', 'kisan_credit_card'],
+        'household': ['bbps_utility', 'grocery_pos']
       };
       const children = subMapping[scope] || [];
       children.forEach(childId => {
@@ -252,7 +313,11 @@
         // hidden cohort-specific boxes (offsetParent === null) are skipped.
         const optionalScopes = [
           'telecom', 'ecommerce', 'geo', 'cashflow', 'campus', 'vendor', 'farmer', 'household',
-          'upi_lite', 'dbt_logs', 'sms_parsing', 'enam_receipts'
+          'upi_lite', 'dbt_logs', 'sms_parsing', 'telco_postpaid_apis',
+          'ondc_retail', 'amazon_flipkart_scraping', 'shipping_pin_codes',
+          'aa_bank_statements', 'student_wallet_topups', 'split_bill_history',
+          'ondc_merchant', 'upi_qr_dashboards', 'enam_receipts', 'kisan_credit_card',
+          'bbps_utility', 'grocery_pos'
         ];
         const declined = optionalScopes.filter(scope => {
           const box = document.getElementById('scope-' + scope);
